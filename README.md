@@ -4,6 +4,8 @@
 
 > **심화 단계 저장소 (MEALFIT_DL_LLM).** 1차 프로젝트 [axioe/MealFit](https://github.com/axioe/MealFit)의 main(2026-11-13, MVC 정리 완료)을 이력째 옮겨 와서 DL·LLM 심화 작업을 이어 간다. 배포는 하지 않는다(운영 서버 중지, CI의 deploy 잡은 `DEPLOY_ENABLED` 변수가 없으면 건너뜀).
 
+> **AI 코딩 도구를 쓴다면** 작업 전에 [`AGENTS.md`](AGENTS.md)를 읽게 한다. Claude Code는 `CLAUDE.md`, Gemini CLI는 `GEMINI.md`를 통해 자동으로 읽고, Codex·Cursor·Copilot은 `AGENTS.md`를 바로 읽는다. 그 밖의 도구는 첫 대화에 이 파일 내용을 붙여 넣는다.
+
 > 발표: 2026-10-23 (금) · 시연 범위: 회원가입·프로필 → 냉장고 재고 등록 → AI 3끼 추천과 서버 검증 → 확정과 장보기 목록 → 조리 차감·취소 복원 → 섭취 기록 → 대시보드
 
 ## 현재 구현 상태 (2026-10-22, `main` 기준)
