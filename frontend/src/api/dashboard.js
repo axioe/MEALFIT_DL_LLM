@@ -1,6 +1,6 @@
 import { api } from '@/api/client'
 import { dashboardMock } from '@/api/mocks/dashboardMock'
-import { EXPIRATION_STATUS, LOT_STATUS, SHOPPING_ITEM_STATUS } from '@/lib/enums'
+import { buildDashboard } from '@/models/dashboard'
 
 /**
  * 대시보드(메인 화면) 데이터. 영역마다 API 완성 시점이 달라서 MOCK을 영역별로 나눈다.
@@ -45,31 +45,13 @@ export const MOCK_AREAS = Object.entries(MOCK)
  * GET  /api/v1/me/profile   응답 { nickname, goal: 'LOSE' | 'MAINTAIN' | 'GAIN', targetWeightKg, ... }
  */
 
-const EXPIRING = [EXPIRATION_STATUS.EXPIRED, EXPIRATION_STATUS.TODAY, EXPIRATION_STATUS.IMMINENT]
-
-function pickExpiringLots(inventory) {
-  return inventory.groups
-    .flatMap((group) => group.lots)
-    .filter((lot) => lot.status === LOT_STATUS.ACTIVE && EXPIRING.includes(lot.expirationStatus))
-    .sort(
-      (a, b) =>
-        EXPIRING.indexOf(a.expirationStatus) - EXPIRING.indexOf(b.expirationStatus) ||
-        String(a.expiryDate).localeCompare(String(b.expiryDate)),
-    )
-}
-
 async function composeDashboard(date) {
   const [meals, inventory, shoppingItems] = await Promise.all([
     dashboardMock.getMeals(date),
     api.get('/inventory/lots').then((r) => r.data),
     api.get('/shopping-items').then((r) => r.data),
   ])
-  return {
-    date,
-    meals,
-    expiringLots: pickExpiringLots(inventory),
-    shortages: shoppingItems.filter((item) => item.status !== SHOPPING_ITEM_STATUS.PURCHASED),
-  }
+  return buildDashboard({ date, meals, inventory, shoppingItems })
 }
 
 export const dashboardApi = {

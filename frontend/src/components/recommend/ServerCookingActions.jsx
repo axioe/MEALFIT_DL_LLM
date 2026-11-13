@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useActualCookingAction, useActualUsagePreview } from '@/hooks/useCooking'
 import { useAuthStore } from '@/stores/authStore'
-import { cookingApi } from '@/api/cooking'
-import { queryKeys } from '@/api/queryKeys'
-import { cookingErrorMessage, createCookingSubmission, refreshCookingQueries } from '@/models/cookingFlows'
-import { canCompleteUsage, createCookingIntent, loadPendingCooking, savePendingCooking, validateUsagePreview, validateCookingEvent } from '@/models/cookingUsage'
+import { cookingErrorMessage, createCookingSubmission } from '@/models/cookingFlows'
+import { canCompleteUsage, createCookingIntent, loadPendingCooking, savePendingCooking, validateCookingEvent } from '@/models/cookingUsage'
 import { CookingPreview } from './CookingPreview'
 import { CookingResult } from './CookingResult'
 
 export function ServerCookingActions({ mode, body, inputError, inventory, blockedReason, date, onLockChange, onBusyChange }) {
-  const client = useQueryClient()
   const userId = useAuthStore((state) => state.user?.id)
   const intent = useRef(createCookingIntent())
   const eventRequest = useRef(null)
@@ -27,17 +24,9 @@ export function ServerCookingActions({ mode, body, inputError, inventory, blocke
   const signature = JSON.stringify(body)
   const ready = Boolean(body) && !inputError && !blockedReason && !inventory.isFetching && !inventory.isError && Boolean(inventory.data)
   const snapshot = JSON.stringify([signature, inventory.dataUpdatedAt])
-  const preview = useQuery({
-    queryKey: ['cooking', 'actual-preview', mode, snapshot],
-    queryFn: async ({ signal }) => validateUsagePreview(await (mode === 'meal' ? cookingApi.previewUsages(body, signal) : cookingApi.previewIngredients(body, signal)), body, mode),
-    enabled: ready && requested === snapshot && !event && !pending && !uncertain,
-    retry: false, staleTime: 0, refetchOnMount: 'always',
-  })
-  const mutation = useMutation({ retry: false,
-    mutationFn: ({ action, payload, eventId }) => action === 'cancel' ? cookingApi.cancel(eventId)
-      : mode === 'meal' ? cookingApi.completeUsages(payload) : cookingApi.completeIngredients(payload),
-    onSettled: () => Promise.allSettled([refreshCookingQueries(client, date), client.invalidateQueries({ queryKey: queryKeys.mealPlans.all })]),
-  })
+  const preview = useActualUsagePreview({ mode, body, snapshot,
+    enabled: ready && requested === snapshot && !event && !pending && !uncertain })
+  const mutation = useActualCookingAction({ mode, date })
   const busy = mutation.isPending || uncertain || Boolean(pending)
   useEffect(() => { onBusyChange?.(busy) }, [busy, onBusyChange])
   const locked = mutation.isPending || uncertain || Boolean(pending) || event?.status === 'COOKED'

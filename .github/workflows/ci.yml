@@ -61,14 +61,17 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
-  # main에 push되거나 Actions 화면에서 main으로 Run workflow를 누르면,
+  # [배포 중단 2026-11-13] 저장소 변수 DEPLOY_ENABLED 가 'true' 일 때만 실행한다 (기본: 건너뜀).
+  # 다시 배포하려면 Settings → Secrets and variables → Actions → Variables 에 DEPLOY_ENABLED=true 를 추가하고
+  # 아래 EC2_HOST 가 서버의 현재 IP인지 확인한다.
+  # 켜져 있으면 main 에 push되거나 Actions 화면에서 main으로 Run workflow를 누를 때,
   # backend·frontend가 모두 통과한 뒤 EC2에 배포한다
   # 필요한 Secret: EC2_SSH_KEY(.pem 파일 내용)
   # 서버 IP는 웹사이트 주소로 공개되는 값이라 여기 둔다. 탄력적 IP가 바뀌면 이 값만 고친다
   deploy:
     name: deploy (EC2)
     needs: [backend, frontend]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

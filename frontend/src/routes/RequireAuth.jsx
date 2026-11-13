@@ -1,8 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { authApi } from '@/api/auth'
 import { getErrorMessage } from '@/api/client'
-import { queryKeys } from '@/api/queryKeys'
+import { useCurrentUser } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { Spinner } from '@/components/common/Spinner'
 
@@ -14,18 +12,8 @@ export function RequireAuth() {
   const location = useLocation()
   const accessToken = useAuthStore((state) => state.accessToken)
   const refreshToken = useAuthStore((state) => state.refreshToken)
-  const userId = useAuthStore((state) => state.user?.id)
   const hasSession = Boolean(accessToken || refreshToken)
-
-  const me = useQuery({
-    queryKey: queryKeys.auth.me(userId),
-    queryFn: authApi.getMe,
-    enabled: hasSession,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    // 자동 갱신과 요청 재시도는 공통 Axios 클라이언트가 담당합니다.
-    retry: false,
-  })
+  const me = useCurrentUser({ enabled: hasSession })
 
   if (!hasSession) {
     return (
