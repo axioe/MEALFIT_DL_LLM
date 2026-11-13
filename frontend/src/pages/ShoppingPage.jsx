@@ -8,13 +8,14 @@ import { Spinner } from '@/components/common/Spinner'
 import { SHOPPING_ITEM_STATUS } from '@/lib/enums'
 import { SHOPPING_ITEM_STATUS_LABEL } from '@/lib/labels'
 import { formatQuantity } from '@/lib/format'
+import { countWaitingStockIn } from '@/models/shoppingValidation'
 
 export function ShoppingPage() {
   const { data, isPending, isError, error, isFetching, refetch } = useShopping()
   const [selection, setSelection] = useState(null)
   const [message, setMessage] = useState('')
   const items = data ?? []
-  const waiting = items.filter((item) => Number(item.purchasedQty) > 0).length
+  const waiting = countWaitingStockIn(items)
   return <div className="space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <p className="max-w-xl text-sm leading-6 text-gray-600">확정한 식단의 부족분을 확인하고, 구매한 재료를 냉장고에 넣어 보세요.</p>

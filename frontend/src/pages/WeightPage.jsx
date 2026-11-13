@@ -1,36 +1,19 @@
 import React, { useState } from 'react';
 import { Info, Scale, Trash2, X } from 'lucide-react';
+import { today } from '@/lib/date';
+import { buildWeightChart, CHART } from '@/models/weightChart';
 export function WeightPage() {
     const records = [];
     const targetWeight = "";
     const currentWeight = "";
     // Add Modal
     const [showAddModal, setShowAddModal] = useState(false);
-    const [inputDate, setInputDate] = useState(new Date().toISOString().slice(0, 10));
+    const [inputDate, setInputDate] = useState(today);
     const [inputWeight, setInputWeight] = useState('');
     const [inputMemo, setInputMemo] = useState('');
-    // SVG Chart points calculation
-    const sortedRecords = [...records].sort((a, b) => a.date.localeCompare(b.date));
-    const allWeights = [...sortedRecords.map(r => r.weight), targetWeight];
-    const minW = Math.max(30, Math.min(...allWeights) - 2);
-    const maxW = Math.max(...allWeights) + 2;
-    const chartWidth = 600;
-    const chartHeight = 220;
-    const paddingX = 40;
-    const paddingY = 30;
-    const getX = (idx, total) => {
-        if (total <= 1)
-            return chartWidth / 2;
-        return paddingX + (idx / (total - 1)) * (chartWidth - paddingX * 2);
-    };
-    const getY = (val) => {
-        const range = maxW - minW || 1;
-        return chartHeight - paddingY - ((val - minW) / range) * (chartHeight - paddingY * 2);
-    };
-    const polylinePoints = sortedRecords
-        .map((r, i) => `${getX(i, sortedRecords.length)},${getY(r.weight)}`)
-        .join(' ');
-    const targetLineY = getY(targetWeight);
+    // 그래프 좌표 계산은 models/weightChart
+    const { width: chartWidth, height: chartHeight, paddingX } = CHART;
+    const { sortedRecords, getX, getY, polylinePoints, targetLineY } = buildWeightChart(records, targetWeight);
     return (<>
       {/* Top Glance Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

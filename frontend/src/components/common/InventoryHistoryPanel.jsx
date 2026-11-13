@@ -4,20 +4,8 @@ import { getErrorMessage } from '@/api/client'
 import { useInventoryTransactions } from '@/hooks/useInventory'
 import { Spinner } from '@/components/common/Spinner'
 import { INVENTORY_TRANSACTION_TYPE } from '@/lib/enums'
+import { formatDateTimeKst as formatDate, formatNumber } from '@/lib/format'
 import { INVENTORY_TRANSACTION_TYPE_LABEL } from '@/lib/labels'
-
-const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-})
-const quantityFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 3 })
-
-function formatDate(value) {
-  if (!value) return '날짜 정보 없음'
-  const zoned = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : value + '+09:00'
-  const date = new Date(zoned)
-  return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date)
-}
 
 export function InventoryHistoryPanel({ lotId, lots, onSelectLot, onClose }) {
   const id = useId()
@@ -75,7 +63,7 @@ export function InventoryHistoryPanel({ lotId, lots, onSelectLot, onClose }) {
                   <li key={row.id} className="min-w-0 rounded-xl border border-gray-200 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="min-w-0 break-all text-sm font-bold text-gray-900">{lot?.ingredientName ?? `묶음 #${row.lotId}`}</p>
-                      <span className={`text-sm font-bold ${row.qtyChange > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{row.qtyChange > 0 ? '+' : ''}{quantityFormatter.format(row.qtyChange)}{lot?.unit ?? ''}</span>
+                      <span className={`text-sm font-bold ${row.qtyChange > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{row.qtyChange > 0 ? '+' : ''}{formatNumber(row.qtyChange)}{lot?.unit ?? ''}</span>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">{INVENTORY_TRANSACTION_TYPE_LABEL[row.type] ?? '기타 변경'}</span>

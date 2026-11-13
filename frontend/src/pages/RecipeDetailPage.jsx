@@ -1,10 +1,10 @@
 import { CookingPanel } from "@/components/recommend/CookingPanel";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, RefreshCw } from "lucide-react";
 import { getErrorMessage } from "@/api/client";
 import { useInventory } from "@/hooks/useInventory";
-import { useRecipe } from "@/hooks/useRecipes";
+import { useRecipeServings } from "@/hooks/useRecipeServings";
 import { compareRecipeIngredient, RECIPE_STOCK_LABEL, RECIPE_STOCK_STATUS, validRecipeDate, validRecipeId, validRecipeServings } from "@/models/recipeInventory";
 import { Spinner } from "@/components/common/Spinner";
 import { RecipeSourceBadge } from "@/components/common/StatusBadge";
@@ -20,45 +20,10 @@ function RecipeContent({
   date,
   focusCooking,
 }) {
-  const [requestedServings, setRequestedServings] = useState(initialServings);
-  const [servingInput, setServingInput] = useState(
-    initialServings == null ? "" : String(initialServings),
-  );
   const [cookingBusy, setCookingBusy] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [lastRecipe, setLastRecipe] = useState(null);
-  const requestLock = useRef(false);
-  const recipe = useRecipe(recipeId, requestedServings);
+  const { recipe, data, requestedServings, servingInput, changeServingInput, formError, applyServings, retryRecipe } =
+    useRecipeServings({ recipeId, initialServings, onServingsChange, cookingBusy });
   const inventory = useInventory();
-  const data = recipe.data ?? lastRecipe;
-
-  if (recipe.data && recipe.data !== lastRecipe) {
-    setLastRecipe(recipe.data);
-    setServingInput(String(recipe.data.servings));
-  }
-  useEffect(() => {
-    if (!recipe.isFetching) requestLock.current = false;
-  }, [recipe.isFetching]);
-
-  function applyServings(event) {
-    event.preventDefault();
-    if (requestLock.current || recipe.isFetching || cookingBusy) return;
-    if (!validRecipeServings(servingInput)) {
-      setFormError("인분은 1 이상 2,147,483,647 이하의 정수로 입력해 주세요.");
-      return;
-    }
-    requestLock.current = true;
-    setFormError("");
-    const next = Number(servingInput);
-    if (next === requestedServings) recipe.refetch({ cancelRefetch: false });
-    else setRequestedServings(next);
-    onServingsChange(next);
-  }
-  function retryRecipe() {
-    if (requestLock.current || recipe.isFetching || cookingBusy) return;
-    requestLock.current = true;
-    recipe.refetch({ cancelRefetch: false });
-  }
   return (
     <div className="space-y-6">
       <Link to={backTo} aria-disabled={cookingBusy} onClick={(event) => { if (cookingBusy) event.preventDefault(); }} className="btn-secondary min-h-11">
@@ -149,10 +114,7 @@ function RecipeContent({
                   step="1"
                   value={servingInput}
                   disabled={recipe.isFetching || cookingBusy}
-                  onChange={(event) => {
-                    setServingInput(event.target.value);
-                    setFormError("");
-                  }}
+                  onChange={(event) => changeServingInput(event.target.value)}
                   aria-invalid={Boolean(formError)}
                   aria-describedby={
                     formError ? "recipe-servings-error" : undefined
@@ -433,7 +395,7 @@ export function RecipeDetailPage() {
             기본 인분으로 조회
           </Link>
         )}
-        <Link to={backTo} aria-disabled={cookingBusy} onClick={(event) => { if (cookingBusy) event.preventDefault(); }} className="btn-secondary min-h-11">
+        <Link to={backTo} className="btn-secondary min-h-11">
           식단 추천으로 돌아가기
         </Link>
       </section>

@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLogin } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/api/client";
+import { buildLoginBody } from "@/models/authForm";
 import { AlertCircle, Lock, Mail, Sparkles } from "lucide-react";
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,11 +27,7 @@ export function LoginPage() {
     submitLock.current = true;
 
     try {
-      await login.mutateAsync({
-        email: email.trim().toLowerCase(),
-        // 비밀번호에 포함된 공백은 임의로 제거하지 않습니다.
-        password,
-      });
+      await login.mutateAsync(buildLoginBody({ email, password }));
 
       // 일반 로그인은 이전 화면과 관계없이 대시보드로 이동합니다.
       // 회원가입 직후 마이페이지 이동은 SignupPage에서 별도로 처리합니다.

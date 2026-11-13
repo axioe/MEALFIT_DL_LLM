@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMyProfile, useUpdateMyProfile } from '@/hooks/useProfile'
 import { useAuthStore } from '@/stores/authStore'
+import { parseProfileItems as parseIngredients } from '@/models/profileForm'
 
 /** 조회가 끝난 뒤 폼을 생성해 서버 값을 최초 입력값으로 사용합니다. */
 export function ProfileSettings({ onDirtyChange, onSavingChange }) {
@@ -17,11 +18,6 @@ export function ProfileSettings({ onDirtyChange, onSavingChange }) {
 
   // 계정 변경 시 입력 폼도 새로 생성합니다. 백그라운드 조회로 작성 중인 값을 덮지 않습니다.
   return <ProfileForm key={userId} profile={query.data} onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} />
-}
-
-/** 쉼표로 입력한 재료를 공백 제거·중복 제거한 배열로 변환합니다. */
-function parseIngredients(text) {
-  return [...new Set(text.split(',').map((item) => item.trim()).filter(Boolean))]
 }
 
 function ProfileForm({ profile, onDirtyChange, onSavingChange }) {

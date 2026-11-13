@@ -85,3 +85,12 @@ export function lotSavedMessage(lot, disposed) {
 export function stockInMessage(lot) {
   return `${lot.ingredientName} ${formatQuantity(lot.quantity, lot.unit)}이(가) 새 묶음으로 등록되었습니다.`
 }
+
+/** 오늘 만료·기한 임박인 보관 중 묶음 수 (헤더 배지) */
+export function countImminentLots(groups) {
+  return groups
+    .flatMap((group) => group.lots)
+    .filter((lot) => isActive(lot) &&
+      (lot.expirationStatus === EXPIRATION_STATUS.TODAY || lot.expirationStatus === EXPIRATION_STATUS.IMMINENT))
+    .length
+}

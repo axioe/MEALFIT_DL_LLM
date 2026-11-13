@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AlertCircle, Sparkles, Zap } from 'lucide-react'
 import { useSignup } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/api/client'
+import { buildSignupBody, validateSignupForm } from '@/models/authForm'
 
 /**
  * 이메일·비밀번호·닉네임으로 가입하고 자동 로그인합니다.
@@ -31,24 +32,15 @@ export function SignupPage() {
     setFormError('')
     signup.reset()
 
-    if (!nickname.trim()) {
-      setFormError('닉네임을 입력해 주세요.')
-      return
-    }
-
-    // 글자 수와 UTF-8 바이트 수는 다릅니다. BCrypt 제한도 확인합니다.
-    if (new TextEncoder().encode(password).length > 72) {
-      setFormError('비밀번호는 UTF-8 기준 72바이트 이하로 입력해 주세요.')
+    const invalid = validateSignupForm({ password, nickname })
+    if (invalid) {
+      setFormError(invalid)
       return
     }
 
     submitLock.current = true
     try {
-      await signup.mutateAsync({
-        email: email.trim().toLowerCase(),
-        password, // 비밀번호의 공백은 임의로 제거하지 않습니다.
-        nickname: nickname.trim(),
-      })
+      await signup.mutateAsync(buildSignupBody({ email, password, nickname }))
 
       // useSignup이 토큰·회원 정보를 저장한 뒤 프로필 입력 화면으로 이동합니다.
       navigate('/mypage', { replace: true })

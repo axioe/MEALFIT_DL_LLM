@@ -1,22 +1,8 @@
 import { Sparkles, TriangleAlert } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
-import { useInventory } from '@/hooks/useInventory'
+import { useImminentLotCount as useImminentCount } from '@/hooks/useInventory'
 import { formatFullKoreanDate, today } from '@/lib/date'
-import { EXPIRATION_STATUS, LOT_STATUS } from '@/lib/enums'
 import { findNavTitle } from './navItems'
-
-/** 오늘 만료·기한 임박인 보관 중 재고 묶음 수 (냉장고 API) */
-function useImminentCount() {
-  const { data } = useInventory()
-  if (!data) return 0
-  return data.groups
-    .flatMap((group) => group.lots)
-    .filter(
-      (lot) =>
-        lot.status === LOT_STATUS.ACTIVE &&
-        (lot.expirationStatus === EXPIRATION_STATUS.TODAY || lot.expirationStatus === EXPIRATION_STATUS.IMMINENT),
-    ).length
-}
 
 export function Header() {
   const { pathname } = useLocation()

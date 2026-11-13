@@ -4,38 +4,8 @@ import { getErrorMessage } from '@/api/client'
 import { useStockIn } from '@/hooks/useInventory'
 import { STORAGE_LOCATION } from '@/lib/enums'
 import { STORAGE_LABEL } from '@/lib/labels'
+import { buildStockInBody, STOCK_IN_INITIAL_FORM as INITIAL_FORM, STOCK_IN_UNITS as UNITS, validateStockInForm as validateForm } from '@/models/inventoryForm'
 
-const UNITS = ['개', 'g', 'kg', 'mL', 'L', '모', '쪽', '봉지', '팩', '마리']
-const INITIAL_FORM = {
-  ingredientName: '', quantity: '', unit: '개', storageLocation: STORAGE_LOCATION.FRIDGE,
-  expiryDate: '', minStockQty: '', memo: '',
-}
-
-function validateForm(form) {
-  const errors = {}
-  if (!form.ingredientName.trim()) errors.ingredientName = '식재료명을 입력해 주세요.'
-  else if (form.ingredientName.trim().length > 100) errors.ingredientName = '식재료명은 100자 이내로 입력해 주세요.'
-  for (const field of ['quantity', 'minStockQty']) {
-    const text = form[field].trim()
-    if (field === 'minStockQty' && text === '') continue
-    if (!text || !/^(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(text)
-        || !Number.isFinite(Number(text)) || Number(text) > 999999999.999
-        || (field === 'quantity' && Number(text) <= 0)) {
-      errors[field] = field === 'quantity'
-        ? '0보다 큰 수량을 정수 9자리, 소수 3자리 이내로 입력해 주세요.'
-        : '최소 유지 수량은 0 이상, 정수 9자리, 소수 3자리 이내로 입력해 주세요.'
-    }
-  }
-  if (!UNITS.includes(form.unit)) errors.unit = '단위를 선택해 주세요.'
-  if (!Object.values(STORAGE_LOCATION).includes(form.storageLocation)) errors.storageLocation = '보관 위치를 선택해 주세요.'
-  if (form.expiryDate) {
-    const date = new Date(form.expiryDate + 'T00:00:00Z')
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.expiryDate) || Number.isNaN(date.getTime())
-        || date.toISOString().slice(0, 10) !== form.expiryDate) errors.expiryDate = '올바른 소비기한 날짜를 입력해 주세요.'
-  }
-  if (form.memo.length > 255) errors.memo = '메모는 255자 이내로 입력해 주세요.'
-  return errors
-}
 
 export function StockInDialog({ onClose, onSuccess }) {
   const dialogRef = useRef(null)
@@ -70,15 +40,7 @@ export function StockInDialog({ onClose, onSuccess }) {
     }
     submitLock.current = true
     try {
-      const result = await stockIn.mutateAsync({
-        ingredientName: form.ingredientName.trim(),
-        quantity: Number(form.quantity),
-        unit: form.unit,
-        storageLocation: form.storageLocation,
-        ...(form.expiryDate && { expiryDate: form.expiryDate }),
-        ...(form.minStockQty.trim() !== '' && { minStockQty: Number(form.minStockQty) }),
-        ...(form.memo !== '' && { memo: form.memo }),
-      })
+      const result = await stockIn.mutateAsync(buildStockInBody(form))
       onSuccess(result)
     } catch {
       // 등록 실패 시 입력값을 유지한다.
