@@ -14,3 +14,19 @@ Thumbs.db
 
 # Claude Code 로컬 설정
 .claude/settings.local.json
+
+# DL·LLM 작업: 데이터·모델·실험 결과는 git에 올리지 않는다 (AGENTS.md 4장)
+/data/
+ai-service/**/data/
+datasets/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.safetensors
+*.pkl
+wandb/
+mlruns/
+runs/
+.ipynb_checkpoints/
