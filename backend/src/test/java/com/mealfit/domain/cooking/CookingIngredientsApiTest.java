@@ -8,15 +8,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.InventoryLotRepository;
-import com.mealfit.domain.inventory.InventoryTransaction;
-import com.mealfit.domain.inventory.InventoryTransactionRepository;
-import com.mealfit.domain.inventory.InventoryTransactionType;
-import com.mealfit.domain.inventory.LotStatus;
-import com.mealfit.domain.inventory.StorageLocation;
-import com.mealfit.domain.mealplan.UserDietProfile;
-import com.mealfit.domain.mealplan.UserDietProfileProvider;
+import com.mealfit.domain.cooking.repository.CookingEventRepository;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.repository.InventoryLotRepository;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
+import com.mealfit.domain.inventory.entity.InventoryTransactionType;
+import com.mealfit.domain.inventory.entity.LotStatus;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.mealplan.model.UserDietProfile;
+import com.mealfit.domain.mealplan.service.UserDietProfileProvider;
 import com.mealfit.support.TestJwt;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;

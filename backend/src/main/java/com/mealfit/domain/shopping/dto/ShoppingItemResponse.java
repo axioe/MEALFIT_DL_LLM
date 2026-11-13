@@ -1,7 +1,7 @@
 package com.mealfit.domain.shopping.dto;
 
-import com.mealfit.domain.shopping.ShoppingItem;
-import com.mealfit.domain.shopping.ShoppingItemStatus;
+import com.mealfit.domain.shopping.entity.ShoppingItem;
+import com.mealfit.domain.shopping.entity.ShoppingItemStatus;
 import java.math.BigDecimal;
 
 /**

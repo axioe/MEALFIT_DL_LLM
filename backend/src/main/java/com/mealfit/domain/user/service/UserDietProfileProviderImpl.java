@@ -1,7 +1,7 @@
 package com.mealfit.domain.user.service;
 
-import com.mealfit.domain.mealplan.UserDietProfile;
-import com.mealfit.domain.mealplan.UserDietProfileProvider;
+import com.mealfit.domain.mealplan.model.UserDietProfile;
+import com.mealfit.domain.mealplan.service.UserDietProfileProvider;
 import com.mealfit.domain.user.entity.Profile;
 import com.mealfit.domain.user.repository.ProfileRepository;
 import com.mealfit.global.exception.BusinessException;

@@ -3,6 +3,7 @@ package com.mealfit.domain.recipe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.mealfit.domain.recipe.model.Quantity;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 

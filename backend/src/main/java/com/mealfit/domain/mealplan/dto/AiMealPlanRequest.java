@@ -1,7 +1,7 @@
 package com.mealfit.domain.mealplan.dto;
 
-import com.mealfit.domain.inventory.ExpirationStatus;
-import com.mealfit.domain.mealplan.MealType;
+import com.mealfit.domain.inventory.entity.ExpirationStatus;
+import com.mealfit.domain.mealplan.entity.MealType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

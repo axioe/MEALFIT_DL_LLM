@@ -5,8 +5,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mealfit.domain.inventory.*;
-import com.mealfit.domain.mealplan.MealPlanAiClient;
+import com.mealfit.domain.ai.client.FlaskMealPlanAiClient;
+import com.mealfit.domain.inventory.controller.*;
+import com.mealfit.domain.inventory.entity.*;
+import com.mealfit.domain.inventory.repository.*;
+import com.mealfit.domain.inventory.service.*;
+import com.mealfit.domain.mealplan.client.MealPlanAiClient;
 import com.mealfit.support.TestJwt;
 import java.math.BigDecimal;
 import java.time.LocalDate;

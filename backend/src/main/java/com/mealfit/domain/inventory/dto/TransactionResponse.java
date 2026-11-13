@@ -1,7 +1,7 @@
 package com.mealfit.domain.inventory.dto;
 
-import com.mealfit.domain.inventory.InventoryTransaction;
-import com.mealfit.domain.inventory.InventoryTransactionType;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.entity.InventoryTransactionType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

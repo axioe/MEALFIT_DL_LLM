@@ -1,6 +1,9 @@
 package com.mealfit.domain.inventory;
 
 import static org.assertj.core.api.Assertions.*;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.entity.LotStatus;
+import com.mealfit.domain.inventory.entity.StorageLocation;
 import com.mealfit.global.exception.BusinessException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;

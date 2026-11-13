@@ -1,7 +1,7 @@
 package com.mealfit.domain.cooking.dto;
 
-import com.mealfit.domain.cooking.CookingPlan;
-import com.mealfit.domain.recipe.Quantity;
+import com.mealfit.domain.cooking.model.CookingPlan;
+import com.mealfit.domain.recipe.model.Quantity;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;

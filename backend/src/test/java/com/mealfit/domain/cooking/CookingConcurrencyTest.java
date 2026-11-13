@@ -1,5 +1,8 @@
 package com.mealfit.domain.cooking;
 
+import com.mealfit.domain.cooking.entity.CookingStatus;
+import com.mealfit.domain.cooking.repository.CookingEventRepository;
+import com.mealfit.domain.cooking.service.CookingService;
 import com.mealfit.support.TestUserFixture;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -9,20 +12,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
 import com.mealfit.domain.cooking.dto.CookingEventRequest;
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.InventoryLotRepository;
-import com.mealfit.domain.inventory.InventoryTransaction;
-import com.mealfit.domain.inventory.InventoryTransactionRepository;
-import com.mealfit.domain.inventory.StorageLocation;
-import com.mealfit.domain.mealplan.MealPlan;
-import com.mealfit.domain.mealplan.MealPlanRepository;
-import com.mealfit.domain.mealplan.MealPlanService;
-import com.mealfit.domain.mealplan.MealPlanStatus;
-import com.mealfit.domain.mealplan.MealType;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.repository.InventoryLotRepository;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.mealplan.entity.MealPlan;
+import com.mealfit.domain.mealplan.repository.MealPlanRepository;
+import com.mealfit.domain.mealplan.service.MealPlanService;
+import com.mealfit.domain.mealplan.entity.MealPlanStatus;
+import com.mealfit.domain.mealplan.entity.MealType;
 import com.mealfit.domain.mealplan.dto.MealPlanRecommendRequest;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeRepository;
-import com.mealfit.domain.recipe.RecipeSource;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
+import com.mealfit.domain.recipe.entity.RecipeSource;
 import com.mealfit.global.exception.BusinessException;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;

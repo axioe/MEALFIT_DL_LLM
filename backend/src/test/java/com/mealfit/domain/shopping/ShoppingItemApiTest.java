@@ -1,5 +1,8 @@
 package com.mealfit.domain.shopping;
 
+import com.mealfit.domain.shopping.entity.ShoppingItem;
+import com.mealfit.domain.shopping.entity.ShoppingItemStatus;
+import com.mealfit.domain.shopping.repository.ShoppingItemRepository;
 import com.mealfit.support.TestJwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,19 +12,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.InventoryLotRepository;
-import com.mealfit.domain.inventory.InventoryTransaction;
-import com.mealfit.domain.inventory.InventoryTransactionRepository;
-import com.mealfit.domain.inventory.InventoryTransactionType;
-import com.mealfit.domain.inventory.LotStatus;
-import com.mealfit.domain.inventory.StorageLocation;
-import com.mealfit.domain.mealplan.MealPlan;
-import com.mealfit.domain.mealplan.MealPlanRepository;
-import com.mealfit.domain.mealplan.MealType;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeRepository;
-import com.mealfit.domain.recipe.RecipeSource;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.repository.InventoryLotRepository;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
+import com.mealfit.domain.inventory.entity.InventoryTransactionType;
+import com.mealfit.domain.inventory.entity.LotStatus;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.mealplan.entity.MealPlan;
+import com.mealfit.domain.mealplan.repository.MealPlanRepository;
+import com.mealfit.domain.mealplan.entity.MealType;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
+import com.mealfit.domain.recipe.entity.RecipeSource;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;

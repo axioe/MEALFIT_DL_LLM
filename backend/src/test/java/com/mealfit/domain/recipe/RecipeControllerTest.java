@@ -1,5 +1,8 @@
 package com.mealfit.domain.recipe;
 
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.entity.RecipeSource;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
 import com.mealfit.support.TestJwt;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

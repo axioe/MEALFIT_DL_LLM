@@ -1,6 +1,6 @@
 package com.mealfit.domain.shopping.dto;
 
-import com.mealfit.domain.inventory.StorageLocation;
+import com.mealfit.domain.inventory.entity.StorageLocation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
