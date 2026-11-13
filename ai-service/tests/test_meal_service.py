@@ -4,8 +4,8 @@ import unittest
 from datetime import date
 from unittest.mock import patch
 from app import create_app, generate_meals
-from errors import ServiceError
-from meal_recommendation import SYSTEM_PROMPT, RESPONSE_SCHEMA
+from mealfit_ai.errors import ServiceError
+from mealfit_ai.services.meal_plan_service import SYSTEM_PROMPT, RESPONSE_SCHEMA
 
 
 def request_body(types=None):
@@ -137,7 +137,7 @@ class MealServiceTest(unittest.TestCase):
         self.assertEqual(response.json['code'], 'AI_005')
 
     def test_daily_generator_reuses_sdk_with_distinct_schema(self):
-        with patch('app.generate', return_value='[]') as generate:
+        with patch('mealfit_ai.services.meal_plan_service.generate', return_value='[]') as generate:
             self.assertEqual(generate_meals(self.body, '', 'model'), '[]')
             self.assertEqual(generate.call_args.kwargs['system_prompt'], SYSTEM_PROMPT)
             self.assertEqual(generate.call_args.kwargs['response_schema'], RESPONSE_SCHEMA)

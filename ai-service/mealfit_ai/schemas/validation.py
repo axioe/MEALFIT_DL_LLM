@@ -1,7 +1,7 @@
 import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from errors import ServiceError
+from mealfit_ai.errors import ServiceError
 
 
 def invalid(message, field):

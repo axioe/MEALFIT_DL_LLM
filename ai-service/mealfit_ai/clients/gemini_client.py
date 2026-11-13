@@ -5,8 +5,8 @@ from google import genai
 from google.genai import types
 from google.genai.errors import APIError
 from httpx import TimeoutException
-from errors import ServiceError
-from recommendation import RESPONSE_SCHEMA, SYSTEM_PROMPT
+from mealfit_ai.errors import ServiceError
+from mealfit_ai.services.quick_recipe_service import RESPONSE_SCHEMA, SYSTEM_PROMPT
 
 
 logger = logging.getLogger(__name__)

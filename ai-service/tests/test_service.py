@@ -5,10 +5,10 @@ from datetime import date
 from unittest.mock import patch, MagicMock
 from httpx import ReadTimeout
 from app import create_app
-from gemini_client import generate
-from errors import ServiceError
-from recommendation import validate_response
-from validation import validate_request
+from mealfit_ai.clients.gemini_client import generate
+from mealfit_ai.errors import ServiceError
+from mealfit_ai.services.quick_recipe_service import validate_response
+from mealfit_ai.schemas.validation import validate_request
 
 TODAY = date(2026, 10, 22)
 BODY = {'ingredients': [{'name': '달걀', 'quantity': 4, 'unit': '개', 'expirationDate': '2026-10-25'},
@@ -123,7 +123,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json['code'], 'AI_002')
 
-    @patch('gemini_client.genai.Client')
+    @patch('mealfit_ai.clients.gemini_client.genai.Client')
     def test_sdk_structured_output_and_timeout_config(self, client):
         context = MagicMock(); client.return_value.__enter__.return_value = context
         context.models.generate_content.return_value.text = json.dumps(RESPONSE)
@@ -134,14 +134,14 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(config.response_mime_type, 'application/json')
         self.assertIn('recipes', config.response_json_schema['properties'])
 
-    @patch('gemini_client.genai.Client', side_effect=ReadTimeout('secret-url'))
+    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=ReadTimeout('secret-url'))
     def test_timeout_is_safe(self, _client):
         self.app.config['GEMINI_API_KEY'] = 'test-only'; self.app.config['GENERATOR'] = generate
         response = self.send(BODY)
         self.assertEqual(response.status_code, 504)
         self.assertNotIn('secret-url', response.get_data(as_text=True))
 
-    @patch('gemini_client.genai.Client', side_effect=RuntimeError('secret-url'))
+    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=RuntimeError('secret-url'))
     def test_upstream_failure(self, _client):
         self.app.config['GEMINI_API_KEY'] = 'test-only'; self.app.config['GENERATOR'] = generate
         self.assertEqual(self.send(BODY).status_code, 502)
@@ -160,7 +160,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(value['selectedIngredients'], ['양파'])
 
     def test_volume_conversion_and_exact_decimal_sum(self):
-        from recommendation import compare
+        from mealfit_ai.services.quick_recipe_service import compare
         inventory = [{'name': '우유', 'quantity': '0.1', 'unit': 'L'}, {'name': '우유', 'quantity': '0.2', 'unit': 'ml'}]
         result = compare({'name': '우유', 'quantity': '100.2', 'unit': 'ml'}, inventory)
         self.assertEqual(result['quantity'], '100.2')
@@ -170,7 +170,7 @@ class ServiceTests(unittest.TestCase):
         self.app.config['MAX_CONTENT_LENGTH'] = 10
         self.assertEqual(self.send(BODY).status_code, 413)
 
-    @patch('gemini_client.genai.Client')
+    @patch('mealfit_ai.clients.gemini_client.genai.Client')
     def test_gemini_api_errors(self, client):
         from google.genai.errors import APIError
         self.app.config.update(GEMINI_API_KEY='test-only', GENERATOR=generate)
@@ -185,9 +185,9 @@ class ServiceTests(unittest.TestCase):
         with patch.dict(os.environ, {'GEMINI_MODEL': 'gemini-3.5-flash-lite'}):
             self.assertEqual(create_app().config['GEMINI_MODEL'], 'gemini-3.5-flash-lite')
 
-    @patch('gemini_client.genai.Client', side_effect=ReadTimeout('secret-key-and-url'))
+    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=ReadTimeout('secret-key-and-url'))
     def test_failure_logs_only_safe_diagnostics(self, _client):
-        with self.assertLogs('gemini_client', level='WARNING') as captured:
+        with self.assertLogs('mealfit_ai.clients.gemini_client', level='WARNING') as captured:
             with self.assertRaises(ServiceError):
                 generate({}, 'private-api-key', 'gemini-3.5-flash-lite')
         output = ' '.join(captured.output)

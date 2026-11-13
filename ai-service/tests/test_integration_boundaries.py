@@ -4,9 +4,9 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from app import create_app
-from errors import ServiceError
-from test_service import BODY, RESPONSE, TODAY
-from test_meal_service import request_body, response_body
+from mealfit_ai.errors import ServiceError
+from tests.test_service import BODY, RESPONSE, TODAY
+from tests.test_meal_service import request_body, response_body
 
 
 class IntegrationBoundaryTests(unittest.TestCase):
