@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '@/api/auth'
+import { queryKeys } from '@/api/queryKeys'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -69,5 +70,21 @@ export function useLogout() {
         }
       }
     },
+  })
+}
+
+/**
+ * 서버가 인증한 현재 회원을 조회합니다. 저장된 토큰이 있을 때만 요청합니다.
+ * 자동 갱신과 요청 재시도는 공통 Axios 클라이언트가 담당합니다.
+ */
+export function useCurrentUser({ enabled }) {
+  const userId = useAuthStore((state) => state.user?.id)
+  return useQuery({
+    queryKey: queryKeys.auth.me(userId),
+    queryFn: authApi.getMe,
+    enabled,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
   })
 }

@@ -141,7 +141,9 @@ EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · MariaD
 
 ### 자동 배포 (GitHub Actions)
 
-`main`에 push(PR 머지 포함)되면 CI가 통과한 뒤 EC2에 자동 배포된다. 반영까지 약 2~3분.
+> **현재 배포 중단 (2026-11-13)**: 발표 이후 운영 서버를 꺼 두었고, 자동 배포 단계는 저장소 변수 `DEPLOY_ENABLED=true`일 때만 실행된다. 지금은 `main` 머지 시 테스트·빌드만 돈다.
+
+배포를 켜 두면 `main`에 push(PR 머지 포함)되고 CI가 통과한 뒤 EC2에 자동 배포된다. 반영까지 약 2~3분.
 
 ```
 main push ─▶ backend (test) ─┐
@@ -228,12 +230,12 @@ cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --bu
 ## 개발 규칙
 
 ### 브랜치 · 커밋
-- `main`: 통합 + 배포 브랜치. **머지되면 바로 운영 서버(http://3.39.100.188)에 자동 배포된다.** 직접 push 금지
+- `main`: 통합 브랜치. 직접 push 금지 (배포 중단 중이라 머지해도 운영 서버에 배포되지 않는다)
 - 작업 브랜치: `main`에서 만든다. `feature/{영역}-{내용}` 예) `feature/inventory-stock-in`, `fix/auth-refresh`
 - 커밋 메시지: `feat: 재고 입고 API`, `fix: ...`, `refactor: ...`, `docs: ...`
 - PR은 `main`으로. CI(백엔드 테스트, 프론트 lint·빌드)가 통과해야 머지
 - PR 올리기 전에 `main`을 작업 브랜치에 먼저 합쳐서(pull) 충돌을 풀고, 로컬에서 실행해 본다
-- 머지 후 Actions의 `deploy (EC2)`가 초록색인지, 서버에서 화면이 동작하는지 확인한다
+- 머지 후 Actions의 `backend (test)`·`frontend (lint, build)`가 초록색인지 확인한다 (`deploy (EC2)`는 배포 중단 중이라 건너뜀으로 표시된다)
 - 머지된 작업 브랜치는 삭제해도 된다
 
 ### DB 스키마 (Flyway)
