@@ -1,5 +1,13 @@
 package com.mealfit.domain.inventory;
 
+import com.mealfit.domain.inventory.dto.InventoryAction;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.entity.LotStatus;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.inventory.repository.InventoryLotRepository;
+import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
+import com.mealfit.domain.inventory.service.InventoryService;
 import com.mealfit.support.TestJwt;
 
 import static org.assertj.core.api.Assertions.assertThat;

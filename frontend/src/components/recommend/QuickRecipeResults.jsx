@@ -1,5 +1,5 @@
 import { Clock, ChefHat } from 'lucide-react'
-import { quickRecipeGrid, splitQuickIngredients } from '@/api/quickCookingView'
+import { quickRecipeGrid, splitQuickIngredients } from '@/models/quickCookingView'
 
 export function QuickRecipeResults({ recipes, onRecipe, onPrepare }) {
   return <section aria-label="AI 요리 추천 결과" className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold">냉장고 맞춤 · 15분 AI 요리</h3><span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-800">AI 생성 · Gemini</span></div><p className="text-xs leading-5 text-gray-500">재료 비교는 추천 요청 당시 냉장고 기준이며 참고용이에요. 실제 사용 가능 여부는 조리 전 서버에서 다시 확인해요.</p>

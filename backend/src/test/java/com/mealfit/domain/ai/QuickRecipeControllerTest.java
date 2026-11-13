@@ -4,6 +4,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.mealfit.domain.ai.dto.QuickRecipeModels;
+import com.mealfit.domain.ai.exception.QuickRecipeException;
+import com.mealfit.domain.ai.service.QuickRecipeService;
 import com.mealfit.support.TestJwt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -47,14 +50,14 @@ class QuickRecipeControllerTest {
     @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named = "MEALFIT_LIVE_AI_URL", matches = ".+")
     @SuppressWarnings("unchecked")
     void liveAuthenticatedSpringToFlaskGeminiWithoutDatabaseWrites() throws Exception {
-        var inventory = mock(com.mealfit.domain.inventory.InventoryLotRepository.class);
-        var lot = com.mealfit.domain.inventory.InventoryLot.builder().userId(7L).ingredientName("달걀")
+        var inventory = mock(com.mealfit.domain.inventory.repository.InventoryLotRepository.class);
+        var lot = com.mealfit.domain.inventory.entity.InventoryLot.builder().userId(7L).ingredientName("달걀")
                 .quantity(new java.math.BigDecimal("4")).unit("개")
-                .storageLocation(com.mealfit.domain.inventory.StorageLocation.FRIDGE).build();
+                .storageLocation(com.mealfit.domain.inventory.entity.StorageLocation.FRIDGE).build();
         org.springframework.test.util.ReflectionTestUtils.setField(lot, "id", 1L);
-        when(inventory.findByUserIdAndStatusOrderByExpiryDateAsc(7L, com.mealfit.domain.inventory.LotStatus.ACTIVE))
+        when(inventory.findByUserIdAndStatusOrderByExpiryDateAsc(7L, com.mealfit.domain.inventory.entity.LotStatus.ACTIVE))
                 .thenReturn(java.util.List.of(lot));
-        org.springframework.beans.factory.ObjectProvider<com.mealfit.domain.mealplan.UserDietProfileProvider> profiles = mock(org.springframework.beans.factory.ObjectProvider.class);
+        org.springframework.beans.factory.ObjectProvider<com.mealfit.domain.mealplan.service.UserDietProfileProvider> profiles = mock(org.springframework.beans.factory.ObjectProvider.class);
         var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(
                 java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(3)).build());
         factory.setReadTimeout(java.time.Duration.ofSeconds(20));

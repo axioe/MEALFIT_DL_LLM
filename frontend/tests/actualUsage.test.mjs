@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { actualUsageSupport, cookingInventoryOptions, usageBaseline, usageChanged, syncUsageSession, addUsageIngredient, analyzeUsage, prepareActualUsageDraft, canUseDefaultCooking } from '../src/api/actualUsage.js'
+import { actualUsageSupport, cookingInventoryOptions, usageBaseline, usageChanged, syncUsageSession, addUsageIngredient, analyzeUsage, prepareActualUsageDraft, canUseDefaultCooking } from '../src/models/actualUsage.js'
 
 const preview = { ingredients: [{ ingredientName: '토마토', requiredQty: 100, unit: 'g' }] }
 const baseline = usageBaseline(preview)

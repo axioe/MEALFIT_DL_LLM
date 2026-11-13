@@ -1,6 +1,6 @@
 package com.mealfit.domain.mealplan.dto;
 
-import com.mealfit.domain.mealplan.MealType;
+import com.mealfit.domain.mealplan.entity.MealType;
 import java.math.BigDecimal;
 import java.util.List;
 

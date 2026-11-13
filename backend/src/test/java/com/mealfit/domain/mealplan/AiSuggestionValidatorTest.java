@@ -3,6 +3,9 @@ package com.mealfit.domain.mealplan;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.mealfit.domain.mealplan.dto.AiMealSuggestion;
+import com.mealfit.domain.mealplan.entity.MealType;
+import com.mealfit.domain.mealplan.model.IngredientRestriction;
+import com.mealfit.domain.mealplan.service.AiSuggestionValidator;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;

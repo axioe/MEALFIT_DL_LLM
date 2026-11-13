@@ -1,9 +1,9 @@
 package com.mealfit.domain.recipe.dto;
 
-import com.mealfit.domain.recipe.Quantity;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeIngredient;
-import com.mealfit.domain.recipe.RecipeSource;
+import com.mealfit.domain.recipe.model.Quantity;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.entity.RecipeIngredient;
+import com.mealfit.domain.recipe.entity.RecipeSource;
 import java.math.BigDecimal;
 import java.util.List;
 

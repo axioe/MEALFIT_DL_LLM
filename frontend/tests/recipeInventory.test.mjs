@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { compareRecipeIngredient, RECIPE_STOCK_STATUS as STATUS, validRecipeDate, validRecipeId, validRecipeServings } from '../src/api/recipeInventory.js'
+import { compareRecipeIngredient, RECIPE_STOCK_STATUS as STATUS, validRecipeDate, validRecipeId, validRecipeServings } from '../src/models/recipeInventory.js'
 
 const ingredient = { ingredientName: '양파', quantity: 50, unit: 'g' }
 const lot = (quantity, unit = 'g', extra = {}) => ({ ingredientName: '양파', quantity, unit, status: 'ACTIVE', expirationStatus: 'NORMAL', ...extra })

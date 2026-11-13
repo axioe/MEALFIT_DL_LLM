@@ -4,12 +4,16 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mealfit.domain.cooking.CookingService;
-import com.mealfit.domain.cooking.CookingEventRepository;
-import com.mealfit.domain.cooking.CookingStatus;
+import com.mealfit.domain.cooking.service.CookingService;
+import com.mealfit.domain.cooking.repository.CookingEventRepository;
+import com.mealfit.domain.cooking.entity.CookingStatus;
 import com.mealfit.domain.cooking.dto.IngredientCookingRequest;
-import com.mealfit.domain.inventory.*;
+import com.mealfit.domain.inventory.controller.*;
+import com.mealfit.domain.inventory.entity.*;
+import com.mealfit.domain.inventory.repository.*;
+import com.mealfit.domain.inventory.service.*;
 import com.mealfit.domain.inventory.dto.StockInRequest;
+import com.mealfit.domain.inventory.dto.InventoryAction;
 import com.mealfit.domain.inventory.dto.UpdateLotRequest;
 import com.mealfit.support.TestJwt;
 import com.mealfit.support.TestUserFixture;
@@ -38,7 +42,7 @@ class RestorationRollbackIntegrationTest {
     @Autowired CookingEventRepository events;
     @Autowired JdbcTemplate jdbc;
     @Autowired DataSource dataSource;
-    @Autowired com.mealfit.domain.shopping.ShoppingItemRepository shopping;
+    @Autowired com.mealfit.domain.shopping.repository.ShoppingItemRepository shopping;
     @Autowired CookingService cooking;
     private TestUserFixture user;
 
@@ -86,8 +90,8 @@ class RestorationRollbackIntegrationTest {
     }
 
     @Test void failedMultiItemStockInRollsBackCreatedLotHistoryAndPurchasedQuantity() throws Exception {
-        var first = com.mealfit.domain.shopping.ShoppingItem.create(USER, "구매첫째", new BigDecimal("20"), "g");
-        var second = com.mealfit.domain.shopping.ShoppingItem.create(USER, "구매둘째", new BigDecimal("20"), "g");
+        var first = com.mealfit.domain.shopping.entity.ShoppingItem.create(USER, "구매첫째", new BigDecimal("20"), "g");
+        var second = com.mealfit.domain.shopping.entity.ShoppingItem.create(USER, "구매둘째", new BigDecimal("20"), "g");
         first.recordPurchase(new BigDecimal("10")); second.recordPurchase(new BigDecimal("10"));
         shopping.saveAllAndFlush(List.of(first, second));
         long count = history.count();
@@ -124,7 +128,7 @@ class RestorationRollbackIntegrationTest {
     }
 
     @Test void repeatedPartialStockInRequestsAreDistinctOperationsUnderCurrentContract() throws Exception {
-        var item = com.mealfit.domain.shopping.ShoppingItem.create(USER, "부분입고계약", new BigDecimal("100"), "g");
+        var item = com.mealfit.domain.shopping.entity.ShoppingItem.create(USER, "부분입고계약", new BigDecimal("100"), "g");
         item.recordPurchase(new BigDecimal("100")); shopping.saveAndFlush(item);
         var body = Map.of("items", List.of(Map.of("id", item.getId(), "quantity", 30, "storageLocation", "FRIDGE")));
         for (int i = 0; i < 2; i++) mvc.perform(post("/api/v1/shopping-items/stock-in").with(TestJwt.user(USER))

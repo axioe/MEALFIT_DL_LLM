@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { PackagePlus, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { useStockIn } from '@/api/inventory'
+import { useStockIn } from '@/hooks/useInventory'
 import { STORAGE_LOCATION } from '@/lib/enums'
 import { STORAGE_LABEL } from '@/lib/labels'
 

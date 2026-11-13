@@ -1,4 +1,4 @@
-import { useLogout } from '@/api/auth';
+import { useLogout } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { NAV_ITEMS } from '@/components/layout/navItems';
 import React, { useRef } from 'react';

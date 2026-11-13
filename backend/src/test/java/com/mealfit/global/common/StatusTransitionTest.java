@@ -3,10 +3,10 @@ package com.mealfit.global.common;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.mealfit.domain.cooking.CookingStatus;
-import com.mealfit.domain.intake.IntakeStatus;
-import com.mealfit.domain.inventory.ExpirationStatus;
-import com.mealfit.domain.mealplan.MealPlanStatus;
+import com.mealfit.domain.cooking.entity.CookingStatus;
+import com.mealfit.domain.intake.entity.IntakeStatus;
+import com.mealfit.domain.inventory.entity.ExpirationStatus;
+import com.mealfit.domain.mealplan.entity.MealPlanStatus;
 import com.mealfit.global.exception.BusinessException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;

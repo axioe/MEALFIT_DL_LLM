@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { QueryClient, QueryObserver } from '@tanstack/react-query'
-import { mealPlanQueryOptions, refreshMealPlanQueries, validateMealPlanDateResult, visibleMealPlans } from '../src/api/mealPlanQueries.js'
+import { mealPlanQueryOptions, refreshMealPlanQueries, validateMealPlanDateResult, visibleMealPlans } from '../src/models/mealPlanQueries.js'
 import { queryKeys } from '../src/api/queryKeys.js'
 
 const first = '2026-10-21', second = '2026-10-22'

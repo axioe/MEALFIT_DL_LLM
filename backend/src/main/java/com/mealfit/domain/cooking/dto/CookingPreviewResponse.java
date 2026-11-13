@@ -1,10 +1,10 @@
 package com.mealfit.domain.cooking.dto;
 
-import com.mealfit.domain.cooking.CookingPlan;
-import com.mealfit.domain.inventory.ExpirationStatus;
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.StorageLocation;
-import com.mealfit.domain.mealplan.MealPlan;
+import com.mealfit.domain.cooking.model.CookingPlan;
+import com.mealfit.domain.inventory.entity.ExpirationStatus;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.mealplan.entity.MealPlan;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

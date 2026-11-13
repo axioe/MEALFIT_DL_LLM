@@ -36,36 +36,50 @@
 | 프론트 언어 | React + TypeScript | **React + JavaScript** (`.js` / `.jsx`) |
 | Spring Boot | 3.x | 3.5.16 (Java 21) |
 
-## 폴더 구조
+## 폴더 구조 (MVC)
+
+세 서비스 모두 **Controller(요청 처리) → Model(비즈니스 로직·데이터) → View(응답·화면)** 로 나눈다.
 
 ```
 MealFit/
-├─ backend/                  Spring Boot (REST API, 도메인 로직, 서버 검증)
+├─ backend/                       Spring Boot (REST API, 도메인 로직, 서버 검증)
 │  └─ src/main/java/com/mealfit/
-│     ├─ global/             security(JWT 필터), exception, config, common(BaseTimeEntity, StatusTransition), web(@CurrentUserId)
-│     └─ domain/
-│        ├─ auth/            회원가입·로그인·토큰 재발급·로그아웃 (controller/service/repository/entity/dto)
-│        ├─ user/            내 계정·회원 탈퇴·프로필·마이페이지 상세
-│        ├─ inventory/       재고 묶음·변경 이력
-│        ├─ mealplan/        식단 추천·확정·취소, AI 제안 검증, 로컬 대체 레시피 선택
-│        ├─ recipe/          레시피 상세, 수량·단위 환산(Quantity)
-│        ├─ shopping/        장보기 부족분·부분 구매·입고
-│        ├─ cooking/         조리 미리보기·완료·사용량 수정·식단 없는 조리·취소 복원
-│        ├─ intake/          섭취 기록 (엔티티만)
-│        └─ ai/              AI RestClient 설정, 15분 요리 추천(QuickRecipe*), QUICK_AI.md
+│     ├─ global/                  security(JWT), exception, config, common(BaseTimeEntity, StatusTransition), web(@CurrentUserId)
+│     └─ domain/{도메인}/          모든 도메인이 같은 하위 구조
+│        ├─ controller/           REST 컨트롤러 (Controller)
+│        ├─ service/              비즈니스 로직·검증, 다른 도메인과 맞물리는 인터페이스
+│        ├─ repository/           Spring Data JPA
+│        ├─ entity/               JPA 엔티티와 상태 enum (Model)
+│        ├─ model/                DB에 저장하지 않는 값 객체 (Quantity, CookingPlan, UserDietProfile …)
+│        ├─ dto/                  요청·응답 (View로 나가는 모양)
+│        └─ client/ config/ exception/   외부 AI 호출, 설정, 도메인 예외 (필요한 도메인만)
+│        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, ai
 ├─ backend/src/main/resources/db/migration/   V1 ~ V7 (아래 DB 스키마 참고)
-├─ ai-service/               Python Flask + Gemini (15분 요리 추천, README.md에 실행·계약 정리)
-├─ frontend/                 React + JavaScript + Vite
+├─ ai-service/                    Python Flask + Gemini
+│  ├─ app.py                      실행 진입점 (python app.py)
+│  ├─ mealfit_ai/
+│  │  ├─ __init__.py              create_app (설정·Blueprint·오류 처리 등록)
+│  │  ├─ controllers/             /health, /ai/quick-recipes, /ai/meal-plans 라우트와 오류 응답 (Controller)
+│  │  ├─ services/                15분 요리·하루 식단 프롬프트와 응답 검증 (Model)
+│  │  ├─ schemas/                 요청 본문 검증
+│  │  ├─ clients/                 Gemini 호출
+│  │  └─ errors.py
+│  └─ tests/
+├─ frontend/                      React + JavaScript + Vite
 │  ├─ src/
-│  │  ├─ api/                client.js(axios, 토큰 첨부·401 재발급), 도메인별 API + TanStack Query 훅, mocks/
-│  │  ├─ stores/             authStore.js (Zustand, 로그인 세션)
-│  │  ├─ components/         layout/ common/ dashboard/ profile/ recommend/ shopping/
-│  │  ├─ pages/              Dashboard, Recommend, RecipeDetail, Fridge, Shopping, MyPage, Login, Signup, Workout, Calendar, Weight
-│  │  ├─ routes/             router.jsx (페이지별 지연 로딩)
-│  │  └─ lib/                enums.js, labels.js, 날짜·기한·숫자 형식 도우미
-│  └─ tests/                 Node 기본 테스트 (*.test.mjs)
-├─ docker-compose.yml        로컬 MariaDB
-├─ docker-compose.prod.yml   운영(EC2) 구성
+│  │  ├─ api/                     서버 요청 함수만 (client.js: axios·토큰·401 재발급, queryKeys.js, mocks/) — Model(데이터)
+│  │  ├─ models/                  화면 로직·검증 규칙 순수 함수 (조리·장보기·추천·프로필 폼 …) — Model(규칙)
+│  │  ├─ stores/                  authStore.js (Zustand, 로그인 세션) — Model(상태)
+│  │  ├─ hooks/                   TanStack Query 훅: 불러오기·저장·캐시 갱신 흐름 — Controller
+│  │  ├─ pages/                   화면 단위 (Dashboard, Recommend, Fridge, Shopping, MyPage …) — View
+│  │  ├─ components/              layout/ common/ dashboard/ profile/ recommend/ shopping/ — View
+│  │  │  └─ prototype/            아직 연결하지 않은 디자인 시안 (어디서도 import하지 않음)
+│  │  ├─ routes/                  router.jsx (페이지별 지연 로딩), RequireAuth
+│  │  └─ lib/                     enums.js, labels.js, 날짜·기한·숫자 형식, queryClient
+│  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
+├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약)
+├─ docker-compose.yml             로컬 MariaDB
+├─ docker-compose.prod.yml        운영(EC2) 구성
 └─ .env.example, .env.prod.example
 ```
 
@@ -87,7 +101,7 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 - 모든 API는 로그인이 필요하다(회원가입·로그인·재발급·로그아웃 제외). 사용자는 JWT의 회원 ID로만 식별한다.
 - 프론트는 `/api` 요청을 Vite 프록시로 8080에 넘기므로 CORS 설정이 필요 없다.
 
-**15분 요리 AI (선택)**: 자세한 내용은 [`ai-service/README.md`](ai-service/README.md), [`domain/ai/QUICK_AI.md`](backend/src/main/java/com/mealfit/domain/ai/QUICK_AI.md)
+**15분 요리 AI (선택)**: 자세한 내용은 [`ai-service/README.md`](ai-service/README.md), [`docs/quick-ai.md`](docs/quick-ai.md)
 
 ```bash
 cd ai-service
@@ -230,6 +244,7 @@ cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --bu
 - 수량은 `DECIMAL(12,3)` + `BigDecimal`, enum은 `VARCHAR(20)` + `@Enumerated(EnumType.STRING)`
 
 ### 백엔드
+- 패키지: 새 클래스는 `domain/{도메인}/` 아래 `controller/ service/ repository/ entity/ model/ dto/` 중 역할에 맞는 곳에 둔다 (도메인 바로 아래에 두지 않는다)
 - 현재 사용자: 컨트롤러 파라미터에 `@CurrentUserId Long userId`. JWT로 인증된 회원 ID만 들어오고, 요청의 `userId`·`X-User-Id`는 무시한다
 - 다른 사용자 데이터 접근 방지: 조회는 `findByIdAndUserId(id, userId)` 형태로
 - 에러: `throw new BusinessException(ErrorCode.XXX)` → 자동으로 아래 형식 응답. 새 에러는 `ErrorCode`에 도메인 접두어로 추가 (`INVENTORY_001`)
@@ -244,7 +259,8 @@ cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --bu
 - **JavaScript만 사용** (TypeScript 문법 금지). 화면(JSX가 있는 파일)은 `.jsx`, 그 외는 `.js`
 - API 호출은 `src/api/client.js`의 `api` 인스턴스만 사용한다. 토큰 첨부와 401 시 자동 재발급이 여기에 들어 있다
 - 로그인 세션은 `src/stores/authStore.js`(Zustand)에서만 다룬다. 화면에서 토큰을 직접 읽거나 저장하지 않는다
-- 도메인별로 `src/api/{domain}.js`에 API 함수 + `useQuery`/`useMutation` 훅을 만든다
+- 계층 나누기: 서버 요청 함수는 `src/api/{domain}.js`, `useQuery`/`useMutation` 훅은 `src/hooks/use{Domain}.js`, 화면에서 쓰는 계산·검증은 `src/models/`, 화면은 `pages/`·`components/`
+- `src/models/`는 Node 테스트가 직접 불러오므로 `@/` 대신 상대 경로(`../lib/enums.js`)로 import한다
 - 쿼리 키는 `src/api/queryKeys.js`에 모으고, 변경 후 관련 키를 `invalidateQueries`
 - 에러 메시지는 `getErrorMessage(error)`로 서버 메시지를 그대로 보여준다
 - 공통 스타일 클래스: `input`, `label`, `btn-primary`, `btn-secondary`, `card` (`src/index.css`)
@@ -254,6 +270,6 @@ cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --bu
 ### AI 서비스 연동 (Spring ↔ Flask)
 - Gemini API 키는 `ai-service/.env`에만 둔다. 브라우저·Spring·저장소에는 노출 금지
 - 이름·이메일·토큰·사용자 ID 등 개인정보는 AI 요청에 넣지 않는다 (재고·목표·알레르기·제외 재료만)
-- Spring은 `domain/ai/AiClientConfig`의 `aiRestClient`로 호출한다. 타임아웃: Spring 연결 3초·읽기 20초, Flask → Gemini 18초(추가 재시도 없음), 프론트 axios 30초
+- Spring은 `domain/ai/config/AiClientConfig`의 `aiRestClient`로 호출한다. 타임아웃: Spring 연결 3초·읽기 20초, Flask → Gemini 18초(추가 재시도 없음), 프론트 axios 30초
 - AI 결과는 항상 초안이다. Spring이 출처·필수 필드·시간·수량·알레르기·제외 재료를 다시 검사한다
 - 실패 시 대응: 하루 3끼 추천은 로컬 대체 식단을 쓰고 `RecipeSource.LOCAL_FALLBACK`으로 표기한다. 15분 요리 추천은 가짜 결과를 만들지 않고 오류 코드(`QUICK_AI_001`~`005`)로 안내한다

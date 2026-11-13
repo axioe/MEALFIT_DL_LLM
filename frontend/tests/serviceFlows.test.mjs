@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildPurchase, buildStockIn, quantityInMillis } from '../src/api/shoppingValidation.js'
+import { buildPurchase, buildStockIn, quantityInMillis } from '../src/models/shoppingValidation.js'
 
 const item = { id: 7, purchasedQty: 0.1, remainingQty: 0.2 }
 const form = { quantity: '0.1', storageLocation: 'FRIDGE', expiryDate: '', minStockQty: '0' }

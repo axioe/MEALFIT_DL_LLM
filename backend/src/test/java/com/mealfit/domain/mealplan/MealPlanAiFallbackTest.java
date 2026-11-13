@@ -1,5 +1,9 @@
 package com.mealfit.domain.mealplan;
 
+import com.mealfit.domain.mealplan.client.MealPlanAiClient;
+import com.mealfit.domain.mealplan.entity.MealType;
+import com.mealfit.domain.mealplan.model.UserDietProfile;
+import com.mealfit.domain.mealplan.service.UserDietProfileProvider;
 import com.mealfit.support.TestJwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,10 +19,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mealfit.domain.mealplan.dto.AiMealPlanRequest;
 import com.mealfit.domain.mealplan.dto.AiMealSuggestion;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeIngredient;
-import com.mealfit.domain.recipe.RecipeRepository;
-import com.mealfit.domain.recipe.RecipeSource;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.entity.RecipeIngredient;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
+import com.mealfit.domain.recipe.entity.RecipeSource;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;

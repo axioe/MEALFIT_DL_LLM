@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Clock, RefreshCw } from 'lucide-react'
 import { ServerCookingActions } from './ServerCookingActions'
-import { cookingBody } from '@/api/cookingUsage'
+import { cookingBody } from '@/models/cookingUsage'
 import { ActualIngredientsEditor } from './ActualIngredientsEditor'
-import { analyzeUsage } from '@/api/actualUsage'
-import { quickUsageBaseline, prepareQuickUsageDraft } from '@/api/quickCookingService'
+import { analyzeUsage } from '@/models/actualUsage'
+import { quickUsageBaseline, prepareQuickUsageDraft } from '@/models/quickCookingService'
 import { formatQuantity } from '@/lib/format'
 import { getErrorMessage } from '@/api/client'
-import { RECIPE_STOCK_LABEL } from '@/api/recipeInventory'
+import { RECIPE_STOCK_LABEL } from '@/models/recipeInventory'
 
 export function QuickRecipeDetail({ recipe, initialMode, inventory, onBack }) {
   const title = useRef(null)

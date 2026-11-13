@@ -19,16 +19,8 @@ import {
   Zap,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import {
-  MOCK_AREAS,
-  useCoaching,
-  useDashboard,
-  useProfileSummary,
-  useRecordIntake,
-  useSetWorkoutCompleted,
-  useTodayWorkout,
-  useWeightSummary,
-} from '@/api/dashboard'
+import { MOCK_AREAS } from '@/api/dashboard'
+import { useCoaching, useDashboard, useProfileSummary, useRecordIntake, useSetWorkoutCompleted, useTodayWorkout, useWeightSummary } from '@/hooks/useDashboard'
 import { ConditionCheckDialog } from '@/components/dashboard/ConditionCheckDialog'
 import { Spinner } from '@/components/common/Spinner'
 import { ExpirationBadge, MealPlanStatusBadge, RecipeSourceBadge } from '@/components/common/StatusBadge'

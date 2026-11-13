@@ -1,5 +1,11 @@
 package com.mealfit.domain.mealplan;
 
+import com.mealfit.domain.mealplan.entity.MealPlan;
+import com.mealfit.domain.mealplan.entity.MealPlanStatus;
+import com.mealfit.domain.mealplan.entity.MealType;
+import com.mealfit.domain.mealplan.model.UserDietProfile;
+import com.mealfit.domain.mealplan.repository.MealPlanRepository;
+import com.mealfit.domain.mealplan.service.UserDietProfileProvider;
 import com.mealfit.support.TestJwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,17 +15,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.mealfit.domain.cooking.CookingEvent;
-import com.mealfit.domain.cooking.CookingEventRepository;
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.InventoryLotRepository;
-import com.mealfit.domain.inventory.StorageLocation;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeRepository;
-import com.mealfit.domain.recipe.RecipeSource;
-import com.mealfit.domain.shopping.ShoppingItem;
-import com.mealfit.domain.shopping.ShoppingItemRepository;
-import com.mealfit.domain.shopping.ShoppingItemStatus;
+import com.mealfit.domain.cooking.entity.CookingEvent;
+import com.mealfit.domain.cooking.repository.CookingEventRepository;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.repository.InventoryLotRepository;
+import com.mealfit.domain.inventory.entity.StorageLocation;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
+import com.mealfit.domain.recipe.entity.RecipeSource;
+import com.mealfit.domain.shopping.entity.ShoppingItem;
+import com.mealfit.domain.shopping.repository.ShoppingItemRepository;
+import com.mealfit.domain.shopping.entity.ShoppingItemStatus;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;

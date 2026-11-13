@@ -1,7 +1,7 @@
 import { ExpirationBadge } from '@/components/common/StatusBadge'
 import { STORAGE_LABEL } from '@/lib/labels'
 import { formatQuantity } from '@/lib/format'
-import { cookingPreviewState, plannedUsage } from '@/api/cookingUx'
+import { cookingPreviewState, plannedUsage } from '@/models/cookingUx'
 
 export function CookingPreview({ preview, canComplete, onComplete }) {
   return <section aria-label="요리 전 재료 확인" className="space-y-4 rounded-2xl border border-emerald-200 bg-white p-4 md:p-5">

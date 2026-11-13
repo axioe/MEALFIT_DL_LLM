@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cookingBody, validateUsagePreview, validateCookingEvent, createCookingIntent, loadPendingCooking, savePendingCooking, canCompleteUsage } from '../src/api/cookingUsage.js'
+import { cookingBody, validateUsagePreview, validateCookingEvent, createCookingIntent, loadPendingCooking, savePendingCooking, canCompleteUsage } from '../src/models/cookingUsage.js'
 import { createCookingApi } from '../src/api/cookingRequests.js'
-import { createCookingSubmission } from '../src/api/cookingFlows.js'
+import { createCookingSubmission } from '../src/models/cookingFlows.js'
 const rows = () => [{ ingredientName: '달걀', quantity: '2', unit: '개', enabled: true, added: false }, { ingredientName: '양파', quantity: '50', unit: 'g', enabled: true, added: false }]
 const uuid1 = '00000000-0000-4000-8000-000000000001'
 const uuid2 = '00000000-0000-4000-8000-000000000002'

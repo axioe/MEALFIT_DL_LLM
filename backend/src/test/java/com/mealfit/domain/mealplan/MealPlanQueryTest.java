@@ -1,5 +1,7 @@
 package com.mealfit.domain.mealplan;
 
+import com.mealfit.domain.mealplan.entity.MealPlan;
+import com.mealfit.domain.mealplan.repository.MealPlanRepository;
 import com.mealfit.support.TestUserFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,8 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mealfit.domain.cooking.CookingEvent;
-import com.mealfit.domain.cooking.CookingEventRepository;
+import com.mealfit.domain.cooking.entity.CookingEvent;
+import com.mealfit.domain.cooking.repository.CookingEventRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.ZoneId;

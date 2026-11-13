@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Activity, X, Zap } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { useCheckCondition } from '@/api/dashboard'
+import { useCheckCondition } from '@/hooks/useDashboard'
 
 const QUESTIONS = [
   {

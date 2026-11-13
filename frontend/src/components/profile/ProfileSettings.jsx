@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useMyProfile, useUpdateMyProfile } from '@/api/profile'
+import { useMyProfile, useUpdateMyProfile } from '@/hooks/useProfile'
 import { useAuthStore } from '@/stores/authStore'
 
 /** 조회가 끝난 뒤 폼을 생성해 서버 값을 최초 입력값으로 사용합니다. */

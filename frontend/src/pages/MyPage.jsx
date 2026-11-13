@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useLogout } from "@/api/auth";
+import { useLogout } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
 import React, { useRef, useState } from "react";
 import {
@@ -25,8 +25,8 @@ import {
 import { ProfileSettings } from "@/components/profile/ProfileSettings";
 import { WithdrawalSection } from "@/components/profile/WithdrawalSection";
 
-import { useProfileDetails, useUpdateProfileSection } from "@/api/profile";
-import { createProfileForm, buildProfileSectionBody } from "@/lib/profileForm";
+import { useProfileDetails, useUpdateProfileSection } from "@/hooks/useProfile";
+import { createProfileForm, buildProfileSectionBody } from "@/models/profileForm";
 
 /** 데이터가 준비된 후 입력 폼을 생성하고 회원·탭 변경 시 초기화합니다. */
 export function MyPage() {

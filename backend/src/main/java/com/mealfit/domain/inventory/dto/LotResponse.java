@@ -1,9 +1,9 @@
 package com.mealfit.domain.inventory.dto;
 
-import com.mealfit.domain.inventory.ExpirationStatus;
-import com.mealfit.domain.inventory.InventoryLot;
-import com.mealfit.domain.inventory.LotStatus;
-import com.mealfit.domain.inventory.StorageLocation;
+import com.mealfit.domain.inventory.entity.ExpirationStatus;
+import com.mealfit.domain.inventory.entity.InventoryLot;
+import com.mealfit.domain.inventory.entity.LotStatus;
+import com.mealfit.domain.inventory.entity.StorageLocation;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadQuickRecommendations, normalizeQuickRecipes, prepareQuickRecommendationInput, quickUsageBaseline, quickCookingAvailability, prepareQuickUsageDraft } from '../src/api/quickCookingService.js'
-import { addUsageIngredient, analyzeUsage, cookingInventoryOptions, usageChanged } from '../src/api/actualUsage.js'
-import { selectableIngredients } from '../src/api/quickCooking.js'
+import { loadQuickRecommendations, normalizeQuickRecipes, prepareQuickRecommendationInput, quickUsageBaseline, quickCookingAvailability, prepareQuickUsageDraft } from '../src/models/quickCookingService.js'
+import { addUsageIngredient, analyzeUsage, cookingInventoryOptions, usageChanged } from '../src/models/actualUsage.js'
+import { selectableIngredients } from '../src/models/quickCooking.js'
 const stock = { asOfDate: '2026-10-22', groups: [
   { ingredientName: '달걀', unit: '개', lots: [{ id: 1, ingredientName: '달걀', unit: '개', quantity: 6, status: 'ACTIVE', expirationStatus: 'NORMAL', expiryDate: '2026-10-25' }] },
   { ingredientName: '양파', unit: 'g', lots: [{ id: 2, ingredientName: '양파', unit: 'g', quantity: 300, status: 'ACTIVE', expirationStatus: 'NORMAL' }] },

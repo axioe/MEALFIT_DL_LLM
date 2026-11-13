@@ -1,9 +1,9 @@
 package com.mealfit.domain.cooking.dto;
 
-import com.mealfit.domain.cooking.CookingEvent;
-import com.mealfit.domain.cooking.CookingStatus;
-import com.mealfit.domain.inventory.InventoryTransaction;
-import com.mealfit.domain.inventory.InventoryTransactionType;
+import com.mealfit.domain.cooking.entity.CookingEvent;
+import com.mealfit.domain.cooking.entity.CookingStatus;
+import com.mealfit.domain.inventory.entity.InventoryTransaction;
+import com.mealfit.domain.inventory.entity.InventoryTransactionType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;

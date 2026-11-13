@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Pencil, TriangleAlert, X } from 'lucide-react'
 import { getErrorCode, getErrorMessage } from '@/api/client'
-import { useUpdateLot } from '@/api/inventory'
+import { useUpdateLot } from '@/hooks/useInventory'
 import { LOT_STATUS, STORAGE_LOCATION } from '@/lib/enums'
 import { STORAGE_LABEL } from '@/lib/labels'
 

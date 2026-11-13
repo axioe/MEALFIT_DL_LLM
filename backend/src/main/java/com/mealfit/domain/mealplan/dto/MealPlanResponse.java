@@ -1,10 +1,10 @@
 package com.mealfit.domain.mealplan.dto;
 
-import com.mealfit.domain.mealplan.MealPlan;
-import com.mealfit.domain.mealplan.MealPlanStatus;
-import com.mealfit.domain.mealplan.MealType;
-import com.mealfit.domain.recipe.Recipe;
-import com.mealfit.domain.recipe.RecipeSource;
+import com.mealfit.domain.mealplan.entity.MealPlan;
+import com.mealfit.domain.mealplan.entity.MealPlanStatus;
+import com.mealfit.domain.mealplan.entity.MealType;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.entity.RecipeSource;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
