@@ -232,13 +232,24 @@ cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --bu
 ## 개발 규칙
 
 ### 브랜치 · 커밋
-- `main`: 통합 브랜치. 직접 push 금지 (배포 중단 중이라 머지해도 운영 서버에 배포되지 않는다)
-- 작업 브랜치: `main`에서 만든다. `feature/{영역}-{내용}` 예) `feature/inventory-stock-in`, `fix/auth-refresh`
+```
+feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 재개 시) 배포
+```
+- `main`: 검증이 끝난 코드만 있는 브랜치. **develop 또는 `hotfix/*`에서 온 PR만** 받는다 (CI의 `source branch` 검사가 막는다)
+- `develop`: 팀원 작업을 모아 함께 돌려 보는 벽 브랜치. 저장소 기본 브랜치이며 모든 작업 PR은 여기로 보낸다
+- 작업 브랜치: `develop`에서 만든다. `feature/{영역}-{내용}` 예) `feature/inventory-stock-in`, `fix/auth-refresh`
 - 커밋 메시지: `feat: 재고 입고 API`, `fix: ...`, `refactor: ...`, `docs: ...`
-- PR은 `main`으로. CI(백엔드 테스트, 프론트 lint·빌드)가 통과해야 머지
-- PR 올리기 전에 `main`을 작업 브랜치에 먼저 합쳐서(pull) 충돌을 풀고, 로컬에서 실행해 본다
-- 머지 후 Actions의 `backend (test)`·`frontend (lint, build)`가 초록색인지 확인한다 (`deploy (EC2)`는 배포 중단 중이라 건너뜀으로 표시된다)
-- 머지된 작업 브랜치는 삭제해도 된다
+- PR 올리기 전에 `develop`을 작업 브랜치에 먼저 합쳐서(pull) 충돌을 풀고, 로컬에서 실행해 본다
+- 둘 다 직접 push 금지, PR로만 머지한다
+- 머지된 작업 브랜치는 삭제한다 (`develop`·`main`은 지우지 않는다)
+
+| 단계 | CI 검사 |
+|---|---|
+| 작업 브랜치 → `develop` | `backend (test)` · `frontend (lint, build)` (단위 테스트 포함) · `ai-service (test)` |
+| `develop` → `main` | 위 검사 + `source branch` + `integration (docker compose)` (운영과 같은 구성으로 전체 컨테이너를 띄워 응답 확인) |
+
+- 급한 수정: `main`에서 `hotfix/*`를 만들어 main으로 PR → 머지 후 `main`을 `develop`에도 합친다
+- `deploy (EC2)`는 배포 중단 중이라 건너뜀으로 표시된다
 
 ### DB 스키마 (Flyway)
 - 스키마는 `backend/src/main/resources/db/migration`의 SQL로만 바꾼다 (`ddl-auto: validate`)
