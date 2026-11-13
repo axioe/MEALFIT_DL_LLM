@@ -33,3 +33,8 @@ export function buildStockIn(item, form) {
 }
 import { STORAGE_LOCATION } from '../lib/enums.js'
 
+
+/** 구매했지만 아직 냉장고에 넣지 않은 품목 수 */
+export function countWaitingStockIn(items) {
+  return items.filter((item) => Number(item.purchasedQty) > 0).length
+}

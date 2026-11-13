@@ -2,41 +2,23 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Clock, Dumbbell, Sparkles } from 'lucide-react';
 import { MealStatusBadge } from '@/components/common/StatusBadge';
+import { today } from '@/lib/date';
+import { buildMonthGrid, shiftMonth } from '@/models/calendar';
 export function CalendarPage() {
     const plans = [];
     const workoutLogs = [];
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+    const [selectedDate, setSelectedDate] = useState(today);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const handlePrevMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+        setCurrentMonth(shiftMonth(currentMonth, -1));
     };
     const handleNextMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+        setCurrentMonth(shiftMonth(currentMonth, 1));
     };
     // Month grid days calculation
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const calendarDays = [];
-    // Previous month trailing days
-    const prevMonthDays = new Date(year, month, 0).getDate();
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-        const d = prevMonthDays - i;
-        const dateStr = new Date(year, month - 1, d).toISOString().slice(0, 10);
-        calendarDays.push({ dateStr, dayNum: d, isCurrentMonth: false });
-    }
-    // Current month days
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        calendarDays.push({ dateStr, dayNum: d, isCurrentMonth: true });
-    }
-    // Next month leading days to complete full weeks
-    const remaining = (7 - (calendarDays.length % 7)) % 7;
-    for (let d = 1; d <= remaining; d++) {
-        const dateStr = new Date(year, month + 1, d).toISOString().slice(0, 10);
-        calendarDays.push({ dateStr, dayNum: d, isCurrentMonth: false });
-    }
+    const calendarDays = buildMonthGrid(currentMonth);
     // Selected date plans
     const dayPlans = plans.filter(p => p.date === selectedDate);
     const dayWorkoutLog = workoutLogs.find(l => l.date === selectedDate);

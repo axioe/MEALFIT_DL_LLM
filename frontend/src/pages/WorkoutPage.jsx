@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Info, RefreshCw, Send, ShieldCheck, Sparkles } from 'lucide-react';
+import { countCompletedDays, mondayBasedDayIndex, weeklyProgress } from '@/models/workout';
 export function WorkoutPage({ profile = {}, fitness = {} } = {}) {
     const workoutPlan = null;
     const workoutLogs = [];
@@ -7,15 +8,14 @@ export function WorkoutPage({ profile = {}, fitness = {} } = {}) {
     const [naturalPrompt, setNaturalPrompt] = useState('');
     const isLoading = false;
     const isAdjusting = false;
-    const currentDayOfWeekIdx = (new Date().getDay() + 6) % 7; // Monday = 0
+    const currentDayOfWeekIdx = mondayBasedDayIndex();
     // BMI Calculation
     const bmi = '—';
     const activeRoutine = workoutPlan?.weeklyRoutine || [];
     const selectedDay = activeRoutine[selectedDayIdx];
     // Weekly progress
-    const completedDaysCount = workoutLogs.filter(l => l.completed).length;
-    const exerciseDaysCount = activeRoutine.filter(r => !r.isRestDay).length || 1;
-    const progressPercent = Math.min(100, Math.round((completedDaysCount / exerciseDaysCount) * 100));
+    const completedDaysCount = countCompletedDays(workoutLogs);
+    const progressPercent = weeklyProgress(activeRoutine, workoutLogs);
     return (<>
       {/* Step 1: Body Profile Analysis Card */}
       <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs mb-6">

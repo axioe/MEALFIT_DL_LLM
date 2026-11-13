@@ -37,3 +37,12 @@ export function quickCookingExamples() {
       steps: ['두부와 애호박을 먹기 좋은 크기로 썰어 주세요.', '팬에서 앞뒤로 충분히 익혀 주세요.'] },
   ]
 }
+
+/** 15분 요리 화면의 냉장고 현황: 보관 중 묶음 중 오늘·임박 수, 기한 경과(추천 제외) 수 */
+export function quickInventoryStatus(inventory) {
+  const activeLots = (inventory?.groups ?? []).flatMap((group) => group.lots ?? []).filter((lot) => lot.status === LOT_STATUS.ACTIVE)
+  return {
+    imminent: activeLots.filter((lot) => [EXPIRATION_STATUS.TODAY, EXPIRATION_STATUS.IMMINENT].includes(lot.expirationStatus)).length,
+    expired: activeLots.filter((lot) => lot.expirationStatus === EXPIRATION_STATUS.EXPIRED).length,
+  }
+}

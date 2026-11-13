@@ -4,25 +4,7 @@ import { getErrorCode, getErrorMessage } from '@/api/client'
 import { useUpdateLot } from '@/hooks/useInventory'
 import { LOT_STATUS, STORAGE_LOCATION } from '@/lib/enums'
 import { STORAGE_LABEL } from '@/lib/labels'
-
-function validQuantity(text, positive = false) {
-  return /^(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(text.trim())
-    && Number.isFinite(Number(text)) && Number(text) <= 999999999.999
-    && (positive ? Number(text) > 0 : Number(text) >= 0)
-}
-
-function adjustBody(form, lot) {
-  const body = {}
-  if (Number(form.quantity) !== Number(lot.quantity)) body.quantity = Number(form.quantity)
-  if (form.storageLocation !== lot.storageLocation) body.storageLocation = form.storageLocation
-  if (form.expiryDate !== (lot.expiryDate ?? '')) {
-    if (form.expiryDate) body.expiryDate = form.expiryDate
-    else body.clearExpiryDate = true
-  }
-  if (Number(form.minStockQty) !== Number(lot.minStockQty)) body.minStockQty = Number(form.minStockQty)
-  if (form.memo !== (lot.memo ?? '')) body.memo = form.memo
-  return body
-}
+import { buildLotAdjustBody as adjustBody, isValidQuantity as validQuantity } from '@/models/inventoryForm'
 
 export function InventoryLotDialog({ lot, mode, onClose, onSuccess }) {
   const isDisposal = mode === 'dispose'

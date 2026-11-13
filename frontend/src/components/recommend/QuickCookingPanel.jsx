@@ -2,13 +2,12 @@ import { useRef, useState } from 'react'
 import { Plus, RefreshCw, Search, Sparkles } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
 import { useInventory } from '@/hooks/useInventory'
-import { searchIngredients, selectableIngredients } from '@/models/quickCooking'
+import { quickInventoryStatus, searchIngredients, selectableIngredients } from '@/models/quickCooking'
 import { prepareServerQuickInput } from '@/models/quickRecipeRequests'
 import { useQuickRecommendation } from '@/hooks/useQuickRecommendation'
 import { QuickRecipeDetail } from './QuickRecipeDetail'
 import { QuickRecipeResults } from './QuickRecipeResults'
 import { QuickStockForm, IngredientIcon } from './QuickStockForm'
-import { EXPIRATION_STATUS, LOT_STATUS } from '@/lib/enums'
 import { Link } from 'react-router-dom'
 import { StockInDialog } from '@/components/common/StockInDialog'
 import { ExpirationBadge } from '@/components/common/StatusBadge'
@@ -52,9 +51,7 @@ export function QuickCookingPanel() {
     }
   }
 
-  const activeLots = (inventory.data?.groups ?? []).flatMap((group) => group.lots ?? []).filter((lot) => lot.status === LOT_STATUS.ACTIVE)
-  const imminent = activeLots.filter((lot) => [EXPIRATION_STATUS.TODAY, EXPIRATION_STATUS.IMMINENT].includes(lot.expirationStatus)).length
-  const expired = activeLots.filter((lot) => lot.expirationStatus === EXPIRATION_STATUS.EXPIRED).length
+  const { imminent, expired } = quickInventoryStatus(inventory.data)
   if (detail) return <QuickRecipeDetail key={detail.recipe.key} recipe={detail.recipe} initialMode={detail.mode} inventory={inventory} onBack={() => setDetail(null)} />
   return <div className="space-y-6">
     <header className="rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 p-5 text-white md:p-6">
