@@ -2,6 +2,8 @@
 
 냉장고 재고를 기반으로 AI가 3끼 식단을 추천하고, 장보기 → 조리 → 섭취 기록까지 한 흐름으로 연결하는 식단 관리 웹 서비스.
 
+> **심화 단계 저장소 (MEALFIT_DL_LLM).** 1차 프로젝트 [axioe/MealFit](https://github.com/axioe/MealFit)의 main(2026-11-13, MVC 정리 완료)을 이력째 옮겨 와서 DL·LLM 심화 작업을 이어 간다. 배포는 하지 않는다(운영 서버 중지, CI의 deploy 잡은 `DEPLOY_ENABLED` 변수가 없으면 건너뜀).
+
 > 발표: 2026-10-23 (금) · 시연 범위: 회원가입·프로필 → 냉장고 재고 등록 → AI 3끼 추천과 서버 검증 → 확정과 장보기 목록 → 조리 차감·취소 복원 → 섭취 기록 → 대시보드
 
 ## 현재 구현 상태 (2026-10-22, `main` 기준)
@@ -171,7 +173,7 @@ main push ─▶ backend (test) ─┐
 ```bash
 sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
 sudo usermod -aG docker ubuntu   # 다시 접속해야 적용
-git clone https://github.com/axioe/MealFit.git && cd MealFit
+git clone https://github.com/axioe/MEALFIT_DL_LLM.git && cd MEALFIT_DL_LLM
 cp .env.prod.example .env        # DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET 채우기
 docker compose -f docker-compose.prod.yml up -d --build
 ```
