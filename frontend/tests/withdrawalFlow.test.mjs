@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { requestWithdrawal, clearWithdrawalSession } from '../src/api/withdrawalFlow.js'
+import { requestWithdrawal, clearWithdrawalSession } from '../src/models/withdrawalFlow.js'
 
 function cleanupOptions(events) {
   return {

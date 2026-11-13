@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { selectableIngredients } from '../src/api/quickCooking.js'
-import { prepareServerQuickInput, adaptAiQuickResponse } from '../src/api/quickRecipeRequests.js'
-import { usageBaseline } from '../src/api/actualUsage.js'
-import { cookingBody, createCookingIntent, validateCookingEvent, savePendingCooking, loadPendingCooking } from '../src/api/cookingUsage.js'
-import { compareRecipeIngredient } from '../src/api/recipeInventory.js'
-import { buildPurchase, buildStockIn } from '../src/api/shoppingValidation.js'
+import { selectableIngredients } from '../src/models/quickCooking.js'
+import { prepareServerQuickInput, adaptAiQuickResponse } from '../src/models/quickRecipeRequests.js'
+import { usageBaseline } from '../src/models/actualUsage.js'
+import { cookingBody, createCookingIntent, validateCookingEvent, savePendingCooking, loadPendingCooking } from '../src/models/cookingUsage.js'
+import { compareRecipeIngredient } from '../src/models/recipeInventory.js'
+import { buildPurchase, buildStockIn } from '../src/models/shoppingValidation.js'
 
 const lot = (id, quantity, extra = {}) => ({ id, ingredientName: '두부', quantity, unit: 'g', status: 'ACTIVE', expirationStatus: 'NORMAL', ...extra })
 const inventory = { asOfDate: '2026-10-22', groups: [{ ingredientName: '두부', unit: 'g', lots: [lot(1, '100'), lot(2, '200'), lot(3, '999', { status: 'DEPLETED' }), lot(4, '500', { expirationStatus: 'EXPIRED' })] }] }

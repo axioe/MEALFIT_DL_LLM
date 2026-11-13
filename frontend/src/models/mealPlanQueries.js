@@ -1,4 +1,4 @@
-import { queryKeys } from './queryKeys.js'
+import { queryKeys } from '../api/queryKeys.js'
 import { validRecipeDate } from './recipeInventory.js'
 import { MEAL_PLAN_STATUS } from '../lib/enums.js'
 

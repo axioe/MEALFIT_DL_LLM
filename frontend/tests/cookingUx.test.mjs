@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { cookingChangeQuantity, cookingPreviewState, mealCardActions, plannedUsage, recipePlanLink } from '../src/api/cookingUx.js'
+import { cookingChangeQuantity, cookingPreviewState, mealCardActions, plannedUsage, recipePlanLink } from '../src/models/cookingUx.js'
 const plan={id:91,recipe:{id:3},planDate:'2026-10-22',servings:2,status:'DRAFT',cooked:false}
 test('초안은 확정·재추천을 제공하고 요리하기는 제공하지 않는다',()=>{
  assert.deepEqual(mealCardActions(plan),{draft:true,cooked:false,canCook:false,canCancelPlan:true})

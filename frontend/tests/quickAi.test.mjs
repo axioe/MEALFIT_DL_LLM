@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { prepareServerQuickInput,adaptAiQuickResponse,createQuickRecipesApi } from '../src/api/quickRecipeRequests.js'
+import { prepareServerQuickInput, adaptAiQuickResponse, createQuickRecipesApi } from '../src/models/quickRecipeRequests.js'
 const response=()=>({source:'AI_GENERATED',recipes:[{title:'두부 볶음',description:'간단한 요리',cookingMinutes:10,servings:2,reason:'재고 활용',steps:['익혀 주세요.'],ingredients:[{name:'두부',quantity:'300',unit:'g',inventory:{quantity:'300',unit:'g',shortageQuantity:'0',status:'SUFFICIENT',hasIncompatibleUnits:false}}]}]})
 test('선택 재고 ID만 전송하고 보유량을 브라우저에서 주장하지 않는다',()=>{
  assert.deepEqual(prepareServerQuickInput([{quantity:'999',lots:[{id:1},{id:2}]}],'15'),{selectedLotIds:[1,2],maxCookingMinutes:15,recommendationCount:3})

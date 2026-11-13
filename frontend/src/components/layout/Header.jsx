@@ -1,6 +1,6 @@
 import { Sparkles, TriangleAlert } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
-import { useInventory } from '@/api/inventory'
+import { useInventory } from '@/hooks/useInventory'
 import { formatFullKoreanDate, today } from '@/lib/date'
 import { EXPIRATION_STATUS, LOT_STATUS } from '@/lib/enums'
 import { findNavTitle } from './navItems'

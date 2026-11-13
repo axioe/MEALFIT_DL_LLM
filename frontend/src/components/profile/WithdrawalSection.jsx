@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { useWithdraw } from '@/api/withdrawal'
-import { validateWithdrawalInput } from '@/api/withdrawalFlow'
+import { useWithdraw } from '@/hooks/useWithdrawal'
+import { validateWithdrawalInput } from '@/models/withdrawalFlow'
 import { getErrorMessage } from '@/api/client'
 
 /** 기존 프로필 저장 중에는 탈퇴를 시작하지 않습니다. */

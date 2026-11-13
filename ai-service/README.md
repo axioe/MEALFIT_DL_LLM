@@ -5,6 +5,18 @@
 기존 Python AI 코드는 없어 새로 구현했으며, 가이드북에는 구체적 프롬프트·모델·15분 추천 스키마가 없습니다.
 따라서 해당 부분은 17차 요구사항으로 작성한 **내부 개발 계약**입니다. 20차에서 기존 Spring DTO에 맞춘 `/ai/meal-plans`를 추가했습니다. `/ai/recipes`는 구현하지 않았습니다.
 
+## 코드 구조 (MVC)
+
+| 위치 | 역할 |
+|---|---|
+| `app.py` | 실행 진입점 (`python app.py`) |
+| `mealfit_ai/__init__.py` | `create_app`: 설정, Blueprint, 오류 처리 등록 |
+| `mealfit_ai/controllers/` | 라우트 `/health`, `/ai/quick-recipes`, `/ai/meal-plans`와 공통 오류 응답 (Controller) |
+| `mealfit_ai/services/` | `quick_recipe_service.py`(15분 요리), `meal_plan_service.py`(하루 식단): 프롬프트·응답 검증 (Model) |
+| `mealfit_ai/schemas/validation.py` | 요청 본문 검증과 공통 검증 도우미 |
+| `mealfit_ai/clients/gemini_client.py` | Gemini 호출 (키·원문은 로그에 남기지 않음) |
+| `tests/` | `python -m unittest` 로 실행 |
+
 ## Windows PowerShell 실행
 
 ```powershell

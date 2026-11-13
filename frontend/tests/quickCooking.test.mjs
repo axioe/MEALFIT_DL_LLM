@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { selectableIngredients, searchIngredients, quickCookingExamples } from '../src/api/quickCooking.js'
+import { selectableIngredients, searchIngredients, quickCookingExamples } from '../src/models/quickCooking.js'
 
 const lot = (id, extra = {}) => ({ id, ingredientName: '양파', unit: 'g', quantity: '0.1', status: 'ACTIVE', expirationStatus: 'NORMAL', ...extra })
 const data = (...lots) => ({ asOfDate: '2026-10-21', groups: [{ ingredientName: '양파', unit: 'g', lots }] })

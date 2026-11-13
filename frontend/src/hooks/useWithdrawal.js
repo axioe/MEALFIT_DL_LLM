@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/api/client'
-import { requestWithdrawal, clearWithdrawalSession } from '@/api/withdrawalFlow'
+import { requestWithdrawal, clearWithdrawalSession } from '@/models/withdrawalFlow'
 import { useAuthStore } from '@/stores/authStore'
 
 /** 탈퇴 성공 시에만 세션을 정리하며, 비밀번호를 로그인 Store 등에 저장하지 않습니다. */

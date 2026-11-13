@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { RefreshCw, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { useInventoryTransactions } from '@/api/inventory'
+import { useInventoryTransactions } from '@/hooks/useInventory'
 import { Spinner } from '@/components/common/Spinner'
 import { INVENTORY_TRANSACTION_TYPE } from '@/lib/enums'
 import { INVENTORY_TRANSACTION_TYPE_LABEL } from '@/lib/labels'

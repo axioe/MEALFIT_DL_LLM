@@ -1,6 +1,6 @@
-import { useRecipe } from '@/api/recipes'
+import { useRecipe } from '@/hooks/useRecipes'
 import { formatQuantity } from '@/lib/format'
-import { validRecipeId, validRecipeServings } from '@/api/recipeInventory'
+import { validRecipeId, validRecipeServings } from '@/models/recipeInventory'
 
 export function DailyRecipePreview({ plan }) {
   const query = useRecipe(plan.recipe.id, plan.servings, validRecipeId(plan.recipe.id) && validRecipeServings(plan.servings))

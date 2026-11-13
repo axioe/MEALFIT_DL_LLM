@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useLogin } from "@/api/auth";
+import { useLogin } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/api/client";
 import { AlertCircle, Lock, Mail, Sparkles } from "lucide-react";
 export function LoginPage() {

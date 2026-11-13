@@ -3,16 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, RefreshCw } from "lucide-react";
 import { getErrorMessage } from "@/api/client";
-import { useInventory } from "@/api/inventory";
-import { useRecipe } from "@/api/recipes";
-import {
-  compareRecipeIngredient,
-  RECIPE_STOCK_LABEL,
-  RECIPE_STOCK_STATUS,
-  validRecipeDate,
-  validRecipeId,
-  validRecipeServings,
-} from "@/api/recipeInventory";
+import { useInventory } from "@/hooks/useInventory";
+import { useRecipe } from "@/hooks/useRecipes";
+import { compareRecipeIngredient, RECIPE_STOCK_LABEL, RECIPE_STOCK_STATUS, validRecipeDate, validRecipeId, validRecipeServings } from "@/models/recipeInventory";
 import { Spinner } from "@/components/common/Spinner";
 import { RecipeSourceBadge } from "@/components/common/StatusBadge";
 import { RECIPE_SOURCE } from "@/lib/enums";

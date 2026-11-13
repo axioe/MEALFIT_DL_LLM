@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { adaptMockQuickRecipes, prepareQuickCookingInput, splitQuickIngredients, quickRecipeGrid } from '../src/api/quickCookingView.js'
-import { quickCookingExamples } from '../src/api/quickCooking.js'
-import { defaultFavorites, favoriteSupport } from '../src/api/favoriteIngredients.js'
+import { adaptMockQuickRecipes, prepareQuickCookingInput, splitQuickIngredients, quickRecipeGrid } from '../src/models/quickCookingView.js'
+import { quickCookingExamples } from '../src/models/quickCooking.js'
+import { defaultFavorites, favoriteSupport } from '../src/models/favoriteIngredients.js'
 
 const group = (ingredientName, quantity, unit) => ({ ingredientName, quantity, unit, lots: [{ id: 9, ingredientName, quantity, unit, status: 'ACTIVE', expirationStatus: 'NORMAL' }] })
 test('기본 즐겨찾기는 서버 저장 없이 등록 기본값만 제공한다', () => {

@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { formatQuantity } from '@/lib/format'
 import { STORAGE_LABEL } from '@/lib/labels'
-import { addUsageIngredient } from '@/api/actualUsage'
+import { addUsageIngredient } from '@/models/actualUsage'
 
 export function ActualIngredientsEditor({ session, analysis, inventoryReady, disabled, preparedDraft, actualUsageSupported = false, onRowsChange, onReset }) {
   const id = useId()

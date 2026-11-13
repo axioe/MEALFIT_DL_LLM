@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { Archive, ChevronDown, History, Package, Plus, Refrigerator, RefreshCw, Search, Snowflake, TriangleAlert, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { useInventory } from '@/api/inventory'
+import { useInventory } from '@/hooks/useInventory'
 import { InventoryHistoryPanel } from '@/components/common/InventoryHistoryPanel'
 import { InventoryLotDialog } from '@/components/common/InventoryLotDialog'
 import { StockInDialog } from '@/components/common/StockInDialog'

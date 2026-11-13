@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
-import { cookingChangeQuantity } from '@/api/cookingUx'
+import { cookingChangeQuantity } from '@/models/cookingUx'
 import { formatQuantity } from '@/lib/format'
 
 export function CookingResult({ event, offerCancel, canCancel, onCancel }) {

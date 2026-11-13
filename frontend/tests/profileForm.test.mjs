@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildProfileSectionBody, createProfileForm, parseProfileItems } from '../src/lib/profileForm.js'
+import { buildProfileSectionBody, createProfileForm, parseProfileItems } from '../src/models/profileForm.js'
 
 function details() {
   return {

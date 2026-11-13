@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AlertCircle, Sparkles, Zap } from 'lucide-react'
-import { useSignup } from '@/api/auth'
+import { useSignup } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/api/client'
 
 /**

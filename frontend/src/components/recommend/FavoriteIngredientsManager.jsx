@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
-import { favoriteSupport } from '@/api/favoriteIngredients'
+import { favoriteSupport } from '@/models/favoriteIngredients'
 
 export function FavoriteIngredientsManager({ items, onClose }) {
   const dialog = useRef(null)

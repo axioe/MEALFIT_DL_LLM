@@ -1,10 +1,10 @@
-import { defaultFavorites } from '@/api/favoriteIngredients'
+import { defaultFavorites } from '@/models/favoriteIngredients'
 import { FavoriteIngredientsManager } from './FavoriteIngredientsManager'
 import { useRef, useState } from 'react'
 import { Plus, Package } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { useStockIn } from '@/api/inventory'
-import { validRecipeDate } from '@/api/recipeInventory'
+import { useStockIn } from '@/hooks/useInventory'
+import { validRecipeDate } from '@/models/recipeInventory'
 import { STORAGE_LABEL } from '@/lib/labels'
 import { STORAGE_LOCATION } from '@/lib/enums'
 

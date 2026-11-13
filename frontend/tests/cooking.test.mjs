@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { QueryClient } from '@tanstack/react-query'
-import { canCancelCooking, cookingKeys, cookingErrorMessage, createCookingSubmission, refreshCookingQueries, resolveCookingTarget, validateCookingPreview } from '../src/api/cookingFlows.js'
+import { canCancelCooking, cookingKeys, cookingErrorMessage, createCookingSubmission, refreshCookingQueries, resolveCookingTarget, validateCookingPreview } from '../src/models/cookingFlows.js'
 import { createCookingApi } from '../src/api/cookingRequests.js'
 import { queryKeys } from '../src/api/queryKeys.js'
 const plan={id:91,recipe:{id:3},planDate:'2026-10-22',mealType:'LUNCH',status:'CONFIRMED',servings:2,cooked:false}
