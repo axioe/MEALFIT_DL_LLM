@@ -67,3 +67,25 @@ test('트레이너 필수 선택을 확인하고 잘못된 탭은 전송하지 �
   assert.throws(() => buildProfileSectionBody('unknown', form), /저장할 탭/)
   assert.deepEqual(parseProfileItems(''), [])
 })
+
+test('장비 토글: 없음은 다른 항목과 함께 고를 수 없다', async () => {
+  const { toggleExclusiveItem } = await import('../src/models/profileForm.js')
+  assert.deepEqual(toggleExclusiveItem(['dumbbell'], 'none'), ['none'])
+  assert.deepEqual(toggleExclusiveItem(['none'], 'none'), [])
+  assert.deepEqual(toggleExclusiveItem(['none'], 'band'), ['band'])
+  assert.deepEqual(toggleExclusiveItem(['band', 'mat'], 'band'), ['mat'])
+})
+
+test('부위 토글은 있으면 빼고 없으면 뒤에 붙인다', async () => {
+  const { toggleItem } = await import('../src/models/profileForm.js')
+  assert.deepEqual(toggleItem(['knee'], 'back'), ['knee', 'back'])
+  assert.deepEqual(toggleItem(['knee', 'back'], 'knee'), ['back'])
+})
+
+test('저장 실패 문구는 필드 오류 → 서버 메시지 → 예외 메시지 → 기본 문구 순서로 고른다', async () => {
+  const { profileSaveErrorMessage } = await import('../src/models/profileForm.js')
+  assert.equal(profileSaveErrorMessage({ response: { data: { errors: [{ message: 'a' }, { message: 'b' }] } } }), 'a / b')
+  assert.equal(profileSaveErrorMessage({ response: { data: { message: '서버' } } }), '서버')
+  assert.equal(profileSaveErrorMessage(new Error('예외')), '예외')
+  assert.equal(profileSaveErrorMessage({}), '저장에 실패했습니다. 다시 시도해 주세요.')
+})

@@ -87,3 +87,24 @@ export function buildProfileSectionBody(section, form) {
   }
   throw new Error('저장할 탭을 확인해 주세요.')
 }
+
+/** 목록에 있으면 빼고 없으면 뒤에 붙인다 (예: 불편한 부위) */
+export function toggleItem(list, item) {
+  return list.includes(item) ? list.filter((value) => value !== item) : [...list, item]
+}
+
+/**
+ * 장비처럼 '없음'(exclusive)이 다른 항목과 함께 고를 수 없는 목록을 토글한다.
+ * '없음'을 고르면 나머지를 비우고, 다른 항목을 고르면 '없음'을 뺀다.
+ */
+export function toggleExclusiveItem(list, item, exclusive = 'none') {
+  if (item === exclusive) return list.includes(item) ? [] : [item]
+  return list.includes(item) ? list.filter((value) => value !== item) : [...list.filter((value) => value !== exclusive), item]
+}
+
+/** 저장 실패 응답을 화면에 보여줄 한 줄로 만든다 (필드 오류가 있으면 모두 이어 붙인다) */
+export function profileSaveErrorMessage(failure) {
+  const issues = failure?.response?.data?.errors
+  if (issues?.length) return issues.map((item) => item.message).join(' / ')
+  return failure?.response?.data?.message ?? failure?.message ?? '저장에 실패했습니다. 다시 시도해 주세요.'
+}
