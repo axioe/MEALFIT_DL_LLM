@@ -39,10 +39,11 @@ public class FallbackRecipeSelector {
      * @param sameDayNames  같은 날 다른 끼니 메뉴명
      * @param previousNames 직전 초안 메뉴명 (재추천 전 메뉴)
      * @param recentNames   최근 식단 메뉴명
+     * @param basisDate     임박 여부를 판단할 기준일 (식단 날짜)
      */
     public Optional<Selection> select(MealType mealType, UserDietProfile profile, List<InventoryLot> availableLots,
                                       Set<String> sameDayNames, Set<String> previousNames,
-                                      Collection<String> recentNames, LocalDate today) {
+                                      Collection<String> recentNames, LocalDate basisDate) {
         Set<String> restricted = profile.restrictedIngredients();
         List<Recipe> safe = recipeRepository.findFallbackCandidates(mealType).stream()
                 .filter(recipe -> IngredientRestriction.violations(ingredientNames(recipe), restricted).isEmpty())
@@ -59,7 +60,7 @@ public class FallbackRecipeSelector {
                 .map(lot -> lot.getIngredientName().strip())
                 .collect(Collectors.toSet());
         Set<String> imminent = availableLots.stream()
-                .filter(lot -> isImminent(lot.expirationStatus(today)))
+                .filter(lot -> isImminent(lot.expirationStatus(basisDate)))
                 .map(lot -> lot.getIngredientName().strip())
                 .collect(Collectors.toSet());
 
