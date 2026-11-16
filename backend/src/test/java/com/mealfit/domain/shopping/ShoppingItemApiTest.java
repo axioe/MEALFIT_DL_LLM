@@ -159,6 +159,61 @@ class ShoppingItemApiTest {
                 .andExpect(jsonPath("$[0].ingredientName").value("우유"));
     }
 
+    private void saveEggs(String qty, LocalDate expiryDate) {
+        inventoryLotRepository.save(InventoryLot.builder()
+                .userId(USER).ingredientName("달걀").quantity(new BigDecimal(qty)).unit("개")
+                .expiryDate(expiryDate).storageLocation(StorageLocation.FRIDGE).build());
+    }
+
+    private void confirmEggPlan(LocalDate date) {
+        Recipe recipe = Recipe.builder().name("테스트 달걀말이 " + date).servingSize(1).cookTimeMin(10)
+                .nutritionEstimated(true).source(RecipeSource.SEED).steps(List.of("조리한다.")).build();
+        recipe.addIngredient("달걀", new BigDecimal("4"), "개");
+        recipeRepository.save(recipe);
+        MealPlan plan = MealPlan.builder().userId(USER).planDate(date).mealType(MealType.DINNER)
+                .recipe(recipe).servings(1).build();
+        plan.confirm();
+        mealPlanRepository.save(plan);
+    }
+
+    private BigDecimal eggShortage() throws Exception {
+        mockMvc.perform(get("/api/v1/shopping-items").with(TestJwt.user(1L))).andExpect(status().isOk());
+        entityManager.flush();
+        return shoppingItemRepository.findByUserIdOrderByIdAsc(USER).stream()
+                .filter(item -> item.getIngredientName().equals("달걀"))
+                .map(ShoppingItem::getRequiredQty)
+                .findFirst().orElse(BigDecimal.ZERO);
+    }
+
+    @Test
+    void 식단_날짜_전에_기한이_지나는_재고는_부족분에서_빼지_않는다() throws Exception {
+        // 내일 식단에 달걀 4개. 오늘까지인 달걀 4개는 내일 쓸 수 없다 (SDD 8.7)
+        saveEggs("4", DATE.minusDays(1));
+
+        assertThat(eggShortage()).isEqualByComparingTo("4");
+    }
+
+    @Test
+    void 식단_날짜까지_기한이_남은_재고는_부족분에서_뺀다() throws Exception {
+        saveEggs("4", DATE);
+
+        assertThat(eggShortage()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void 여러_날짜_식단은_기한이_빠른_재고부터_날짜순으로_배정한다() throws Exception {
+        // 내일 4개, 5일 뒤 4개 필요
+        confirmEggPlan(DATE.plusDays(4));
+
+        // 모레까지 8개: 내일 식단에만 쓸 수 있으므로 5일 뒤 몫 4개가 부족
+        saveEggs("8", DATE.plusDays(1));
+        assertThat(eggShortage()).isEqualByComparingTo("4");
+
+        // 열흘 뒤까지 4개를 더하면 5일 뒤 식단도 채운다
+        saveEggs("4", DATE.plusDays(9));
+        assertThat(eggShortage()).isEqualByComparingTo("0");
+    }
+
     @Test
     void 구매_수량에_따라_상태가_바뀐다() throws Exception {
         Long id = itemId("달걀");

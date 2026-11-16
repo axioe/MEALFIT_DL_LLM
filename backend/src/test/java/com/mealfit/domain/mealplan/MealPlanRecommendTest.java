@@ -222,4 +222,26 @@ class MealPlanRecommendTest {
 
         assertThat(dinner.get("recipe").get("name").asText()).isNotEqualTo("돼지고기 김치찌개");
     }
+
+    @Test
+    void 식단_날짜_전에_기한이_지나는_재고는_추천에_쓰지_않는다() throws Exception {
+        // 5일 뒤 식단인데 돼지고기는 2일 뒤 기한 → 그날에는 쓸 수 없다 (SDD 8.7)
+        LocalDate later = LocalDate.now().plusDays(5);
+        saveLot("돼지고기", LocalDate.now().plusDays(2));
+
+        JsonNode dinner = recommendOk(later).get(2);
+
+        assertThat(dinner.get("recipe").get("name").asText()).isNotEqualTo("돼지고기 김치찌개");
+    }
+
+    @Test
+    void 임박_여부는_식단_날짜_기준으로_판단한다() throws Exception {
+        // 오늘 기준으로는 넉넉하지만 5일 뒤 식단 기준으로는 다음 날 기한 → 임박 재료로 먼저 쓴다
+        LocalDate later = LocalDate.now().plusDays(5);
+        saveLot("돼지고기", later.plusDays(1));
+
+        JsonNode dinner = recommendOk(later).get(2);
+
+        assertThat(dinner.get("recipe").get("name").asText()).isEqualTo("돼지고기 김치찌개");
+    }
 }
