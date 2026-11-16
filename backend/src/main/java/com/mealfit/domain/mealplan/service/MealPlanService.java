@@ -256,11 +256,14 @@ public class MealPlanService {
      */
     private List<MealPlan> generate(Long userId, LocalDate planDate, List<MealType> targets, int servings,
                                     List<MealPlan> keptPlans, Set<String> previousNames) {
+        // 재료는 오늘이 아니라 그 식단을 먹는 날 기준으로 판단한다 (SDD 8.7).
+        // 먹는 날 전에 기한이 지나는 재료는 보유 재료로 보지 않고, 임박 여부도 그날 기준으로 계산한다.
         LocalDate today = LocalDate.now(ZONE);
+        LocalDate basis = planDate.isBefore(today) ? today : planDate;
         UserDietProfile profile = profileOf(userId);
         List<InventoryLot> availableLots = inventoryLotRepository
                 .findByUserIdAndStatusOrderByExpiryDateAsc(userId, LotStatus.ACTIVE).stream()
-                .filter(lot -> lot.expirationStatus(today) != ExpirationStatus.EXPIRED)
+                .filter(lot -> lot.expirationStatus(basis) != ExpirationStatus.EXPIRED)
                 .toList();
         List<String> keptNames = keptPlans.stream().map(plan -> plan.getRecipe().getName()).toList();
         List<String> recentNames = recentRecipeNames(userId, planDate);
@@ -270,7 +273,7 @@ public class MealPlanService {
                 profile.allergies(), profile.excludedIngredients(),
                 availableLots.stream()
                         .map(lot -> new AiMealPlanRequest.InventoryItem(lot.getIngredientName(), lot.getQuantity(),
-                                lot.getUnit(), lot.getExpiryDate(), lot.expirationStatus(today)))
+                                lot.getUnit(), lot.getExpiryDate(), lot.expirationStatus(basis)))
                         .toList(),
                 keptNames, recentNames);
         Map<MealType, AiMealSuggestion> aiSuggestions = requestAi(aiRequest, profile.restrictedIngredients());
@@ -287,7 +290,7 @@ public class MealPlanService {
                 reason = suggestion.reason();
             } else {
                 FallbackRecipeSelector.Selection selection = fallbackRecipeSelector
-                        .select(mealType, profile, availableLots, usedNames, previousNames, recentNames, today)
+                        .select(mealType, profile, availableLots, usedNames, previousNames, recentNames, basis)
                         .orElseThrow(() -> new BusinessException(ErrorCode.MEAL_PLAN_NO_CANDIDATE));
                 recipe = selection.recipe();
                 reason = selection.reason();

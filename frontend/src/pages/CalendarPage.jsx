@@ -19,6 +19,8 @@ export function CalendarPage() {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const calendarDays = buildMonthGrid(currentMonth);
+    // 한국 날짜 기준. toISOString()은 UTC라 오전 9시 전에는 어제가 된다
+    const todayStr = today();
     // Selected date plans
     const dayPlans = plans.filter(p => p.date === selectedDate);
     const dayWorkoutLog = workoutLogs.find(l => l.date === selectedDate);
@@ -40,7 +42,7 @@ export function CalendarPage() {
               <button onClick={() => {
             const now = new Date();
             setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-            setSelectedDate(now.toISOString().slice(0, 10));
+            setSelectedDate(today());
         }} className="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer">
                 오늘
               </button>
@@ -65,7 +67,7 @@ export function CalendarPage() {
           <div className="grid grid-cols-7 gap-1.5">
             {calendarDays.map((item, idx) => {
             const isSelected = item.dateStr === selectedDate;
-            const isToday = item.dateStr === new Date().toISOString().slice(0, 10);
+            const isToday = item.dateStr === todayStr;
             const dayPlansCount = plans.filter(p => p.date === item.dateStr).length;
             const hasWorkout = workoutLogs.some(l => l.date === item.dateStr && l.completed);
             return (<button key={idx} onClick={() => setSelectedDate(item.dateStr)} className={`min-h-[72px] md:min-h-[84px] p-1.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${isSelected
