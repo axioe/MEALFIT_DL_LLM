@@ -29,7 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @SpringBootTest @ActiveProfiles("test")
 class InitialRecommendationConcurrencyTest {
     private static final long USER = 91024L;
-    @Autowired MealPlanService service;
+    @Autowired MealPlanRecommender service;
     @Autowired MealPlanRepository plans;
     @Autowired JdbcTemplate jdbc;
     @Autowired DataSource dataSource;
