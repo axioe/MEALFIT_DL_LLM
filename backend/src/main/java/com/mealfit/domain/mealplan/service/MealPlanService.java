@@ -6,7 +6,6 @@ import com.mealfit.domain.inventory.entity.ExpirationStatus;
 import com.mealfit.domain.inventory.entity.InventoryLot;
 import com.mealfit.domain.inventory.repository.InventoryLotRepository;
 import com.mealfit.domain.inventory.entity.LotStatus;
-import com.mealfit.domain.mealplan.client.MealPlanAiClient;
 import com.mealfit.domain.mealplan.dto.AiMealPlanRequest;
 import com.mealfit.domain.mealplan.dto.AiMealSuggestion;
 import com.mealfit.domain.mealplan.dto.MealPlanConfirmResponse;
@@ -33,7 +32,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 식단 추천. AI 제안을 먼저 쓰고, AI가 없거나 실패하거나 서버 검증을 통과하지 못한 끼니는 검증된 로컬 대체로 채운다.
  * 추천 결과는 항상 DRAFT이며 재고를 바꾸지 않는다.
+ * 추천·재추천은 준비(prepare*) → AI 호출(MealPlanRecommender, 트랜잭션 밖) → 저장(save*) 순서로 나눈다.
  */
 @Slf4j
 @Service
@@ -66,7 +65,6 @@ public class MealPlanService {
     private final RecipeRepository recipeRepository;
     private final InventoryLotRepository inventoryLotRepository;
     private final FallbackRecipeSelector fallbackRecipeSelector;
-    private final ObjectProvider<MealPlanAiClient> aiClientProvider;
     private final ObjectProvider<UserDietProfileProvider> profileProvider;
     private final ShoppingListService shoppingListService;
     private final CookingEventRepository cookingEventRepository;
@@ -84,22 +82,45 @@ public class MealPlanService {
         return new MealPlanRecommendResponse(date, mealPlans);
     }
 
+    /** AI 호출에 필요한 요청과 검증 기준. 잠금 없이 읽어서 만든다. */
+    public record AiPreparation(AiMealPlanRequest request, Set<String> restricted) {
+    }
+
     /**
-     * 하루 세 끼 추천. 같은 날짜로 다시 부르면 전체 재추천이다:
+     * 하루 세 끼 추천 1단계: AI 요청 준비 (읽기 전용, 잠금 없음).
+     * AI 호출은 MealPlanRecommender가 트랜잭션 밖에서 하고, 결과는 {@link #saveRecommendation}이 저장한다.
+     * AI를 기다리는 동안 회원·식단 행을 잠그거나 DB 연결을 붙잡지 않기 위해서다 (TRD AI-01).
+     */
+    public AiPreparation prepareRecommend(Long userId, MealPlanRecommendRequest request) {
+        LocalDate planDate = request.planDate();
+        List<MealPlan> confirmed = mealPlanRepository.findByUserIdAndPlanDateAndStatusNot(
+                        userId, planDate, MealPlanStatus.CANCELED).stream()
+                .filter(plan -> plan.getStatus() == MealPlanStatus.CONFIRMED)
+                .toList();
+        List<MealType> targets = targetsExcept(confirmed);
+        if (targets.isEmpty()) {
+            throw new BusinessException(ErrorCode.MEAL_PLAN_ALL_CONFIRMED);
+        }
+        return prepare(userId, planDate, targets, request.servingsOrDefault(), confirmed);
+    }
+
+    /**
+     * 하루 세 끼 추천 2단계: 저장. 같은 날짜로 다시 부르면 전체 재추천이다:
      * 기존 초안은 취소하고, 이미 확정된 끼니는 그대로 두고 나머지 끼니만 새로 만든다.
      * 그 날짜의 식단을 잠가서, 재추천이 동시에 들어와도 살아 있는 초안이 끼니마다 하나만 남게 한다 (D06).
+     * 준비 이후 상태가 바뀌었을 수 있으므로 잠근 뒤 대상 끼니를 다시 계산한다.
+     *
+     * @param aiSuggestions 트랜잭션 밖에서 받은 AI 제안 (없으면 로컬 대체)
      */
     @Transactional
-    public MealPlanRecommendResponse recommend(Long userId, MealPlanRecommendRequest request) {
+    public MealPlanRecommendResponse saveRecommendation(Long userId, MealPlanRecommendRequest request,
+                                                        Map<MealType, AiMealSuggestion> aiSuggestions) {
         LocalDate planDate = request.planDate();
         List<MealPlan> existing = lockDate(userId, planDate);
         List<MealPlan> confirmed = existing.stream()
                 .filter(plan -> plan.getStatus() == MealPlanStatus.CONFIRMED)
                 .toList();
-        Set<MealType> confirmedTypes = confirmed.stream().map(MealPlan::getMealType).collect(Collectors.toSet());
-        List<MealType> targets = Arrays.stream(MealType.values())
-                .filter(type -> !confirmedTypes.contains(type))
-                .toList();
+        List<MealType> targets = targetsExcept(confirmed);
         if (targets.isEmpty()) {
             throw new BusinessException(ErrorCode.MEAL_PLAN_ALL_CONFIRMED);
         }
@@ -112,7 +133,7 @@ public class MealPlanService {
         drafts.forEach(MealPlan::cancel);
 
         List<MealPlan> created = generate(userId, planDate, targets, request.servingsOrDefault(), confirmed,
-                previousNames);
+                previousNames, aiSuggestions);
         List<MealPlanResponse> mealPlans = new ArrayList<>();
         confirmed.forEach(plan -> mealPlans.add(toResponse(plan)));
         created.forEach(plan -> mealPlans.add(MealPlanResponse.from(plan)));
@@ -120,22 +141,45 @@ public class MealPlanService {
         return new MealPlanRecommendResponse(planDate, mealPlans);
     }
 
-    /** 한 끼 재추천. 초안만 가능하며, 같은 날 다른 끼니는 바꾸지 않는다. */
+    /** 한 끼 재추천 1단계: AI 요청 준비 (읽기 전용, 잠금 없음). 초안만 가능하다. */
+    public AiPreparation prepareRegenerate(Long userId, Long mealPlanId) {
+        MealPlan plan = mealPlanRepository.findByIdAndUserId(mealPlanId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEAL_PLAN_NOT_FOUND));
+        if (plan.getStatus() != MealPlanStatus.DRAFT) {
+            throw new BusinessException(ErrorCode.MEAL_PLAN_NOT_DRAFT);
+        }
+        return prepare(userId, plan.getPlanDate(), List.of(plan.getMealType()), plan.getServings(),
+                othersOnSameDay(userId, plan));
+    }
+
+    /** 한 끼 재추천 2단계: 저장. 잠근 뒤 초안인지 다시 확인하고, 같은 날 다른 끼니는 바꾸지 않는다. */
     @Transactional
-    public MealPlanResponse regenerate(Long userId, Long mealPlanId) {
+    public MealPlanResponse saveRegeneration(Long userId, Long mealPlanId,
+                                             Map<MealType, AiMealSuggestion> aiSuggestions) {
         MealPlan plan = lockPlan(userId, mealPlanId);
         if (plan.getStatus() != MealPlanStatus.DRAFT) {
             throw new BusinessException(ErrorCode.MEAL_PLAN_NOT_DRAFT);
         }
-        List<MealPlan> others = mealPlanRepository.findByUserIdAndPlanDateAndStatusNot(
-                        userId, plan.getPlanDate(), MealPlanStatus.CANCELED).stream()
-                .filter(other -> !other.getId().equals(plan.getId()))
-                .toList();
+        List<MealPlan> others = othersOnSameDay(userId, plan);
         plan.cancel();
 
         List<MealPlan> created = generate(userId, plan.getPlanDate(), List.of(plan.getMealType()),
-                plan.getServings(), others, Set.of(plan.getRecipe().getName()));
+                plan.getServings(), others, Set.of(plan.getRecipe().getName()), aiSuggestions);
         return MealPlanResponse.from(created.get(0));
+    }
+
+    private List<MealPlan> othersOnSameDay(Long userId, MealPlan plan) {
+        return mealPlanRepository.findByUserIdAndPlanDateAndStatusNot(
+                        userId, plan.getPlanDate(), MealPlanStatus.CANCELED).stream()
+                .filter(other -> !other.getId().equals(plan.getId()))
+                .toList();
+    }
+
+    private static List<MealType> targetsExcept(List<MealPlan> confirmed) {
+        Set<MealType> confirmedTypes = confirmed.stream().map(MealPlan::getMealType).collect(Collectors.toSet());
+        return Arrays.stream(MealType.values())
+                .filter(type -> !confirmedTypes.contains(type))
+                .toList();
     }
 
     /**
@@ -250,38 +294,59 @@ public class MealPlanService {
                 .orElseGet(UserDietProfile::empty);
     }
 
-    /**
-     * @param keptPlans     같은 날 그대로 두는 끼니 (메뉴가 겹치지 않게 한다)
-     * @param previousNames 직전 초안 메뉴명 (가능하면 다른 메뉴를 고른다)
-     */
-    private List<MealPlan> generate(Long userId, LocalDate planDate, List<MealType> targets, int servings,
-                                    List<MealPlan> keptPlans, Set<String> previousNames) {
-        // 재료는 오늘이 아니라 그 식단을 먹는 날 기준으로 판단한다 (SDD 8.7).
-        // 먹는 날 전에 기한이 지나는 재료는 보유 재료로 보지 않고, 임박 여부도 그날 기준으로 계산한다.
+    /** 재료는 오늘이 아니라 그 식단을 먹는 날 기준으로 판단한다 (SDD 8.7). 과거 날짜면 오늘 기준 */
+    private static LocalDate basisDate(LocalDate planDate) {
         LocalDate today = LocalDate.now(ZONE);
-        LocalDate basis = planDate.isBefore(today) ? today : planDate;
-        UserDietProfile profile = profileOf(userId);
-        List<InventoryLot> availableLots = inventoryLotRepository
+        return planDate.isBefore(today) ? today : planDate;
+    }
+
+    /** 먹는 날 전에 기한이 지나는 재료는 보유 재료로 보지 않는다. */
+    private List<InventoryLot> availableLots(Long userId, LocalDate basis) {
+        return inventoryLotRepository
                 .findByUserIdAndStatusOrderByExpiryDateAsc(userId, LotStatus.ACTIVE).stream()
                 .filter(lot -> lot.expirationStatus(basis) != ExpirationStatus.EXPIRED)
                 .toList();
-        List<String> keptNames = keptPlans.stream().map(plan -> plan.getRecipe().getName()).toList();
-        List<String> recentNames = recentRecipeNames(userId, planDate);
+    }
 
+    /** AI 요청을 만든다. 임박 여부도 식단 날짜 기준으로 계산한다. */
+    private AiPreparation prepare(Long userId, LocalDate planDate, List<MealType> targets, int servings,
+                                  List<MealPlan> keptPlans) {
+        LocalDate basis = basisDate(planDate);
+        UserDietProfile profile = profileOf(userId);
         AiMealPlanRequest aiRequest = new AiMealPlanRequest(planDate, targets, servings,
                 profile.goal(), profile.cookTimeMin(), profile.mealBudget(),
                 profile.allergies(), profile.excludedIngredients(),
-                availableLots.stream()
+                availableLots(userId, basis).stream()
                         .map(lot -> new AiMealPlanRequest.InventoryItem(lot.getIngredientName(), lot.getQuantity(),
                                 lot.getUnit(), lot.getExpiryDate(), lot.expirationStatus(basis)))
                         .toList(),
-                keptNames, recentNames);
-        Map<MealType, AiMealSuggestion> aiSuggestions = requestAi(aiRequest, profile.restrictedIngredients());
+                keptPlans.stream().map(plan -> plan.getRecipe().getName()).toList(),
+                recentRecipeNames(userId, planDate));
+        return new AiPreparation(aiRequest, profile.restrictedIngredients());
+    }
+
+    /**
+     * @param keptPlans     같은 날 그대로 두는 끼니 (메뉴가 겹치지 않게 한다)
+     * @param previousNames 직전 초안 메뉴명 (가능하면 다른 메뉴를 고른다)
+     * @param aiSuggestions 트랜잭션 밖에서 받은 AI 제안. 준비 이후 프로필이 바뀌었을 수 있어 제한 재료를 다시 검사한다.
+     */
+    private List<MealPlan> generate(Long userId, LocalDate planDate, List<MealType> targets, int servings,
+                                    List<MealPlan> keptPlans, Set<String> previousNames,
+                                    Map<MealType, AiMealSuggestion> aiSuggestions) {
+        LocalDate basis = basisDate(planDate);
+        UserDietProfile profile = profileOf(userId);
+        List<InventoryLot> availableLots = availableLots(userId, basis);
+        List<String> keptNames = keptPlans.stream().map(plan -> plan.getRecipe().getName()).toList();
+        List<String> recentNames = recentRecipeNames(userId, planDate);
 
         Set<String> usedNames = new HashSet<>(keptNames);
         List<MealPlan> created = new ArrayList<>();
         for (MealType mealType : targets) {
             AiMealSuggestion suggestion = aiSuggestions.get(mealType);
+            if (suggestion != null
+                    && AiSuggestionValidator.validate(suggestion, profile.restrictedIngredients()).isPresent()) {
+                suggestion = null;
+            }
             Recipe recipe;
             String reason;
             if (suggestion != null && !usedNames.contains(suggestion.recipeName().strip())
@@ -306,35 +371,6 @@ public class MealPlanService {
                     .build()));
         }
         return created;
-    }
-
-    /** AI 제안 중 요청한 끼니이고 서버 검증을 통과한 것만 남긴다. 실패하면 빈 결과(전부 로컬 대체). */
-    private Map<MealType, AiMealSuggestion> requestAi(AiMealPlanRequest request, Set<String> restricted) {
-        MealPlanAiClient aiClient = aiClientProvider.getIfAvailable();
-        if (aiClient == null) {
-            return Map.of();
-        }
-        List<AiMealSuggestion> suggestions;
-        try {
-            suggestions = aiClient.recommend(request);
-        } catch (RuntimeException e) {
-            log.warn("AI 식단 추천 실패, 로컬 대체로 전환합니다: {}", e.getMessage());
-            return Map.of();
-        }
-        Map<MealType, AiMealSuggestion> valid = new EnumMap<>(MealType.class);
-        for (AiMealSuggestion suggestion : suggestions == null ? List.<AiMealSuggestion>of() : suggestions) {
-            if (suggestion == null || !request.mealTypes().contains(suggestion.mealType())
-                    || valid.containsKey(suggestion.mealType())) {
-                continue;
-            }
-            Optional<String> problem = AiSuggestionValidator.validate(suggestion, restricted);
-            if (problem.isPresent()) {
-                log.warn("AI 제안을 버리고 로컬 대체로 전환합니다 ({}): {}", suggestion.mealType(), problem.get());
-                continue;
-            }
-            valid.put(suggestion.mealType(), suggestion);
-        }
-        return valid;
     }
 
     private Recipe toRecipe(Long userId, AiMealSuggestion suggestion) {
