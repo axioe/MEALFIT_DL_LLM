@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { queryClient } from "@/lib/queryClient";
+import { coordinateRefresh, LoggedOutError, readPersistedSession } from "@/lib/tabSession";
 
 /**
  * 모든 API 호출은 이 인스턴스를 쓴다.
@@ -58,7 +59,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** 토큰 교체 중 세션이 변경되면 이전 응답으로 덮어쓰지 않습니다. */
+/**
+ * 토큰 재발급. 같은 탭의 동시 요청은 한 번으로 합치고, 여러 탭은 잠금으로 한 번에 하나만 재발급합니다.
+ * 다른 탭이 이미 재발급했으면 그 토큰을 그대로 씁니다 (lib/tabSession.js).
+ */
 function refreshSession() {
   if (refreshPromise) {
     return refreshPromise;
@@ -71,20 +75,27 @@ function refreshSession() {
     return Promise.reject(new Error("로그인이 필요합니다."));
   }
 
-  refreshPromise = api
-    .post("/auth/refresh", { refreshToken: originalRefreshToken })
-    .then(({ data }) => {
+  refreshPromise = coordinateRefresh({
+    originalRefreshToken,
+    readLatest: () => readPersistedSession(window.localStorage),
+    refresh: (refreshToken) =>
+      api.post("/auth/refresh", { refreshToken }).then(({ data }) => data),
+    apply: (session) => {
       const current = useAuthStore.getState();
-
-      if (current.refreshToken !== originalRefreshToken) {
+      // 기다리는 동안 이 탭에서 로그아웃·다른 계정 로그인을 했으면 덮어쓰지 않습니다.
+      if (
+        current.refreshToken !== originalRefreshToken &&
+        current.refreshToken !== session.refreshToken
+      ) {
         throw new Error("로그인 정보가 변경되었습니다.");
       }
-
-      current.setSession(data);
-      return data.accessToken;
-    })
+      current.setSession(session);
+    },
+  })
+    .then(({ session }) => session.accessToken)
     .catch((error) => {
-      if (useAuthStore.getState().refreshToken === originalRefreshToken) {
+      const current = useAuthStore.getState().refreshToken;
+      if (error instanceof LoggedOutError || current === originalRefreshToken) {
         clearSession();
       }
       throw error;

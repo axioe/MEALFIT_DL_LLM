@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { AUTH_STORAGE_KEY } from '@/lib/tabSession'
 
 /**
  * 로그인 정보와 토큰을 관리합니다.
@@ -35,7 +36,7 @@ export const useAuthStore = create(
     }),
     {
       // 다른 프로젝트의 저장 정보와 구분하는 키입니다.
-      name: 'mealfit-auth',
+      name: AUTH_STORAGE_KEY,
 
       // 로그인 데이터만 저장하고 함수는 저장하지 않습니다.
       partialize: (state) => ({
@@ -46,3 +47,13 @@ export const useAuthStore = create(
     },
   ),
 )
+
+// 다른 탭이 로그인·재발급·로그아웃으로 저장값을 바꾸면 이 탭의 메모리에도 반영합니다.
+// 반영하지 않으면 이 탭이 폐기된 Refresh Token으로 재발급을 시도해 모든 탭이 로그아웃됩니다.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === AUTH_STORAGE_KEY || event.key === null) {
+      void useAuthStore.persist.rehydrate()
+    }
+  })
+}

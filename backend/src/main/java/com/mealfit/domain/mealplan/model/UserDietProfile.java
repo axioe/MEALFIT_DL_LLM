@@ -30,9 +30,12 @@ public record UserDietProfile(
         return new UserDietProfile(null, null, null, Set.of(), Set.of());
     }
 
-    /** 알레르기와 제외 재료를 합친 차단 목록 */
+    /**
+     * 알레르기와 제외 재료를 합친 차단 목록.
+     * 알레르기는 같은 계열 재료·가공식품까지 넓힌다 (예: 우유 → 치즈·버터, AllergenFamilies).
+     */
     public Set<String> restrictedIngredients() {
-        Set<String> restricted = new HashSet<>(allergies);
+        Set<String> restricted = new HashSet<>(AllergenFamilies.expand(allergies));
         restricted.addAll(excludedIngredients);
         return restricted;
     }

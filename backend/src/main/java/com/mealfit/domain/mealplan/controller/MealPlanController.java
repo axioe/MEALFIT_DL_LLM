@@ -4,6 +4,7 @@ import com.mealfit.domain.mealplan.dto.MealPlanConfirmResponse;
 import com.mealfit.domain.mealplan.dto.MealPlanRecommendRequest;
 import com.mealfit.domain.mealplan.dto.MealPlanRecommendResponse;
 import com.mealfit.domain.mealplan.dto.MealPlanResponse;
+import com.mealfit.domain.mealplan.service.MealPlanRecommender;
 import com.mealfit.domain.mealplan.service.MealPlanService;
 import com.mealfit.global.web.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MealPlanController {
 
     private final MealPlanService mealPlanService;
+    private final MealPlanRecommender mealPlanRecommender;
 
     @Operation(summary = "날짜별 식단 조회 (취소 제외, 아침·점심·저녁 순, date가 없으면 오늘)")
     @GetMapping
@@ -43,14 +45,14 @@ public class MealPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public MealPlanRecommendResponse recommend(@CurrentUserId Long userId,
                                                @Valid @RequestBody MealPlanRecommendRequest request) {
-        return mealPlanService.recommend(userId, request);
+        return mealPlanRecommender.recommend(userId, request);
     }
 
     @Operation(summary = "한 끼 재추천 (초안만 가능, 다른 끼니는 유지)")
     @PostMapping("/{id}/regenerate")
     @ResponseStatus(HttpStatus.CREATED)
     public MealPlanResponse regenerate(@CurrentUserId Long userId, @PathVariable Long id) {
-        return mealPlanService.regenerate(userId, id);
+        return mealPlanRecommender.regenerate(userId, id);
     }
 
     @Operation(summary = "서버 검증 후 확정 (알레르기·제외 재료·데이터 검사, 장보기 부족분 계산)")

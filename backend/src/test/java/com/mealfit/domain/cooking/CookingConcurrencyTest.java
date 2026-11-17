@@ -19,6 +19,7 @@ import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
 import com.mealfit.domain.inventory.entity.StorageLocation;
 import com.mealfit.domain.mealplan.entity.MealPlan;
 import com.mealfit.domain.mealplan.repository.MealPlanRepository;
+import com.mealfit.domain.mealplan.service.MealPlanRecommender;
 import com.mealfit.domain.mealplan.service.MealPlanService;
 import com.mealfit.domain.mealplan.entity.MealPlanStatus;
 import com.mealfit.domain.mealplan.entity.MealType;
@@ -60,6 +61,8 @@ class CookingConcurrencyTest {
     private CookingService cookingService;
     @Autowired
     private MealPlanService mealPlanService;
+    @Autowired
+    private MealPlanRecommender mealPlanRecommender;
     @Autowired
     private RecipeRepository recipeRepository;
     @Autowired
@@ -173,11 +176,11 @@ class CookingConcurrencyTest {
     @Test
     void 전체_재추천을_동시에_보내도_끼니마다_초안이_하나만_남는다() throws Exception {
         // D06 A안: 같은 날짜의 식단을 잠가 재추천을 하나씩 처리한다
-        mealPlanService.recommend(USER, new MealPlanRecommendRequest(TODAY, 1));
+        mealPlanRecommender.recommend(USER, new MealPlanRecommendRequest(TODAY, 1));
 
         List<String> results = concurrently(
-                () -> mealPlanService.recommend(USER, new MealPlanRecommendRequest(TODAY, 1)),
-                () -> mealPlanService.recommend(USER, new MealPlanRecommendRequest(TODAY, 1)));
+                () -> mealPlanRecommender.recommend(USER, new MealPlanRecommendRequest(TODAY, 1)),
+                () -> mealPlanRecommender.recommend(USER, new MealPlanRecommendRequest(TODAY, 1)));
 
         assertThat(results).containsExactly(OK, OK);
         List<MealPlan> live = mealPlanRepository.findByUserIdAndPlanDateAndStatusNot(
