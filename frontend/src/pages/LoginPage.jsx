@@ -29,8 +29,7 @@ export function LoginPage() {
     try {
       await login.mutateAsync(buildLoginBody({ email, password }));
 
-      // 일반 로그인은 이전 화면과 관계없이 대시보드로 이동합니다.
-      // 회원가입 직후 마이페이지 이동은 SignupPage에서 별도로 처리합니다.
+      // 로그인은 이전 화면과 관계없이 대시보드로 이동합니다 (회원가입 직후도 동일).
       navigate("/dashboard", { replace: true, state: null });
     } catch {
       // useLogin이 보관한 오류를 위의 error 문구로 표시합니다.

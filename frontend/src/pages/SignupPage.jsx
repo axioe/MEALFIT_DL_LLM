@@ -42,8 +42,9 @@ export function SignupPage() {
     try {
       await signup.mutateAsync(buildSignupBody({ email, password, nickname }))
 
-      // useSignup이 토큰·회원 정보를 저장한 뒤 프로필 입력 화면으로 이동합니다.
-      navigate('/mypage', { replace: true })
+      // useSignup이 토큰·회원 정보를 저장한 뒤 로그인과 같이 대시보드로 이동합니다.
+      // 추가 프로필은 사이드바의 마이페이지에서 설정합니다.
+      navigate('/dashboard', { replace: true, state: null })
     } catch {
       // 중복 이메일 등 서버 오류는 기존 오류 영역에 표시합니다.
     } finally {
