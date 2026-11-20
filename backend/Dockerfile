@@ -14,7 +14,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# t3.small(2GB)에서 MariaDB·nginx와 같이 돌리므로 힙을 제한한다
+# t3.small(2GB)에서 PostgreSQL·nginx와 같이 돌리므로 힙을 제한한다
 ENV JAVA_OPTS="-Xms256m -Xmx512m"
 EXPOSE 8080
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

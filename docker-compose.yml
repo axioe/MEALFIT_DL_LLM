@@ -1,28 +1,26 @@
-# 로컬 개발용 MariaDB. 실행: docker compose up -d
-# 포트가 겹치면(로컬 MySQL 등) .env에 DB_PORT=3307 처럼 바꾸고, Spring 실행 시에도 같은 DB_PORT를 준다.
+# 로컬 개발용 PostgreSQL(+pgvector). 실행: docker compose up -d
+# 운영은 Amazon RDS for PostgreSQL이고, 로컬도 같은 PostgreSQL로 맞춘다 (SDD 8장).
+# pgvector 이미지는 일반 postgres 이미지에 vector 확장이 들어 있는 버전이다 (레시피 검색 LLM-02).
+# 포트가 겹치면 .env에 DB_PORT=5433 처럼 바꾸고, Spring 실행 시에도 같은 DB_PORT를 준다.
 services:
-  mariadb:
-    image: mariadb:11.4
-    container_name: mealfit-mariadb
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mealfit-postgres
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
-      MARIADB_DATABASE: ${DB_NAME:-mealfit}
-      MARIADB_USER: ${DB_USERNAME:-mealfit}
-      MARIADB_PASSWORD: ${DB_PASSWORD:-mealfit}
+      POSTGRES_DB: ${DB_NAME:-mealfit}
+      POSTGRES_USER: ${DB_USERNAME:-mealfit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mealfit}
       TZ: Asia/Seoul
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - mealfit-db:/var/lib/mysql
+      - mealfit-pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-mealfit} -d ${DB_NAME:-mealfit}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  mealfit-db:
+  mealfit-pg:

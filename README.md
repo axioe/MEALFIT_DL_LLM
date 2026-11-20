@@ -33,7 +33,7 @@
 |---|---|---|
 | AI 엔진 | OpenAI API | **Gemini API** (`google-genai` SDK) |
 | AI 서비스 | Python FastAPI | **Python Flask** (`ai-service/`) |
-| DB | MySQL 또는 PostgreSQL | **MariaDB 11.4** |
+| DB | MySQL 또는 PostgreSQL | **PostgreSQL 16 (+pgvector)**. 운영 목표는 Amazon RDS for PostgreSQL (2026-11 MariaDB에서 전환) |
 | 디자인 | Figma | 사용 안 함. AI Studio 프로토타입 화면을 기준으로 바로 구현 |
 | 프론트 언어 | React + TypeScript | **React + JavaScript** (`.js` / `.jsx`) |
 | Spring Boot | 3.x | 3.5.16 (Java 21) |
@@ -56,7 +56,7 @@ MealFit/
 │        ├─ dto/                  요청·응답 (View로 나가는 모양)
 │        └─ client/ config/ exception/   외부 AI 호출, 설정, 도메인 예외 (필요한 도메인만)
 │        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, ai
-├─ backend/src/main/resources/db/migration/   V1 ~ V7 (아래 DB 스키마 참고)
+├─ backend/src/main/resources/db/migration/postgresql/   V1 ~ V7 (아래 DB 스키마 참고)
 ├─ ai-service/                    Python Flask + Gemini
 │  ├─ app.py                      실행 진입점 (python app.py)
 │  ├─ mealfit_ai/
@@ -80,24 +80,25 @@ MealFit/
 │  │  └─ lib/                     enums.js, labels.js, 날짜·기한·숫자 형식, queryClient
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
 ├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약)
-├─ docker-compose.yml             로컬 MariaDB
+├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
 ├─ docker-compose.prod.yml        운영(EC2) 구성
 └─ .env.example, .env.prod.example
 ```
 
 ## 로컬 실행
 
-**준비물:** JDK 17 이상(21이 없으면 Gradle이 자동으로 받음), Node.js 24, Docker Desktop(또는 로컬 MariaDB). 15분 요리 AI까지 확인하려면 Python 3과 Gemini API 키.
+**준비물:** JDK 17 이상(21이 없으면 Gradle이 자동으로 받음), Node.js 24, Docker Desktop(또는 로컬 PostgreSQL 16). 15분 요리 AI까지 확인하려면 Python 3과 Gemini API 키.
 
 ```bash
 cp .env.example .env                        # 아래 JWT_SECRET 설정 필수
-docker compose up -d                        # MariaDB (3306)
+docker compose up -d                        # PostgreSQL + pgvector (5432)
 cd backend && ./gradlew bootRun             # http://localhost:8080  (Windows: gradlew.bat bootRun)
 cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
 - **`JWT_SECRET`은 필수다.** `application.yml`에 기본값이 없어서 없으면 Spring이 뜨지 않는다. `.env`의 `# JWT_SECRET=` 주석을 풀고 `openssl rand -base64 48`로 만든 값을 넣는다. Spring은 루트 `.env`를 읽는다.
-- 3306 포트를 이미 쓰고 있으면(로컬 MySQL 등) `.env`에서 `DB_PORT=3307`로 바꾼다.
+- 5432 포트를 이미 쓰고 있으면(로컬 PostgreSQL 등) `.env`에서 `DB_PORT=5433`으로 바꾼다.
+- Docker 없이 로컬 PostgreSQL을 쓰면 `.env`의 `DB_USERNAME`·`DB_PASSWORD`·`DB_NAME`과 같은 계정·DB를 먼저 만든다.
 - 테이블은 Spring 실행 시 Flyway가 자동으로 만든다. 예전 스키마로 실행한 적이 있어 Flyway 오류가 나면 `docker compose down -v` 후 다시 띄운다.
 - **Swagger:** http://localhost:8080/swagger-ui.html (로그인 응답의 `accessToken`을 Authorize에 넣는다)
 - 모든 API는 로그인이 필요하다(회원가입·로그인·재발급·로그아웃 제외). 사용자는 JWT의 회원 ID로만 식별한다.
@@ -124,10 +125,10 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 
 **서비스 주소: http://3.39.100.188**
 
-EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · MariaDB를 함께 띄운다. 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다.
+EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · PostgreSQL을 함께 띄운다(Amazon RDS 전환 전 구성). 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다.
 
 ```
-브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──▶ mariadb(:3306)
+브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──▶ postgres(:5432)
                                                      └──────▶ ai-service(:8000, 운영 미배포)
 ```
 
@@ -167,14 +168,14 @@ main push ─▶ backend (test) ─┐
 
 - 파일: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
 - EC2: Ubuntu 24.04, t3.small(2GB + 스왑 2GB), 서울 리전
-- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000·3306은 열지 않는다
+- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000·5432는 열지 않는다
 
 **최초 1회 (서버에서)**
 ```bash
 sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
 sudo usermod -aG docker ubuntu   # 다시 접속해야 적용
 git clone https://github.com/axioe/MEALFIT_DL_LLM.git && cd MEALFIT_DL_LLM
-cp .env.prod.example .env        # DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET 채우기
+cp .env.prod.example .env        # DB_PASSWORD, JWT_SECRET 채우기 (RDS 전환 후에는 DB_URL도)
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
@@ -252,11 +253,14 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 �
 - `deploy (EC2)`는 배포 중단 중이라 건너뜀으로 표시된다
 
 ### DB 스키마 (Flyway)
-- 스키마는 `backend/src/main/resources/db/migration`의 SQL로만 바꾼다 (`ddl-auto: validate`)
+- 스키마는 `backend/src/main/resources/db/migration/postgresql`의 SQL로만 바꾼다 (`ddl-auto: validate`)
+- `db/migration/` 바로 아래의 V1–V7은 MariaDB 시절 이력으로 보관만 하고 더 이상 실행하지 않는다 (체크섬 보존)
+- 테스트는 H2(PostgreSQL 모드)로 돌고, CI의 backend 작업은 실제 PostgreSQL(pgvector/pgvector:pg16)에서 마이그레이션·엔티티 검증(`PostgresSchemaIntegrationTest`)을 함께 돈다
+- PostgreSQL IDENTITY는 ID를 직접 넣어도 다음 값이 올라가지 않는다. 데이터 이관 뒤에는 시퀀스를 `setval`로 맞춘다
 - 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각). 애플리케이션 테이블 18개
-- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 다음 번호의 새 파일 `V8__설명.sql`
+- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 `db/migration/postgresql/`에 다음 번호의 새 파일 `V8__설명.sql`
 - 같은 날 여러 명이 마이그레이션을 만들면 번호가 겹칠 수 있으니 단톡방에 번호를 먼저 말하고 쓴다
-- 수량은 `DECIMAL(12,3)` + `BigDecimal`, enum은 `VARCHAR(20)` + `@Enumerated(EnumType.STRING)`
+- 수량은 `NUMERIC(12,3)` + `BigDecimal`, 시각은 `TIMESTAMP(6)` + `LocalDateTime`, enum은 `VARCHAR(20)` + `@Enumerated(EnumType.STRING)`
 
 ### 백엔드
 - 패키지: 새 클래스는 `domain/{도메인}/` 아래 `controller/ service/ repository/ entity/ model/ dto/` 중 역할에 맞는 곳에 둔다 (도메인 바로 아래에 두지 않는다)
