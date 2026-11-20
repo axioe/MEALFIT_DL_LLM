@@ -201,7 +201,7 @@ docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
 **수동 배포 (자동 배포가 안 될 때만)**
 ```bash
-cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 - 로그: `docker compose -f docker-compose.prod.yml logs -f backend`

@@ -205,7 +205,10 @@ jobs:
         run: |
           ssh -i ~/.ssh/ec2.pem ubuntu@"$EC2_HOST" '
             set -e
-            cd ~/MealFit
+            # 심화 저장소는 ~/MEALFIT_DL_LLM 에 둔다 (~/MealFit 은 1차 저장소). 없으면 공개 저장소에서 받는다
+            [ -d ~/MEALFIT_DL_LLM ] || git clone -q https://github.com/axioe/MEALFIT_DL_LLM.git ~/MEALFIT_DL_LLM
+            cd ~/MEALFIT_DL_LLM
+            [ -f .env ] || { echo "::error::서버 ~/MEALFIT_DL_LLM/.env 가 없습니다 (docs/rds-setup.md 3장)"; exit 1; }
             git fetch -q origin main
             git reset -q --hard origin/main
             git log --oneline -1

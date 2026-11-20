@@ -55,13 +55,19 @@ DB_PASSWORD=<2단계에서 정한 값>
 
 ## 4. 첫 기동과 확인
 
+서버에는 1차 저장소(`~/MealFit`)의 컨테이너가 남아 있을 수 있다. 컨테이너 이름이 같아 충돌하므로 먼저 내린다 (볼륨은 지우지 않는다).
+
 ```bash
+cd ~/MealFit && docker compose -f docker-compose.prod.yml down        # 1차 저장소 컨테이너 정리 (없으면 건너뜀)
+[ -d ~/MEALFIT_DL_LLM ] || git clone https://github.com/axioe/MEALFIT_DL_LLM.git ~/MEALFIT_DL_LLM
+cd ~/MEALFIT_DL_LLM && cp .env.prod.example .env && nano .env         # 3단계 값 입력
 docker compose -f docker-compose.prod.yml up -d --build --remove-orphans   # 옛 mealfit-postgres 컨테이너를 정리한다
 docker compose -f docker-compose.prod.yml logs backend | grep -i flyway     # "Successfully applied 8 migrations" 확인
 ```
 
 - 옛 컨테이너 DB 볼륨(`mealfit-pg`)은 새로 시작하므로 쓰지 않는다. 확인이 끝나면 `docker volume rm mealfit_mealfit-pg`로 지운다
-- 자동 배포는 저장소 변수 `DEPLOY_ENABLED=true`일 때만 돈다. RDS·서버 준비가 끝나기 전에는 켜지 않는다
+- 자동 배포는 저장소 변수 `DEPLOY_ENABLED=true`와 Secret `EC2_SSH_KEY`(EC2 키 파일 내용)가 있을 때만 돈다. 서버 폴더는 `~/MEALFIT_DL_LLM`
+- RDS·서버 준비가 끝나기 전에는 `DEPLOY_ENABLED`를 켜지 않는다
 
 ## 5. 비용·운영 메모
 
