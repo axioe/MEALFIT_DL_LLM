@@ -81,7 +81,8 @@ MealFit/
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
 ├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약)
 ├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
-├─ docker-compose.prod.yml        운영(EC2) 구성
+├─ docker-compose.prod.yml        운영(EC2) 구성 (DB는 RDS)
+├─ docker-compose.ci.yml          CI 통합 검사용 (운영 구성 + PostgreSQL 컨테이너)
 └─ .env.example, .env.prod.example
 ```
 
@@ -125,10 +126,10 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 
 **서비스 주소: http://3.39.100.188**
 
-EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · PostgreSQL을 함께 띄운다(Amazon RDS 전환 전 구성). 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다.
+EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · ai-service를 띄우고, DB는 Amazon RDS for PostgreSQL 16(+pgvector)을 쓴다. 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다. RDS 준비 절차는 [docs/rds-setup.md](docs/rds-setup.md).
 
 ```
-브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──▶ postgres(:5432)
+브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──TLS──▶ Amazon RDS PostgreSQL(:5432)
                                                      └──────▶ ai-service(:8000, 운영 미배포)
 ```
 
@@ -166,27 +167,28 @@ main push ─▶ backend (test) ─┐
 
 ### 서버 구성
 
-- 파일: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
+- 파일: `docker-compose.prod.yml`, `docker-compose.ci.yml`(CI 전용), `docs/rds-setup.md`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
 - EC2: Ubuntu 24.04, t3.small(2GB + 스왑 2GB), 서울 리전
-- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000·5432는 열지 않는다
+- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000은 열지 않는다. RDS 보안 그룹은 5432를 EC2 보안 그룹에서만 허용
 
 **최초 1회 (서버에서)**
 ```bash
 sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
 sudo usermod -aG docker ubuntu   # 다시 접속해야 적용
 git clone https://github.com/axioe/MEALFIT_DL_LLM.git && cd MEALFIT_DL_LLM
-cp .env.prod.example .env        # DB_PASSWORD, JWT_SECRET 채우기 (RDS 전환 후에는 DB_URL도)
-docker compose -f docker-compose.prod.yml up -d --build
+sudo mkdir -p /etc/mealfit && sudo curl -o /etc/mealfit/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+cp .env.prod.example .env        # DB_URL(RDS), DB_PASSWORD, JWT_SECRET 채우기
+docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 **수동 배포 (자동 배포가 안 될 때만)**
 ```bash
-cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --build
+cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 - 로그: `docker compose -f docker-compose.prod.yml logs -f backend`
 - 운영에서는 Swagger를 끈다(`application-prod.yml`). API 확인은 로컬에서 한다
-- DB 접속(DBeaver): 기본은 SSH 터널(SSH 탭에 EC2 주소·`ubuntu`·키 파일, Main 탭 Host는 `localhost`)
+- DB 접속(DBeaver): SSH 터널(SSH 탭에 EC2 주소·`ubuntu`·키 파일, Main 탭 Host는 RDS 엔드포인트). RDS는 퍼블릭 접속을 열지 않는다
 
 ## 담당 영역
 
