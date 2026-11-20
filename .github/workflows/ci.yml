@@ -57,6 +57,12 @@ jobs:
         run: chmod +x gradlew
       - name: Test
         run: ./gradlew test --no-daemon
+      # PG_TEST_URL이 빠지면 실제 PostgreSQL 검증이 조용히 건너뛰어지므로, 실행 여부를 결과 파일로 확인한다
+      - name: Check PostgreSQL tests ran
+        run: |
+          f=build/test-results/test/TEST-com.mealfit.integration.PostgresSchemaIntegrationTest.xml
+          grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*"' "$f"
+          grep -q 'skipped="0"' "$f" || { echo "::error::PostgresSchemaIntegrationTest가 건너뛰어졌습니다 (PG_TEST_URL 확인)"; exit 1; }
       - name: Upload test report
         if: failure()
         uses: actions/upload-artifact@v4

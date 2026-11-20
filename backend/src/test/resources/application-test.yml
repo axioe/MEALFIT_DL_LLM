@@ -8,8 +8,8 @@ spring:
     hibernate:
       ddl-auto: validate
   flyway:
-    # 운영 마이그레이션 + 테스트 전용 보정(db/testdata, 고정 ID 충돌 방지)
-    locations: classpath:db/migration/postgresql,classpath:db/testdata
+    # 운영 마이그레이션 + DB별 마이그레이션(H2면 없음, 실제 PostgreSQL이면 pgvector) + 테스트 전용 보정(db/testdata, 고정 ID 충돌 방지)
+    locations: classpath:db/migration/postgresql,classpath:db/vendor/{vendor},classpath:db/testdata
 
 # 테스트 전용 공개 키입니다. 운영·로컬 JWT_SECRET과 무관하게 CI를 실행합니다.
 jwt:
