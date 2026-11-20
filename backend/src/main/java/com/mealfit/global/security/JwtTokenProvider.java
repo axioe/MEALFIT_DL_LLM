@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 public class JwtTokenProvider {
 
     private static final String ISSUER = "mealfit";
+    // [보안][JWT] Access Token 대상(aud) 클레임
+    private static final String AUDIENCE = "mealfit-api";
 
     private final JwtProperties properties;
     private final SecretKey signingKey;
@@ -28,10 +30,11 @@ public class JwtTokenProvider {
         this.properties = properties;
         this.signingKey = createSigningKey(properties.secret());
 
-        // 같은 키로 서명을 검증하고, MealFit이 발급한 토큰만 허용합니다.
+        // 같은 키로 서명을 검증하고, MealFit이 발급하고 대상(aud)이 일치하는 토큰만 허용합니다.
         this.parser = Jwts.parser()
             .verifyWith(signingKey)
             .requireIssuer(ISSUER)
+            .requireAudience(AUDIENCE)
             .sig()
             .clear()
             .add(Jwts.SIG.HS256)
@@ -84,6 +87,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
             .issuer(ISSUER)
+            .audience().add(AUDIENCE).and()
             .subject(userId.toString())
             .claim("email", email)
             .issuedAt(Date.from(now))

@@ -1,59 +1,51 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import { AUTH_STORAGE_KEY } from '@/lib/tabSession'
 
-/**
- * 로그인 정보와 토큰을 관리합니다.
- * 화면에서는 토큰을 직접 저장하지 않고 이 Store를 사용합니다.
- */
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      accessToken: null,
-      refreshToken: null,
-      user: null,
-
-      /**
-       * 회원가입·로그인·재발급 응답을 저장합니다.
-       * TokenResponse의 필드명과 동일하게 받습니다.
-       */
-      setSession: ({ accessToken, refreshToken, user }) => {
-        set({
-          accessToken,
-          refreshToken,
-          user,
-        })
-      },
-
-      /** 로그아웃 또는 재발급 실패 시 로그인 정보를 제거합니다. */
-      clear: () => {
-        set({
-          accessToken: null,
-          refreshToken: null,
-          user: null,
-        })
-      },
-    }),
-    {
-      // 다른 프로젝트의 저장 정보와 구분하는 키입니다.
-      name: AUTH_STORAGE_KEY,
-
-      // 로그인 데이터만 저장하고 함수는 저장하지 않습니다.
-      partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        user: state.user,
-      }),
-    },
-  ),
-)
-
-// 다른 탭이 로그인·재발급·로그아웃으로 저장값을 바꾸면 이 탭의 메모리에도 반영합니다.
-// 반영하지 않으면 이 탭이 폐기된 Refresh Token으로 재발급을 시도해 모든 탭이 로그아웃됩니다.
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key === AUTH_STORAGE_KEY || event.key === null) {
-      void useAuthStore.persist.rehydrate()
+/** [보안][JWT메모리] 과거 버전에서 localStorage에 저장됐던 인증 잔여 데이터를 정리합니다. */
+function clearLegacyAuthStorage() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY)
     }
-  })
+  } catch {
+    // 스토리지 접근이 제한된 환경에서는 무시합니다.
+  }
 }
+
+clearLegacyAuthStorage()
+
+/**
+ * [보안][JWT메모리] Access JWT와 회원 정보를 메모리에만 보관합니다.
+ * 새로고침 시에는 HttpOnly Refresh 쿠키(/api/v1/auth/refresh)로 세션을 복구합니다.
+ */
+export const useAuthStore = create((set) => ({
+  accessToken: null,
+  user: null,
+  // 새로고침 후 Refresh 쿠키 기반 초기 세션 복구가 끝났는지 여부
+  bootstrapped: false,
+
+  /** 로그인·재발급·복구 성공 시 Access Token과 회원 정보를 메모리에 저장합니다. */
+  setSession: ({ accessToken, user }) => {
+    clearLegacyAuthStorage()
+    set({
+      accessToken,
+      user,
+      bootstrapped: true,
+    })
+  },
+
+  /** 초기 복구 시도가 완료되었음을 표시합니다. */
+  markBootstrapped: () => {
+    set({ bootstrapped: true })
+  },
+
+  /** 로그아웃 또는 재발급 실패 시 메모리 세션과 잔여 localStorage를 정리합니다. */
+  clear: () => {
+    clearLegacyAuthStorage()
+    set({
+      accessToken: null,
+      user: null,
+      bootstrapped: true,
+    })
+  },
+}))

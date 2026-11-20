@@ -16,3 +16,8 @@ jwt:
   secret: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
   access-token-ttl: 30m
   refresh-token-ttl: 14d
+
+# 로컬 .env에 MAIL_PROVIDER=smtp가 설정되어 있어도 자동 테스트는 항상 log 발송기를 사용합니다.
+mealfit:
+  auth:
+    mail-provider: log

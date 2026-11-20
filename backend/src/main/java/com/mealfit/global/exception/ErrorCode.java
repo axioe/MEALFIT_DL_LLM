@@ -43,6 +43,19 @@ public enum ErrorCode {
         HttpStatus.UNAUTHORIZED, "AUTH_005",
         "로그인 정보가 만료되었거나 유효하지 않습니다. 다시 로그인해 주세요."
     ),
+    // [이메일인증] 미인증 계정 로그인 차단 및 인증 토큰·재발송 쿨다운 오류
+    AUTH_EMAIL_NOT_VERIFIED(
+        HttpStatus.FORBIDDEN, "AUTH_006",
+        "이메일 인증이 필요합니다. 메일함을 확인해 주세요."
+    ),
+    AUTH_INVALID_VERIFICATION_TOKEN(
+        HttpStatus.BAD_REQUEST, "AUTH_007",
+        "유효하지 않거나 만료된 이메일 인증 링크입니다."
+    ),
+    AUTH_VERIFICATION_COOLDOWN(
+        HttpStatus.TOO_MANY_REQUESTS, "AUTH_008",
+        "인증 메일은 60초마다 다시 요청할 수 있습니다."
+    ),
 
     // 회원 탈퇴 본인 확인 오류는 400으로 응답해 토큰 만료와 구분합니다.
     USER_PASSWORD_MISMATCH(

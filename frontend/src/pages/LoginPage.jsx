@@ -1,15 +1,18 @@
 import React, { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useLogin } from "@/hooks/useAuth";
-import { getErrorMessage } from "@/api/client";
+import { useLogin, useResendEmailVerification } from "@/hooks/useAuth";
+import { getErrorCode, getErrorMessage } from "@/api/client";
 import { buildLoginBody } from "@/models/authForm";
 import { AlertCircle, Lock, Mail, Sparkles } from "lucide-react";
+
 export function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const login = useLogin();
-  const navigate = useNavigate();
   const location = useLocation();
+  const [email, setEmail] = useState(location.state?.email ?? "");
+  const [password, setPassword] = useState("");
+  const [resendNotice, setResendNotice] = useState("");
+  const login = useLogin();
+  const resend = useResendEmailVerification();
+  const navigate = useNavigate();
   const submitLock = useRef(false);
 
   // 저장 중 상태와 서버 오류를 기존 화면 영역에 연결합니다.
@@ -17,19 +20,20 @@ export function LoginPage() {
   const error = login.isError
     ? getErrorMessage(login.error, "로그인하지 못했습니다.")
     : null;
+  // [이메일인증] AUTH_006(미인증 계정) 오류일 때 재발송 버튼을 노출합니다.
+  const isEmailNotVerified =
+    login.isError && getErrorCode(login.error) === "AUTH_006";
 
   /** 입력을 전송하고 성공하면 로그인 정보를 저장한 뒤 이동합니다. */
   async function handleSubmit(event) {
     event.preventDefault();
 
-    // 화면이 다시 그려지기 전 연속 클릭해도 한 번만 전송합니다.
     if (submitLock.current) return;
     submitLock.current = true;
+    setResendNotice("");
 
     try {
       await login.mutateAsync(buildLoginBody({ email, password }));
-
-      // 로그인은 이전 화면과 관계없이 대시보드로 이동합니다 (회원가입 직후도 동일).
       navigate("/dashboard", { replace: true, state: null });
     } catch {
       // useLogin이 보관한 오류를 위의 error 문구로 표시합니다.
@@ -37,6 +41,20 @@ export function LoginPage() {
       submitLock.current = false;
     }
   }
+
+  /** [이메일인증] 미인증 로그인 실패 시 인증 메일을 다시 요청합니다. */
+  async function handleResend() {
+    const trimmed = email.trim();
+    if (!trimmed || resend.isPending) return;
+    setResendNotice("");
+    try {
+      await resend.mutateAsync(trimmed);
+      setResendNotice("인증 메일을 다시 발송했습니다. 메일함을 확인해 주세요.");
+    } catch (err) {
+      setResendNotice(getErrorMessage(err, "인증 메일을 다시 보내지 못했습니다."));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-lg max-w-md w-full">
@@ -54,9 +72,6 @@ export function LoginPage() {
           </p>
         </div>
 
-        {/* 1-Click Demo Button */}
-        {null}
-
         <div className="relative flex py-2 items-center mb-5">
           <div className="flex-grow border-t border-gray-200"></div>
           <span className="flex-shrink mx-4 text-gray-400 text-xs font-semibold">
@@ -71,14 +86,38 @@ export function LoginPage() {
           </p>
         )}
 
+        {location.state?.verified && (
+          <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+            이메일 인증이 완료되었습니다. 로그인해 주세요.
+          </p>
+        )}
+
         {error && (
           <div
             role="alert"
-            className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2"
+            className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2"
           >
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{error}</span>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {isEmailNotVerified && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resend.isPending}
+                className="w-full py-2 rounded-lg bg-white border border-rose-200 text-rose-700 font-bold hover:bg-rose-100/50 cursor-pointer disabled:opacity-50"
+              >
+                {resend.isPending ? "재발송 중..." : "인증 메일 다시 보내기"}
+              </button>
+            )}
           </div>
+        )}
+
+        {resendNotice && (
+          <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+            {resendNotice}
+          </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">

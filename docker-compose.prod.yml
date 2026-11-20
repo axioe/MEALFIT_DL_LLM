@@ -17,6 +17,17 @@ services:
       # 로그인 토큰 서명 키(Base64, 디코딩 후 32바이트 이상). 없으면 서버가 뜨지 않는다
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요 (openssl rand -base64 48)}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
+      # 이메일 인증 및 쿠키·출처 보안 설정 (실제 SMTP 비밀번호는 서버 .env에만 둔다)
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MealFit}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:-http://localhost}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
       TZ: Asia/Seoul
     # RDS 인증서 번들(global-bundle.pem)이 있는 서버 폴더를 읽기 전용으로 붙인다
     # 서버에서 한 번: sudo mkdir -p /etc/mealfit && sudo curl -o /etc/mealfit/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
