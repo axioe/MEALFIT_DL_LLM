@@ -255,6 +255,7 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 �
 ### DB 스키마 (Flyway)
 - 스키마는 `backend/src/main/resources/db/migration/postgresql`의 SQL로만 바꾼다 (`ddl-auto: validate`)
 - `db/migration/` 바로 아래의 V1–V7은 MariaDB 시절 이력으로 보관만 하고 더 이상 실행하지 않는다 (체크섬 보존)
+- pgvector처럼 실제 PostgreSQL에서만 되는 마이그레이션은 `db/vendor/postgresql/`에 두고 번호는 이어서 매긴다 (V8 = `recipe_embeddings`, 레시피 검색). RDS에서는 관리 계정으로 `CREATE EXTENSION vector;`를 먼저 실행한다
 - 테스트는 H2(PostgreSQL 모드)로 돌고, CI의 backend 작업은 실제 PostgreSQL(pgvector/pgvector:pg16)에서 마이그레이션·엔티티 검증(`PostgresSchemaIntegrationTest`)을 함께 돈다
 - PostgreSQL IDENTITY는 ID를 직접 넣어도 다음 값이 올라가지 않는다. 데이터 이관 뒤에는 시퀀스를 `setval`로 맞춘다
 - 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각). 애플리케이션 테이블 18개
