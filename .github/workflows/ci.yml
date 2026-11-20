@@ -26,6 +26,25 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # 실제 PostgreSQL(+pgvector)에서 Flyway·엔티티 검증 (PostgresSchemaIntegrationTest). 나머지 테스트는 H2(PostgreSQL 모드)
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: mealfit
+          POSTGRES_USER: mealfit
+          POSTGRES_PASSWORD: mealfit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mealfit -d mealfit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PG_TEST_URL: jdbc:postgresql://localhost:5432/mealfit
+      PG_TEST_USERNAME: mealfit
+      PG_TEST_PASSWORD: mealfit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -112,7 +131,6 @@ jobs:
         run: |
           {
             echo "DB_PASSWORD=$(openssl rand -hex 16)"
-            echo "DB_ROOT_PASSWORD=$(openssl rand -hex 16)"
             echo "JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')"
           } > .env
       - name: Build and start all services

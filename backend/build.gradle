@@ -35,9 +35,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // DB
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    // 운영: Amazon RDS for PostgreSQL, 로컬: pgvector/pgvector 컨테이너 (SDD 8장)
+    runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-mysql' // MariaDB 지원 모듈
+    implementation 'org.flywaydb:flyway-database-postgresql' // PostgreSQL 지원 모듈
 
     // API 문서 (Swagger UI: /swagger-ui.html)
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"

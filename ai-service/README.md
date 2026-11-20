@@ -1,6 +1,6 @@
 # MealFit Python AI 서비스
 
-독립 실행 Flask + Gemini 추천 서비스입니다. React·Spring·MariaDB·Docker를 실행하지 않아도 됩니다.
+독립 실행 Flask + Gemini 추천 서비스입니다. React·Spring·PostgreSQL·Docker를 실행하지 않아도 됩니다.
 이번 작업에 한해 사용자가 FastAPI 대신 Flask를 승인했습니다. 가이드북의 내부 `/ai/*` 경로는 유지합니다.
 기존 Python AI 코드는 없어 새로 구현했으며, 가이드북에는 구체적 프롬프트·모델·15분 추천 스키마가 없습니다.
 따라서 해당 부분은 17차 요구사항으로 작성한 **내부 개발 계약**입니다. 20차에서 기존 Spring DTO에 맞춘 `/ai/meal-plans`를 추가했습니다. `/ai/recipes`는 구현하지 않았습니다.
