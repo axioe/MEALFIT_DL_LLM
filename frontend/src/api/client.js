@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 import { queryClient } from "@/lib/queryClient";
-import { coordinateRefresh, LoggedOutError, readPersistedSession } from "@/lib/tabSession";
+import { withTabLock } from "@/lib/tabSession";
 
 /**
  * 모든 API 호출은 이 인스턴스를 쓴다.
@@ -13,11 +13,17 @@ import { coordinateRefresh, LoggedOutError, readPersistedSession } from "@/lib/t
  */
 export const api = axios.create({
   baseURL: "/api/v1",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    // [보안][CSRF] 쿠키 기반 /refresh, /logout 요청의 교차 출처 폼 제출을 차단하는 커스텀 헤더
+    "X-Requested-With": "XMLHttpRequest",
+  },
+  // [HttpOnly쿠키] Refresh Token 쿠키를 자동 송수신하기 위해 withCredentials 활성화
+  withCredentials: true,
   timeout: 30_000, // AI 추천은 최대 20초 + 여유
 });
 
-// 같은 탭에서 여러 요청이 실패해도 갱신은 한 번만 실행합니다.
+// 같은 탭에서 여러 요청이 실패하거나 복구가 겹쳐도 갱신은 한 번만 실행합니다.
 let refreshPromise = null;
 
 const AUTH_PATHS = new Set([
@@ -25,6 +31,9 @@ const AUTH_PATHS = new Set([
   "/auth/login",
   "/auth/refresh",
   "/auth/logout",
+  // [이메일인증] 비로그인 인증 확인·재발송 경로는 Authorization 헤더 및 401 갱신 제외
+  "/auth/email-verification/confirm",
+  "/auth/email-verification/resend",
 ]);
 
 function isAuthRequest(config) {
@@ -60,42 +69,69 @@ api.interceptors.request.use((config) => {
 });
 
 /**
- * 토큰 재발급. 같은 탭의 동시 요청은 한 번으로 합치고, 여러 탭은 잠금으로 한 번에 하나만 재발급합니다.
- * 다른 탭이 이미 재발급했으면 그 토큰을 그대로 씁니다 (lib/tabSession.js).
+ * [JWT메모리][HttpOnly쿠키] 새로고침 직후 메모리에 Access Token이 없을 때
+ * HttpOnly Refresh 쿠키로 세션을 1회 복구합니다.
  */
+export function restoreSession() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  const current = useAuthStore.getState();
+  if (current.accessToken) {
+    if (!current.bootstrapped) {
+      current.markBootstrapped();
+    }
+    return Promise.resolve(current.accessToken);
+  }
+
+  refreshPromise = withTabLock(() => api.post("/auth/refresh"))
+    .then(({ data }) => {
+      useAuthStore.getState().setSession(data);
+      return data.accessToken;
+    })
+    .catch(() => {
+      // 쿠키가 없거나 만료된 경우 강제 리로드 대신 상태만 정리해 RequireAuth가 /login으로 이동시킵니다.
+      useAuthStore.getState().clear();
+      return null;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
+/** [HttpOnly쿠키] 쿠키 기반 Refresh Token으로 새 Access Token을 재발급합니다. */
 function refreshSession() {
   if (refreshPromise) {
     return refreshPromise;
   }
 
-  const originalRefreshToken = useAuthStore.getState().refreshToken;
+  const originalSession = useAuthStore.getState();
+  const originalAccessToken = originalSession.accessToken;
+  const originalUserId = originalSession.user?.id;
 
-  if (!originalRefreshToken) {
-    clearSession();
-    return Promise.reject(new Error("로그인이 필요합니다."));
-  }
-
-  refreshPromise = coordinateRefresh({
-    originalRefreshToken,
-    readLatest: () => readPersistedSession(window.localStorage),
-    refresh: (refreshToken) =>
-      api.post("/auth/refresh", { refreshToken }).then(({ data }) => data),
-    apply: (session) => {
+  refreshPromise = withTabLock(() => api.post("/auth/refresh"))
+    .then(({ data }) => {
       const current = useAuthStore.getState();
-      // 기다리는 동안 이 탭에서 로그아웃·다른 계정 로그인을 했으면 덮어쓰지 않습니다.
+
       if (
-        current.refreshToken !== originalRefreshToken &&
-        current.refreshToken !== session.refreshToken
+        current.accessToken !== originalAccessToken ||
+        current.user?.id !== originalUserId
       ) {
         throw new Error("로그인 정보가 변경되었습니다.");
       }
-      current.setSession(session);
-    },
-  })
-    .then(({ session }) => session.accessToken)
+
+      current.setSession(data);
+      return data.accessToken;
+    })
     .catch((error) => {
-      const current = useAuthStore.getState().refreshToken;
-      if (error instanceof LoggedOutError || current === originalRefreshToken) {
+      const current = useAuthStore.getState();
+      if (
+        current.accessToken === originalAccessToken &&
+        current.user?.id === originalUserId
+      ) {
         clearSession();
       }
       throw error;

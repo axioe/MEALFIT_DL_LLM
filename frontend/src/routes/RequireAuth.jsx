@@ -1,21 +1,39 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { getErrorMessage } from '@/api/client'
+import { getErrorMessage, restoreSession } from '@/api/client'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { Spinner } from '@/components/common/Spinner'
 
 /**
- * 서버가 인증한 사용자에게만 하위 화면을 표시합니다.
- * 저장된 토큰이 있다는 이유만으로 로그인 성공으로 판단하지 않습니다.
+ * [JWT메모리][HttpOnly쿠키]
+ * 메모리에 Access Token이 없으면 새로고침 직후 Refresh 쿠키로 세션을 먼저 복구합니다.
+ * 복구 중에는 인증 확인 화면을 표시하고, 실패하면 로그인 화면으로 이동합니다.
  */
 export function RequireAuth() {
   const location = useLocation()
   const accessToken = useAuthStore((state) => state.accessToken)
-  const refreshToken = useAuthStore((state) => state.refreshToken)
-  const hasSession = Boolean(accessToken || refreshToken)
-  const me = useCurrentUser({ enabled: hasSession })
+  const bootstrapped = useAuthStore((state) => state.bootstrapped)
 
-  if (!hasSession) {
+  useEffect(() => {
+    if (!accessToken && !bootstrapped) {
+      void restoreSession()
+    }
+  }, [accessToken, bootstrapped])
+
+  const me = useCurrentUser({ enabled: Boolean(accessToken) })
+
+  // [JWT메모리] 새로고침 후 Refresh 쿠키로 세션을 복구하는 동안 인증 확인 상태를 표시합니다.
+  if (!bootstrapped) {
+    return (
+      <div role="status" className="flex min-h-screen items-center justify-center gap-3 bg-gray-50">
+        <Spinner />
+        <span className="text-sm text-gray-500">세션을 복구하고 있습니다.</span>
+      </div>
+    )
+  }
+
+  if (!accessToken) {
     return (
       <Navigate
         to="/login"
@@ -58,4 +76,3 @@ export function RequireAuth() {
 
   return <Outlet />
 }
-

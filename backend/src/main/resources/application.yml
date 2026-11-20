@@ -28,11 +28,37 @@ spring:
   jackson:
     time-zone: Asia/Seoul
     default-property-inclusion: non_null
+  # [이메일인증][SMTP] 실제 메일 발송 설정 (MAIL_PROVIDER=smtp일 때 사용, 비밀값은 .env에만 보관)
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: ${SERVER_PORT:8080}
 
 mealfit:
+  auth:
+    # [HttpOnly쿠키][보안] 운영(prod)에서는 Secure=true, 로컬 HTTP 개발에서는 false
+    cookie-secure: ${AUTH_COOKIE_SECURE:false}
+    # [보안] /refresh, /logout 동일 출처(Origin/Referer) 검증 허용 목록
+    allowed-origins: ${AUTH_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080}
+    # [이메일인증] log(로컬 콘솔 출력) | smtp(실제 메일 발송)
+    mail-provider: ${MAIL_PROVIDER:log}
+    mail-from: ${MAIL_FROM:${MAIL_USERNAME:}}
+    mail-from-name: ${MAIL_FROM_NAME:MealFit}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
   ai:
     # Python AI 서비스(FastAPI + Gemini). Gemini 키는 Python 쪽에만 둔다.
     base-url: ${AI_SERVICE_URL:http://localhost:8000}

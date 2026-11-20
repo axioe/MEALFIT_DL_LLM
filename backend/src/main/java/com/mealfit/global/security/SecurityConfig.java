@@ -63,7 +63,10 @@ public class SecurityConfig {
                     "/api/v1/auth/signup",
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
-                    "/api/v1/auth/logout"
+                    "/api/v1/auth/logout",
+                    // [이메일인증] 비로그인 상태에서 인증 확인·재발송 호출 허용
+                    "/api/v1/auth/email-verification/confirm",
+                    "/api/v1/auth/email-verification/resend"
                 ).permitAll()
 
                 // Swagger는 운영 프로필에서 별도로 비활성화됩니다.

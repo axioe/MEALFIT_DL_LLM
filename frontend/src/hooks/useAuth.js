@@ -5,7 +5,7 @@ import { queryKeys } from '@/api/queryKeys'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * 가입·로그인 성공 시 이전 회원의 캐시를 비우고
+ * 로그인 성공 시 이전 회원의 캐시를 비우고
  * 서버에서 받은 새 로그인 정보를 저장합니다.
  */
 function useSessionMutation(mutationFn) {
@@ -25,9 +25,28 @@ function useSessionMutation(mutationFn) {
   })
 }
 
-/** 회원가입 성공 후 자동 로그인 상태를 저장합니다. */
+/** [이메일인증] 회원가입은 인증 메일 발송까지만 수행하고 토큰을 저장하지 않습니다. */
 export function useSignup() {
-  return useSessionMutation(authApi.signup)
+  return useMutation({
+    mutationFn: authApi.signup,
+    retry: false,
+  })
+}
+
+/** [이메일인증] 메일 링크의 토큰을 서버에 검증 요청합니다. */
+export function useConfirmEmailVerification() {
+  return useMutation({
+    mutationFn: authApi.confirmEmailVerification,
+    retry: false,
+  })
+}
+
+/** [이메일인증] 인증 메일 재발송을 요청합니다. */
+export function useResendEmailVerification() {
+  return useMutation({
+    mutationFn: authApi.resendEmailVerification,
+    retry: false,
+  })
 }
 
 /** 이메일 로그인 성공 후 토큰과 회원 정보를 저장합니다. */
@@ -36,7 +55,7 @@ export function useLogin() {
 }
 
 /**
- * 서버에서 Refresh Token을 폐기한 뒤 로컬 상태를 정리합니다.
+ * [HttpOnly쿠키] 서버에서 쿠키의 Refresh Token을 폐기한 뒤 로컬 상태를 정리합니다.
  * 서버 요청이 실패해도 이 브라우저의 로그인 정보는 제거합니다.
  */
 export function useLogout() {
@@ -47,21 +66,13 @@ export function useLogout() {
     retry: false,
 
     mutationFn: async () => {
-      const refreshToken = useAuthStore.getState().refreshToken
-
-      if (refreshToken) {
-        await authApi.logout(refreshToken)
-      }
+      await authApi.logout()
     },
 
     onSettled: async () => {
       try {
-        // 먼저 공개 화면으로 이동해야 보호 라우트가 로그아웃한 화면을
-        // 다음 로그인 복귀 경로(from)로 저장하지 않습니다.
-        // 버튼이 사라져도 실행되도록 화면 콜백이 아닌 공통 훅에서 처리합니다.
         await navigate('/login', { replace: true, state: null })
       } finally {
-        // 화면 이동에 문제가 생겨도 로그인 정보와 캐시는 반드시 제거합니다.
         useAuthStore.getState().clear()
         try {
           await queryClient.cancelQueries()

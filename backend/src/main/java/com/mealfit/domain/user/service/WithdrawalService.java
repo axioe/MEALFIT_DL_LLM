@@ -1,5 +1,6 @@
 package com.mealfit.domain.user.service;
 
+import com.mealfit.domain.auth.repository.EmailVerificationTokenRepository;
 import com.mealfit.domain.auth.repository.RefreshTokenRepository;
 import com.mealfit.domain.user.dto.WithdrawRequest;
 import com.mealfit.domain.user.entity.User;
@@ -7,6 +8,7 @@ import com.mealfit.domain.user.repository.UserRepository;
 import com.mealfit.global.exception.BusinessException;
 import com.mealfit.global.exception.ErrorCode;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class WithdrawalService {
     private static final int BCRYPT_MAX_BYTES = 72;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -40,5 +43,6 @@ public class WithdrawalService {
         // 이후 토큰 폐기에서 실패해도 탈퇴 기록까지 함께 롤백됩니다.
         user.withdraw();
         refreshTokenRepository.revokeAllByUserId(userId);
+        emailVerificationTokenRepository.invalidateUnusedByUserId(userId, LocalDateTime.now());
     }
 }
