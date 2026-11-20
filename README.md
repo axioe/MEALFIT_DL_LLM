@@ -81,7 +81,8 @@ MealFit/
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
 ├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약)
 ├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
-├─ docker-compose.prod.yml        운영(EC2) 구성
+├─ docker-compose.prod.yml        운영(EC2) 구성 (DB는 RDS)
+├─ docker-compose.ci.yml          CI 통합 검사용 (운영 구성 + PostgreSQL 컨테이너)
 └─ .env.example, .env.prod.example
 ```
 
@@ -98,7 +99,25 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 
 - **`JWT_SECRET`은 필수다.** `application.yml`에 기본값이 없어서 없으면 Spring이 뜨지 않는다. `.env`의 `# JWT_SECRET=` 주석을 풀고 `openssl rand -base64 48`로 만든 값을 넣는다. Spring은 루트 `.env`를 읽는다.
 - 5432 포트를 이미 쓰고 있으면(로컬 PostgreSQL 등) `.env`에서 `DB_PORT=5433`으로 바꾼다.
-- Docker 없이 로컬 PostgreSQL을 쓰면 `.env`의 `DB_USERNAME`·`DB_PASSWORD`·`DB_NAME`과 같은 계정·DB를 먼저 만든다.
+- **MariaDB 시절 `.env`를 그대로 쓰면 접속이 안 된다.** `DB_PORT=3306` 등이 남아 있으면 `.env.example`을 다시 복사하고 `JWT_SECRET`만 옮긴다 (2026-11 PostgreSQL 전환).
+- Docker Desktop은 BIOS 가상화(Intel VT-x/AMD-V)가 켜져 있어야 한다. 끌 수 없는 PC는 아래 **Docker 없이 실행**을 따른다.
+
+**Docker 없이 실행 (Windows에 PostgreSQL 16 직접 설치)**
+
+1. [PostgreSQL 16 Windows 설치 파일](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)로 설치한다 (포트 5432, Stack Builder는 건너뛰어도 된다).
+2. pgAdmin 또는 DBeaver에서 관리 계정(`postgres`)으로 접속해 앱 계정과 DB를 만든다. 값은 `.env`와 같게 맞춘다.
+   ```sql
+   CREATE ROLE mealfit LOGIN PASSWORD 'mealfit';
+   CREATE DATABASE mealfit OWNER mealfit;
+   ```
+3. Windows용 PostgreSQL에는 pgvector가 없어서 V8(`recipe_embeddings`, 레시피 검색용)이 실패한다. 로컬에서는 `.env`에 아래 한 줄을 넣어 V1–V7만 적용한다. 화면 흐름(회원·냉장고·식단·장보기·조리)은 모두 동작한다.
+   ```
+   spring.flyway.locations=classpath:db/migration/postgresql
+   ```
+   벡터 검색까지 확인하려면 Docker의 `pgvector/pgvector:pg16`을 쓴다. 나중에 pgvector를 쓰는 DB로 바꾸면 이 줄을 지우면 V8이 이어서 적용된다.
+4. 이후는 위와 같이 `backend`·`frontend`를 실행한다.
+
+**현재 화면에서 예시 데이터인 부분:** 대시보드의 식단·운동·체중·AI 코칭 영역과 섭취 기록(먹었어요/건너뛰었어요)은 아직 API가 없어 예시 데이터다 (`frontend/src/api/dashboard.js`의 `MOCK`). 냉장고·식단 추천·확정·장보기·조리·취소는 실제 DB로 동작한다.
 - 테이블은 Spring 실행 시 Flyway가 자동으로 만든다. 예전 스키마로 실행한 적이 있어 Flyway 오류가 나면 `docker compose down -v` 후 다시 띄운다.
 - **Swagger:** http://localhost:8080/swagger-ui.html (로그인 응답의 `accessToken`을 Authorize에 넣는다)
 - 모든 API는 로그인이 필요하다(회원가입·로그인·재발급·로그아웃 제외). 사용자는 JWT의 회원 ID로만 식별한다.
@@ -125,10 +144,10 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 
 **서비스 주소: http://3.39.100.188**
 
-EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · PostgreSQL을 함께 띄운다(Amazon RDS 전환 전 구성). 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다.
+EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · ai-service를 띄우고, DB는 Amazon RDS for PostgreSQL 16(+pgvector)을 쓴다. 외부에 열리는 포트는 80뿐이고, nginx가 `/api`를 Spring으로 넘긴다. RDS 준비 절차는 [docs/rds-setup.md](docs/rds-setup.md).
 
 ```
-브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──▶ postgres(:5432)
+브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──TLS──▶ Amazon RDS PostgreSQL(:5432)
                                                      └──────▶ ai-service(:8000, 운영 미배포)
 ```
 
@@ -166,27 +185,28 @@ main push ─▶ backend (test) ─┐
 
 ### 서버 구성
 
-- 파일: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
+- 파일: `docker-compose.prod.yml`, `docker-compose.ci.yml`(CI 전용), `docs/rds-setup.md`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
 - EC2: Ubuntu 24.04, t3.small(2GB + 스왑 2GB), 서울 리전
-- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000·5432는 열지 않는다
+- 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000은 열지 않는다. RDS 보안 그룹은 5432를 EC2 보안 그룹에서만 허용
 
 **최초 1회 (서버에서)**
 ```bash
 sudo apt update && sudo apt install -y docker.io docker-compose-v2 git
 sudo usermod -aG docker ubuntu   # 다시 접속해야 적용
 git clone https://github.com/axioe/MEALFIT_DL_LLM.git && cd MEALFIT_DL_LLM
-cp .env.prod.example .env        # DB_PASSWORD, JWT_SECRET 채우기 (RDS 전환 후에는 DB_URL도)
-docker compose -f docker-compose.prod.yml up -d --build
+sudo mkdir -p /etc/mealfit && sudo curl -o /etc/mealfit/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+cp .env.prod.example .env        # DB_URL(RDS), DB_PASSWORD, JWT_SECRET 채우기
+docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 **수동 배포 (자동 배포가 안 될 때만)**
 ```bash
-cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --build
+cd ~/MealFit && git pull && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 - 로그: `docker compose -f docker-compose.prod.yml logs -f backend`
 - 운영에서는 Swagger를 끈다(`application-prod.yml`). API 확인은 로컬에서 한다
-- DB 접속(DBeaver): 기본은 SSH 터널(SSH 탭에 EC2 주소·`ubuntu`·키 파일, Main 탭 Host는 `localhost`)
+- DB 접속(DBeaver): SSH 터널(SSH 탭에 EC2 주소·`ubuntu`·키 파일, Main 탭 Host는 RDS 엔드포인트). RDS는 퍼블릭 접속을 열지 않는다
 
 ## 담당 영역
 
