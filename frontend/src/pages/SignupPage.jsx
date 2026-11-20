@@ -1,22 +1,24 @@
 import React, { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, Sparkles, Zap } from 'lucide-react'
-import { useSignup } from '@/hooks/useAuth'
+import { Link } from 'react-router-dom'
+import { AlertCircle, CheckCircle2, Mail, Sparkles, Zap } from 'lucide-react'
+import { useResendEmailVerification, useSignup } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/api/client'
 import { buildSignupBody, validateSignupForm } from '@/models/authForm'
 
 /**
- * 이메일·비밀번호·닉네임으로 가입하고 자동 로그인합니다.
- * 식단 목표·알레르기 등 추가 프로필은 가입 후 마이페이지에서 입력합니다.
+ * [이메일인증] 이메일·비밀번호·닉네임으로 가입하고 인증 메일을 발송합니다.
+ * 메일 링크로 인증을 완료한 뒤 로그인하면 토큰이 발급됩니다.
  */
 export function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nickname, setNickname] = useState('')
   const [formError, setFormError] = useState('')
+  const [signedUpEmail, setSignedUpEmail] = useState('')
+  const [resendNotice, setResendNotice] = useState('')
   const submitLock = useRef(false)
   const signup = useSignup()
-  const navigate = useNavigate()
+  const resend = useResendEmailVerification()
   const isSubmitting = signup.isPending
   const error = formError || (
     signup.isError
@@ -30,6 +32,7 @@ export function SignupPage() {
     if (submitLock.current) return
 
     setFormError('')
+    setResendNotice('')
     signup.reset()
 
     const invalid = validateSignupForm({ password, nickname })
@@ -40,15 +43,73 @@ export function SignupPage() {
 
     submitLock.current = true
     try {
-      await signup.mutateAsync(buildSignupBody({ email, password, nickname }))
-
-      // useSignup이 토큰·회원 정보를 저장한 뒤 프로필 입력 화면으로 이동합니다.
-      navigate('/mypage', { replace: true })
+      const result = await signup.mutateAsync(
+        buildSignupBody({ email, password, nickname }),
+      )
+      // [이메일인증] 가입 직후 자동 로그인하지 않고 인증 메일 안내 화면으로 전환
+      setSignedUpEmail(result?.email || email.trim())
     } catch {
       // 중복 이메일 등 서버 오류는 기존 오류 영역에 표시합니다.
     } finally {
       submitLock.current = false
     }
+  }
+
+  /** [이메일인증] 가입 완료 안내 화면에서 인증 메일 재발송을 요청합니다. */
+  async function handleResend() {
+    if (!signedUpEmail || resend.isPending) return
+    setResendNotice('')
+    try {
+      await resend.mutateAsync(signedUpEmail)
+      setResendNotice('인증 메일을 다시 발송했습니다. 메일함을 확인해 주세요.')
+    } catch (err) {
+      setResendNotice(getErrorMessage(err, '인증 메일을 다시 보내지 못했습니다.'))
+    }
+  }
+
+  if (signedUpEmail) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xl max-w-lg w-full text-center">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 aria-hidden="true" className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-black text-gray-900 tracking-tight">
+            인증 메일을 발송했습니다
+          </h1>
+          <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+            <strong className="text-gray-900">{signedUpEmail}</strong> 로 인증 링크를 보냈습니다.
+            <br />
+            메일의 인증 링크를 클릭한 뒤 로그인해 주세요.
+          </p>
+
+          {resendNotice && (
+            <p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+              {resendNotice}
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-col gap-2.5">
+            <Link
+              to="/login"
+              state={{ email: signedUpEmail }}
+              className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md shadow-emerald-200 transition-all"
+            >
+              로그인 화면으로 이동
+            </Link>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resend.isPending}
+              className="w-full py-2.5 rounded-2xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Mail aria-hidden="true" className="w-4 h-4" />
+              <span>{resend.isPending ? '재발송 중...' : '인증 메일 다시 보내기'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -134,9 +195,8 @@ export function SignupPage() {
             </p>
           </div>
 
-          {/* 가입 API가 저장하지 않는 신체·운동 정보는 이 화면에서 수집하지 않습니다. */}
           <p className="text-[11px] text-gray-500 leading-relaxed bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-            가입 후 마이페이지에서 식단 목표와 알레르기 등 추가 프로필을 설정할 수 있습니다.
+            가입 후 이메일 인증을 완료하고 로그인하면 마이페이지에서 식단 목표와 알레르기를 설정할 수 있습니다.
           </p>
 
           <button
@@ -159,4 +219,3 @@ export function SignupPage() {
     </div>
   )
 }
-

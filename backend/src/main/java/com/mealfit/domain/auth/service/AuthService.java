@@ -1,6 +1,9 @@
 package com.mealfit.domain.auth.service;
 
+import com.mealfit.domain.auth.dto.SignupResponse;
+import com.mealfit.domain.auth.entity.EmailVerificationToken;
 import com.mealfit.domain.auth.entity.RefreshToken;
+import com.mealfit.domain.auth.repository.EmailVerificationTokenRepository;
 import com.mealfit.domain.auth.repository.RefreshTokenRepository;
 import com.mealfit.domain.auth.exception.RefreshTokenReuseException;
 
@@ -20,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,17 @@ public class AuthService {
 
     private static final int BCRYPT_MAX_BYTES = 72;
 
+    // [이메일인증] 인증 토큰 repository 및 메일 발송기
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final EmailSender emailSender;
+
+    // [이메일인증] 환경변수(FRONTEND_BASE_URL) 기반 프론트엔드 인증 링크 주소
+    @Value("${mealfit.auth.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
+    private static final long EMAIL_VERIFY_EXPIRE_MINUTES = 30L;
+    private static final long EMAIL_RESEND_COOLDOWN_SECONDS = 60L;
+
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -48,29 +63,28 @@ public class AuthService {
      * 회원가입 후 토큰을 발급해 바로 로그인된 상태로 만듭니다.
      * 이메일 인증은 현재 범위에 포함하지 않습니다.
      */
+    /** [이메일인증] 회원가입 시 미인증 상태로 저장하고 인증 메일을 발송합니다. (토큰 미발급) */
     @Transactional
-    public TokenResponse signup(SignupRequest request) {
+    public SignupResponse signup(SignupRequest request) {
         String email = normalizeEmail(request.email());
 
         if (userRepository.existsByEmail(email)) {
-            throw new BusinessException(
-                ErrorCode.AUTH_EMAIL_DUPLICATED
-            );
+            throw new BusinessException(ErrorCode.AUTH_EMAIL_DUPLICATED);
         }
 
         validatePasswordByteLength(request.password());
-
-        String passwordHash = passwordEncoder.encode(
-            request.password()
-        );
+        String passwordHash = passwordEncoder.encode(request.password());
 
         User user = saveUser(email, passwordHash);
+        profileRepository.save(Profile.create(user.getId(), request.nickname().trim()));
 
-        Profile profile = profileRepository.save(
-            Profile.create(user.getId(), request.nickname().trim())
+        // [이메일인증] 인증 토큰 생성 및 메일 발송
+        issueAndSendVerificationEmail(user);
+
+        return new SignupResponse(
+            user.getEmail(),
+            "회원가입이 완료되었습니다. 이메일의 인증 링크를 확인한 뒤 로그인해 주세요."
         );
-
-        return issueTokens(user, profile);
     }
 
     /**
@@ -100,6 +114,10 @@ public class AuthService {
             request.password(),
             user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
+        }
+        // [이메일인증] 비밀번호가 맞더라도 이메일 미인증 계정은 로그인 차단 (403)
+        if (!user.isEmailVerified()) {
+            throw new BusinessException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
         }
 
         // 회원가입 때 기본 프로필을 반드시 생성하므로,
@@ -294,5 +312,74 @@ public class AuthService {
                 profile.getNickname()
             )
         );
+    }
+    /** [이메일인증] 인증 메일 링크의 토큰을 검증해 회원을 인증 완료 상태로 전환합니다. */
+    @Transactional
+    public void confirmEmailVerification(String rawToken) {
+        String tokenHash = refreshTokenProvider.hashToken(rawToken);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 로그인·재발급·재발송·탈퇴와 동일하게 항상 회원 → 토큰 순서로 잠급니다.
+        Long userId = emailVerificationTokenRepository
+            .findUserIdByTokenHash(tokenHash)
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_VERIFICATION_TOKEN));
+
+        User user = userRepository.findByIdForUpdate(userId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_VERIFICATION_TOKEN));
+
+        if (user.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.AUTH_INVALID_VERIFICATION_TOKEN);
+        }
+
+        EmailVerificationToken token = emailVerificationTokenRepository
+            .findByTokenHashForUpdate(tokenHash)
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_VERIFICATION_TOKEN));
+
+        if (token.isUsed() || token.isExpired(now)) {
+            throw new BusinessException(ErrorCode.AUTH_INVALID_VERIFICATION_TOKEN);
+        }
+
+        user.markEmailVerified();
+        token.markUsed(now);
+    }
+
+    /** [이메일인증] 인증 메일을 재발송합니다. (계정 유추 방지를 위해 미가입/기인증 계정은 조용히 반환) */
+    @Transactional
+    public void resendVerificationEmail(String rawEmail) {
+        String email = normalizeEmail(rawEmail);
+        User user = userRepository.findByEmailForUpdate(email).orElse(null);
+
+        if (user == null || user.getDeletedAt() != null || user.isEmailVerified()) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        emailVerificationTokenRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId())
+            .ifPresent(lastToken -> {
+                if (lastToken.getCreatedAt().plusSeconds(EMAIL_RESEND_COOLDOWN_SECONDS).isAfter(now)) {
+                    throw new BusinessException(ErrorCode.AUTH_VERIFICATION_COOLDOWN);
+                }
+            });
+
+        // [이메일인증] 기존 미사용 토큰은 모두 무효화하고 최신 링크만 유효하게 유지
+        emailVerificationTokenRepository.invalidateUnusedByUserId(user.getId(), now);
+        issueAndSendVerificationEmail(user);
+    }
+
+    /** [이메일인증] 1회용 토큰 해시 저장 후 인증 URL을 발송합니다. */
+    private void issueAndSendVerificationEmail(User user) {
+        String rawToken = refreshTokenProvider.generateToken();
+        String tokenHash = refreshTokenProvider.hashToken(rawToken);
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(EMAIL_VERIFY_EXPIRE_MINUTES);
+
+        emailVerificationTokenRepository.save(
+            EmailVerificationToken.create(user.getId(), tokenHash, expiresAt)
+        );
+
+        String baseUrl = (frontendBaseUrl == null || frontendBaseUrl.isBlank())
+            ? "http://localhost:5173"
+            : frontendBaseUrl.trim().replaceAll("/+$", "");
+        String verifyUrl = baseUrl + "/verify-email?token=" + rawToken;
+        emailSender.sendVerificationEmail(user.getEmail(), verifyUrl);
     }
 }

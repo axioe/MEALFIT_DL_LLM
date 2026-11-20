@@ -26,6 +26,25 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # 실제 PostgreSQL(+pgvector)에서 Flyway·엔티티 검증 (PostgresSchemaIntegrationTest). 나머지 테스트는 H2(PostgreSQL 모드)
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: mealfit
+          POSTGRES_USER: mealfit
+          POSTGRES_PASSWORD: mealfit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mealfit -d mealfit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PG_TEST_URL: jdbc:postgresql://localhost:5432/mealfit
+      PG_TEST_USERNAME: mealfit
+      PG_TEST_PASSWORD: mealfit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -38,6 +57,12 @@ jobs:
         run: chmod +x gradlew
       - name: Test
         run: ./gradlew test --no-daemon
+      # PG_TEST_URL이 빠지면 실제 PostgreSQL 검증이 조용히 건너뛰어지므로, 실행 여부를 결과 파일로 확인한다
+      - name: Check PostgreSQL tests ran
+        run: |
+          f=build/test-results/test/TEST-com.mealfit.integration.PostgresSchemaIntegrationTest.xml
+          grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*"' "$f"
+          grep -q 'skipped="0"' "$f" || { echo "::error::PostgresSchemaIntegrationTest가 건너뛰어졌습니다 (PG_TEST_URL 확인)"; exit 1; }
       - name: Upload test report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -100,6 +125,7 @@ jobs:
 
   # develop → main 단계에서만 도는 무거운 검사: 운영과 같은 구성으로 전체 컨테이너를 띄워 응답을 확인한다
   # 비밀값은 이 실행에서만 쓰는 임시 값이다 (Gemini 키 없음 → AI는 로컬 대체 식단으로 동작)
+  # 운영 DB는 RDS지만 CI는 docker-compose.ci.yml의 PostgreSQL 컨테이너로 같은 마이그레이션(V1–V8)을 검증한다
   integration:
     name: integration (docker compose)
     needs: [backend, frontend, ai-service]
@@ -110,13 +136,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create temporary .env
         run: |
+          mkdir -p "$RUNNER_TEMP/rds-ca"
           {
             echo "DB_PASSWORD=$(openssl rand -hex 16)"
-            echo "DB_ROOT_PASSWORD=$(openssl rand -hex 16)"
             echo "JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')"
+            echo "DB_URL=jdbc:postgresql://postgres:5432/mealfit"
+            echo "RDS_CA_DIR=$RUNNER_TEMP/rds-ca"
           } > .env
+      # 운영은 RDS라 DB 컨테이너가 없다. CI는 docker-compose.ci.yml로 PostgreSQL(+pgvector) 컨테이너를 붙인다
       - name: Build and start all services
-        run: docker compose -f docker-compose.prod.yml up -d --build
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --build
       # nginx(화면) 200, Spring(API)은 로그인 필요 4xx 가 오면 정상 (죽어 있으면 nginx가 502)
       - name: Smoke test
         run: |
@@ -133,10 +162,10 @@ jobs:
           exit 1
       - name: Container logs
         if: failure()
-        run: docker compose -f docker-compose.prod.yml logs --no-color --tail 200
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs --no-color --tail 200
       - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.prod.yml down -v
+        run: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml down -v
 
   # [배포 중단 2026-11-13] 저장소 변수 DEPLOY_ENABLED 가 'true' 일 때만 실행한다 (기본: 건너뜀).
   # 다시 배포하려면 Settings → Secrets and variables → Actions → Variables 에 DEPLOY_ENABLED=true 를 추가하고
@@ -176,11 +205,14 @@ jobs:
         run: |
           ssh -i ~/.ssh/ec2.pem ubuntu@"$EC2_HOST" '
             set -e
-            cd ~/MealFit
+            # 심화 저장소는 ~/MEALFIT_DL_LLM 에 둔다 (~/MealFit 은 1차 저장소). 없으면 공개 저장소에서 받는다
+            [ -d ~/MEALFIT_DL_LLM ] || git clone -q https://github.com/axioe/MEALFIT_DL_LLM.git ~/MEALFIT_DL_LLM
+            cd ~/MEALFIT_DL_LLM
+            [ -f .env ] || { echo "::error::서버 ~/MEALFIT_DL_LLM/.env 가 없습니다 (docs/rds-setup.md 3장)"; exit 1; }
             git fetch -q origin main
             git reset -q --hard origin/main
             git log --oneline -1
-            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
             docker image prune -f > /dev/null
           '
 

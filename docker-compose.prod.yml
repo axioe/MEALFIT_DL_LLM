@@ -1,51 +1,38 @@
 # 운영(EC2) 배포용. 로컬 개발은 docker-compose.yml(DB만)을 쓴다.
-# 실행: cp .env.prod.example .env (값 채우기) → docker compose -f docker-compose.prod.yml up -d --build
+# 실행: cp .env.prod.example .env (값 채우기) → docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 # 외부에 열리는 포트는 80(frontend)뿐이다. backend(8080)·ai-service(8000)는 내부 네트워크에서만 통신한다.
+# DB는 Amazon RDS for PostgreSQL 16(+pgvector)이다. 이 파일에는 DB 컨테이너가 없다 (2026-11 RDS 전환, 데이터 이관 없이 새로 시작)
+# CI 통합 검사는 RDS 대신 docker-compose.ci.yml로 PostgreSQL 컨테이너를 붙여 같은 구성을 띄운다
 services:
-  mariadb:
-    image: mariadb:11.4
-    container_name: mealfit-mariadb
-    restart: always
-    environment:
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD를 .env에 설정하세요}
-      MARIADB_ROOT_HOST: localhost # root는 컨테이너 안에서만
-      MARIADB_DATABASE: ${DB_NAME:-mealfit}
-      MARIADB_USER: ${DB_USERNAME:-mealfit}
-      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에 설정하세요}
-      TZ: Asia/Seoul
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    # 기본은 서버 내부(127.0.0.1)에서만. DBeaver 직접 접속이 필요하면 .env에 DB_BIND=0.0.0.0
-    # (그때는 반드시 EC2 보안 그룹에서 3306을 팀원 IP만 허용)
-    ports:
-      - "${DB_BIND:-127.0.0.1}:3306:3306"
-    volumes:
-      - mealfit-db:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   backend:
     build: ./backend
     container_name: mealfit-backend
     restart: always
-    depends_on:
-      mariadb:
-        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_HOST: mariadb
-      DB_PORT: 3306
-      DB_NAME: ${DB_NAME:-mealfit}
+      # RDS 주소 전체. TLS 인증서 검증(sslmode=verify-full)을 켠다. 형식은 .env.prod.example 참고
+      DB_URL: ${DB_URL:?DB_URL(RDS 접속 주소)을 .env에 설정하세요}
       DB_USERNAME: ${DB_USERNAME:-mealfit}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에 설정하세요}
       # 로그인 토큰 서명 키(Base64, 디코딩 후 32바이트 이상). 없으면 서버가 뜨지 않는다
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET를 .env에 설정하세요 (openssl rand -base64 48)}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
+      # 이메일 인증 및 쿠키·출처 보안 설정 (실제 SMTP 비밀번호는 서버 .env에만 둔다)
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MealFit}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:-http://localhost}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
       TZ: Asia/Seoul
+    # RDS 인증서 번들(global-bundle.pem)이 있는 서버 폴더를 읽기 전용으로 붙인다
+    # 서버에서 한 번: sudo mkdir -p /etc/mealfit && sudo curl -o /etc/mealfit/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+    volumes:
+      - ${RDS_CA_DIR:-/etc/mealfit}:/etc/mealfit:ro
     expose:
       - "8080"
 
@@ -72,6 +59,3 @@ services:
       TZ: Asia/Seoul
     expose:
       - "8000"
-
-volumes:
-  mealfit-db:

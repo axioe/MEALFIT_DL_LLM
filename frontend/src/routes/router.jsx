@@ -6,6 +6,8 @@ export const router = createBrowserRouter([
     { children: [
             { path: '/login', lazy: page(() => import('@/pages/LoginPage'), 'LoginPage') },
             { path: '/signup', lazy: page(() => import('@/pages/SignupPage'), 'SignupPage') },
+            // [이메일인증] 메일 링크 검증용 공개 라우트
+            { path: '/verify-email', lazy: page(() => import('@/pages/VerifyEmailPage'), 'VerifyEmailPage') },
         ] },
     // 공개 로그인 화면을 제외한 모든 업무 화면은 서버 인증 후 표시합니다.
     { element: <RequireAuth />, children: [

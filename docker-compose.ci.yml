@@ -1,0 +1,23 @@
+# CI 통합 검사 전용. 운영은 RDS를 쓰지만 CI에는 RDS가 없으므로 PostgreSQL(+pgvector) 컨테이너를 붙인다.
+# 실행: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --build
+# .env에 DB_URL=jdbc:postgresql://postgres:5432/mealfit, DB_PASSWORD, RDS_CA_DIR(빈 임시 폴더)을 넣는다 (ci.yml의 임시 .env)
+# 운영 서버에서는 이 파일을 쓰지 않는다.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mealfit-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mealfit}
+      POSTGRES_USER: ${DB_USERNAME:-mealfit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에 설정하세요}
+      TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-mealfit} -d ${DB_NAME:-mealfit}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    depends_on:
+      postgres:
+        condition: service_healthy

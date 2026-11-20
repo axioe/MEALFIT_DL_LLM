@@ -1,15 +1,23 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:mealfit;MODE=MariaDB;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:mealfit;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
     password:
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: validate
+  flyway:
+    # 운영 마이그레이션 + DB별 마이그레이션(H2면 없음, 실제 PostgreSQL이면 pgvector) + 테스트 전용 보정(db/testdata, 고정 ID 충돌 방지)
+    locations: classpath:db/migration/postgresql,classpath:db/vendor/{vendor},classpath:db/testdata
 
 # 테스트 전용 공개 키입니다. 운영·로컬 JWT_SECRET과 무관하게 CI를 실행합니다.
 jwt:
   secret: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
   access-token-ttl: 30m
   refresh-token-ttl: 14d
+
+# 로컬 .env에 MAIL_PROVIDER=smtp가 설정되어 있어도 자동 테스트는 항상 log 발송기를 사용합니다.
+mealfit:
+  auth:
+    mail-provider: log
