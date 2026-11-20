@@ -99,7 +99,25 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 
 - **`JWT_SECRET`은 필수다.** `application.yml`에 기본값이 없어서 없으면 Spring이 뜨지 않는다. `.env`의 `# JWT_SECRET=` 주석을 풀고 `openssl rand -base64 48`로 만든 값을 넣는다. Spring은 루트 `.env`를 읽는다.
 - 5432 포트를 이미 쓰고 있으면(로컬 PostgreSQL 등) `.env`에서 `DB_PORT=5433`으로 바꾼다.
-- Docker 없이 로컬 PostgreSQL을 쓰면 `.env`의 `DB_USERNAME`·`DB_PASSWORD`·`DB_NAME`과 같은 계정·DB를 먼저 만든다.
+- **MariaDB 시절 `.env`를 그대로 쓰면 접속이 안 된다.** `DB_PORT=3306` 등이 남아 있으면 `.env.example`을 다시 복사하고 `JWT_SECRET`만 옮긴다 (2026-11 PostgreSQL 전환).
+- Docker Desktop은 BIOS 가상화(Intel VT-x/AMD-V)가 켜져 있어야 한다. 끌 수 없는 PC는 아래 **Docker 없이 실행**을 따른다.
+
+**Docker 없이 실행 (Windows에 PostgreSQL 16 직접 설치)**
+
+1. [PostgreSQL 16 Windows 설치 파일](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)로 설치한다 (포트 5432, Stack Builder는 건너뛰어도 된다).
+2. pgAdmin 또는 DBeaver에서 관리 계정(`postgres`)으로 접속해 앱 계정과 DB를 만든다. 값은 `.env`와 같게 맞춘다.
+   ```sql
+   CREATE ROLE mealfit LOGIN PASSWORD 'mealfit';
+   CREATE DATABASE mealfit OWNER mealfit;
+   ```
+3. Windows용 PostgreSQL에는 pgvector가 없어서 V8(`recipe_embeddings`, 레시피 검색용)이 실패한다. 로컬에서는 `.env`에 아래 한 줄을 넣어 V1–V7만 적용한다. 화면 흐름(회원·냉장고·식단·장보기·조리)은 모두 동작한다.
+   ```
+   spring.flyway.locations=classpath:db/migration/postgresql
+   ```
+   벡터 검색까지 확인하려면 Docker의 `pgvector/pgvector:pg16`을 쓴다. 나중에 pgvector를 쓰는 DB로 바꾸면 이 줄을 지우면 V8이 이어서 적용된다.
+4. 이후는 위와 같이 `backend`·`frontend`를 실행한다.
+
+**현재 화면에서 예시 데이터인 부분:** 대시보드의 식단·운동·체중·AI 코칭 영역과 섭취 기록(먹었어요/건너뛰었어요)은 아직 API가 없어 예시 데이터다 (`frontend/src/api/dashboard.js`의 `MOCK`). 냉장고·식단 추천·확정·장보기·조리·취소는 실제 DB로 동작한다.
 - 테이블은 Spring 실행 시 Flyway가 자동으로 만든다. 예전 스키마로 실행한 적이 있어 Flyway 오류가 나면 `docker compose down -v` 후 다시 띄운다.
 - **Swagger:** http://localhost:8080/swagger-ui.html (로그인 응답의 `accessToken`을 Authorize에 넣는다)
 - 모든 API는 로그인이 필요하다(회원가입·로그인·재발급·로그아웃 제외). 사용자는 JWT의 회원 ID로만 식별한다.
