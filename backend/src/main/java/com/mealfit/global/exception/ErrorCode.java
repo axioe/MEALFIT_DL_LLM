@@ -102,6 +102,16 @@ public enum ErrorCode {
     COOKING_DUPLICATE_REQUEST(HttpStatus.CONFLICT, "COOKING_009",
             "같은 조리 요청을 이미 처리하고 있습니다. 조리 기록을 확인해 주세요."),
 
+    // 운동 루틴 (WORKOUT_001–005: 루틴 생성·조회, WORKOUT_006~: 조정·기록용으로 비워 둠)
+    WORKOUT_CONDITIONS_MISSING(HttpStatus.UNPROCESSABLE_ENTITY, "WORKOUT_001",
+            "운동 조건이 없습니다. 프로필에서 운동 조건을 먼저 입력해 주세요."),
+    WORKOUT_INVALID_CONDITION(HttpStatus.BAD_REQUEST, "WORKOUT_002",
+            "허용하지 않는 운동 조건입니다."),
+    WORKOUT_ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "WORKOUT_003", "운동 루틴을 찾을 수 없습니다."),
+    WORKOUT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "WORKOUT_004", "운동 세션을 찾을 수 없습니다."),
+    WORKOUT_CONCURRENT_REQUEST(HttpStatus.CONFLICT, "WORKOUT_005",
+            "루틴을 동시에 여러 번 요청했습니다. 잠시 뒤 다시 시도해 주세요."),
+
     // AI 서비스
     AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI_001", "AI 서비스에 연결할 수 없습니다.");
 
