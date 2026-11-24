@@ -142,7 +142,7 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 | docs/ | 모델 카드, 데이터 설명, 실험 결과 요약 |
 
 - 위 표에 없는 최상위 폴더(새 서비스, 새 언어 등)를 만들어야 하면 먼저 사용자(PL)에게 확인한다.
-- 새 Python 패키지는 requirements.txt에 버전을 고정해서 추가한다(torch==x.y.z). 서비스 추론용 DL 패키지는 ai-service/requirements-vision.txt, 데이터 전처리는 ai-service/ml/requirements.txt, 학습은 ai-service/ml/requirements-train.txt에 나눠 둔다(전처리와 학습 파일은 같은 환경에 함께 설치하지 않는다).
+- 새 Python 패키지는 requirements.txt에 버전을 고정해서 추가한다(torch==x.y.z). 서비스 추론용 DL 패키지는 ai-service/requirements-vision.txt, 운영 이미지에 넣는 자세 판별용(onnxruntime)은 ai-service/requirements-pose.txt, 데이터 전처리는 ai-service/ml/requirements.txt, 학습은 ai-service/ml/requirements-train.txt에 나눠 둔다(전처리와 학습 파일은 같은 환경에 함께 설치하지 않는다).
 
 ## 4. DL · LLM 작업 규칙
 
