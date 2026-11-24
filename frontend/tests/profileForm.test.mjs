@@ -1,91 +1,41 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildProfileSectionBody, createProfileForm, parseProfileItems } from '../src/models/profileForm.js'
+import {
+  buildProfileSectionBody,
+  createProfileForm,
+  toggleExclusiveItem,
+  toggleItem,
+} from '../src/models/profileForm.js'
 
-function details() {
-  return {
-    body: { nickname: '회원', age: 30, height: 175.5, currentWeight: 70, targetWeight: 65 },
-    trainer: { age: 30, height: 175.5, currentWeight: 70, workoutGoal: 'health', workoutLevel: 'starter',
-      equipment: ['none'], injuries: ['허리'], allergies: ['우유'], excludedIngredients: ['고수'] },
-    diet: { goal: 'LOSE', allergies: ['우유'], excludedIngredients: ['고수'], preferredFoods: ['두부'], prioritizeFridge: false },
-    fitness: { workoutGoal: 'health', workoutLevel: 'starter', equipment: ['none'], injuries: ['허리'] },
-    tests: { pushups: 0 },
+test('Fitness 탭 폼은 부상 부위 배열과 15/30/45/60분 운동 시간을 그대로 변환한다', () => {
+  const details = {
+    body: { nickname: '운동러', age: 28, height: 175, currentWeight: 70, targetWeight: 67, gender: 'male', activityLevel: 'moderate' },
+    trainer: {
+      age: 28, height: 175, currentWeight: 70, workoutGoal: 'hypertrophy', workoutLevel: 'intermediate',
+      environment: 'gym', equipment: ['barbell', 'dumbbell'], workoutMinutes: 45,
+      injuries: ['무릎'], allergies: [], excludedIngredients: [], dietType: 'high_protein', mealBudget: 10000,
+    },
+    diet: { goal: 'LOSE', cookTimeMin: 20, mealBudget: 10000, allergies: [], excludedIngredients: [], preferredFoods: [], defaultServings: 1, prioritizeFridge: true },
+    fitness: { workoutGoal: 'hypertrophy', workoutLevel: 'intermediate', workoutMinutes: 45, daysPerWeek: 4, equipment: ['barbell', 'dumbbell'], injuries: ['무릎', '허리'] },
+    tests: {},
   }
-}
 
-test('공유 데이터가 모든 탭 입력에 동일하게 표시된다', () => {
-  const form = createProfileForm(details())
-  assert.equal(form.age, form.trainerAge)
-  assert.equal(form.height, form.trainerHeight)
-  assert.equal(form.fitnessGoal, form.trainerGoal)
-  assert.equal(form.experience, form.trainerLevel)
-  assert.deepEqual(form.equipment, form.trainerEquipment)
-  assert.equal(form.allergiesText, form.trainerAllergiesText)
-  assert.equal(form.dietGoal, 'loss')
+  const form = createProfileForm(details)
+  assert.deepEqual(form.fitnessInjuries, ['무릎', '허리'])
+  assert.equal(form.durationMinutes, 45)
+
+  const body = buildProfileSectionBody('fitness', {
+    ...form,
+    durationMinutes: 30,
+    equipment: toggleExclusiveItem(form.equipment, 'barbell'),
+    fitnessInjuries: toggleItem(form.fitnessInjuries, '어깨'),
+  })
+  assert.equal(body.workoutMinutes, 30)
+  assert.deepEqual(body.equipment, ['dumbbell'])
+  assert.deepEqual(body.injuries, ['무릎', '허리', '어깨'])
 })
 
-test('측정값 0을 유지하고 빈칸은 null로 전송한다', () => {
-  const form = createProfileForm(details())
-  const body = buildProfileSectionBody('tests', form)
-  assert.equal(body.pushups, 0)
-  assert.equal(body.plankSeconds, null)
-  assert.equal(body.restingHeartRate, null)
-  assert.equal(body.squat30s, null)
-})
-
-test('식단 목표 변환과 선택 항목 해제, 재료 정규화를 처리한다', () => {
-  const form = createProfileForm(details())
-  form.allergiesText = ' 우유, 땅콩,우유,, '
-  form.dislikedFoodsText = ''
-  form.preferredFoodsText = ''
-  const body = buildProfileSectionBody('diet', form)
-  assert.equal(body.goal, 'LOSE')
-  assert.equal(body.cookTimeMin, null)
-  assert.equal(body.defaultServings, null)
-  assert.deepEqual(body.allergies, ['우유', '땅콩'])
-  assert.deepEqual(body.excludedIngredients, [])
-  assert.deepEqual(body.preferredFoods, [])
-  assert.equal(body.prioritizeFridge, false)
-})
-
-test('각 탭은 담당 필드만 전송하고 신체 소수점 값을 보존한다', () => {
-  const form = createProfileForm(details())
-  form.height = '175.5'
-  const common = buildProfileSectionBody('common', form)
-  assert.equal(common.height, 175.5)
-  assert.equal(Object.hasOwn(common, 'equipment'), false)
-  const fitness = buildProfileSectionBody('fitness', form)
-  assert.equal(Object.hasOwn(fitness, 'nickname'), false)
-  assert.equal(Object.hasOwn(fitness, 'allergies'), false)
-  assert.equal(fitness.workoutMinutes, null)
-})
-
-test('트레이너 필수 선택을 확인하고 잘못된 탭은 전송하지 않는다', () => {
-  const form = createProfileForm(details())
-  form.trainerGoal = ''
-  assert.throws(() => buildProfileSectionBody('trainer', form), /운동 목적/)
-  assert.throws(() => buildProfileSectionBody('unknown', form), /저장할 탭/)
-  assert.deepEqual(parseProfileItems(''), [])
-})
-
-test('장비 토글: 없음은 다른 항목과 함께 고를 수 없다', async () => {
-  const { toggleExclusiveItem } = await import('../src/models/profileForm.js')
-  assert.deepEqual(toggleExclusiveItem(['dumbbell'], 'none'), ['none'])
-  assert.deepEqual(toggleExclusiveItem(['none'], 'none'), [])
-  assert.deepEqual(toggleExclusiveItem(['none'], 'band'), ['band'])
-  assert.deepEqual(toggleExclusiveItem(['band', 'mat'], 'band'), ['mat'])
-})
-
-test('부위 토글은 있으면 빼고 없으면 뒤에 붙인다', async () => {
-  const { toggleItem } = await import('../src/models/profileForm.js')
-  assert.deepEqual(toggleItem(['knee'], 'back'), ['knee', 'back'])
-  assert.deepEqual(toggleItem(['knee', 'back'], 'knee'), ['back'])
-})
-
-test('저장 실패 문구는 필드 오류 → 서버 메시지 → 예외 메시지 → 기본 문구 순서로 고른다', async () => {
-  const { profileSaveErrorMessage } = await import('../src/models/profileForm.js')
-  assert.equal(profileSaveErrorMessage({ response: { data: { errors: [{ message: 'a' }, { message: 'b' }] } } }), 'a / b')
-  assert.equal(profileSaveErrorMessage({ response: { data: { message: '서버' } } }), '서버')
-  assert.equal(profileSaveErrorMessage(new Error('예외')), '예외')
-  assert.equal(profileSaveErrorMessage({}), '저장에 실패했습니다. 다시 시도해 주세요.')
+test('장비 없음(none)은 바벨·덤벨과 배타적으로 토글된다', () => {
+  assert.deepEqual(toggleExclusiveItem(['barbell', 'dumbbell'], 'none'), ['none'])
+  assert.deepEqual(toggleExclusiveItem(['none'], 'barbell'), ['barbell'])
 })

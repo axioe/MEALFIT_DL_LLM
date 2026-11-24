@@ -13,8 +13,18 @@ export const WORKOUT_LEVEL_LABELS = {
     advanced: '고급 (고강도 트레이닝 및 분할 루틴 가능)'
 };
 
+// [운동조건설정] D1 합의 기준: 회당 운동 시간 선택지 (15/30/45/60분)
+export const WORKOUT_MINUTES_OPTIONS = [
+    { value: 15, label: '15분', desc: '짧고 가볍게' },
+    { value: 30, label: '30분', desc: '표준 루틴' },
+    { value: 45, label: '45분', desc: '충분한 근력' },
+    { value: 60, label: '60분', desc: '집중 트레이닝' }
+];
+
 export const EQUIPMENT_OPTIONS = [
     { id: 'dumbbell', label: '덤벨(아령)' },
+    // [운동조건설정] QA-31 검수 대응: 바벨 보유 여부 선택 추가
+    { id: 'barbell', label: '바벨' },
     { id: 'band', label: '저항 밴드' },
     { id: 'mat', label: '요가 매트' },
     { id: 'pullup_bar', label: '풀업바 (문틀 철봉)' },
