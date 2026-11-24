@@ -2,27 +2,28 @@
 
 냉장고 재고를 기반으로 AI가 3끼 식단을 추천하고, 장보기 → 조리 → 섭취 기록까지 한 흐름으로 연결하는 식단 관리 웹 서비스.
 
-> **심화 단계 저장소 (MEALFIT_DL_LLM).** 1차 프로젝트 [axioe/MealFit](https://github.com/axioe/MealFit)의 main(2026-11-13, MVC 정리 완료)을 이력째 옮겨 와서 DL·LLM 심화 작업을 이어 간다. 배포는 하지 않는다(운영 서버 중지, CI의 deploy 잡은 `DEPLOY_ENABLED` 변수가 없으면 건너뜀).
+> **심화 단계 저장소 (MEALFIT_DL_LLM).** 1차 프로젝트 [axioe/MealFit](https://github.com/axioe/MealFit)의 main(2026-11-13, MVC 정리 완료)을 이력째 옮겨 와서 DL·LLM 심화 작업을 이어 간다. 운영 배포 중이며 `main` 머지가 곧 EC2 자동 배포다. AI 도구 작업 규칙은 [AGENTS.md](AGENTS.md)를 따른다.
 
 > 발표: 2026-10-23 (금) · 시연 범위: 회원가입·프로필 → 냉장고 재고 등록 → AI 3끼 추천과 서버 검증 → 확정과 장보기 목록 → 조리 차감·취소 복원 → 섭취 기록 → 대시보드
 
-## 현재 구현 상태 (2026-10-22, `main` 기준)
+## 현재 구현 상태 (2026-11-24, `develop` 기준)
 
-회원·마이페이지부터 **재고 → 식단 추천·확정 → 장보기 → 조리**까지 화면과 API가 연결되어 동작한다. 15분 요리 추천은 Flask + Gemini로 연결되었다(로컬 실행 기준). **하루 3끼 AI 추천, 섭취 기록, 대시보드 API, 운동·체중**이 남아 있다.
+회원·마이페이지부터 **재고 → 식단 추천·확정 → 장보기 → 조리**까지 화면과 API가 연결되어 동작한다. 15분 요리 추천은 Flask + Gemini로 연결되어 있고 자체 모델로 전환할 예정이다. **하루 3끼 AI 추천, 섭취 기록, 대시보드 API, 운동 화면 연결, 체중**이 남아 있다.
 
 | 기능 | 백엔드 API | 프론트 화면 | 남은 일 |
 |---|---|---|---|
-| 회원가입·로그인·로그아웃·탈퇴 (JWT) | ✅ | ✅ | |
+| 회원가입·이메일 인증·로그인·로그아웃·탈퇴 (JWT) | ✅ | ✅ | |
 | 마이페이지 (신체·식단·운동 설정·체력 측정) | ✅ | ✅ | |
 | 스마트 냉장고 (입고·조정·폐기·이력) | ✅ | ✅ | |
 | 식단 추천·재추천·확정·취소 | ✅ (로컬 대체 레시피) | ✅ | 하루 3끼 AI 연결 (`MealPlanAiClient` 구현) |
 | 레시피 상세·인분 환산 | ✅ | ✅ | |
 | 자동 장보기 (부족분·부분 구매·입고) | ✅ | ✅ | |
 | 조리 차감·사용량 수정·식단 없는 조리·취소 복원 | ✅ | ✅ | |
-| 15분 요리 AI 추천 (Spring → Flask → Gemini) | ✅ | ✅ | 운영 배포 (아래 [배포 미반영 항목](#배포-미반영-항목)) |
+| 15분 요리 AI 추천 (Spring → Flask → Gemini) | ✅ | ✅ | 자체 모델 전환 (운영은 `GEMINI_API_KEY`가 있을 때만 동작) |
 | 대시보드 | ❌ | ⚠️ 일부 예시 데이터 (`api/dashboard.js`의 `MOCK`) | `GET /dashboard` |
 | 섭취 기록 (먹음/건너뜀) | ❌ (테이블·엔티티만) | ⚠️ 예시 데이터 | `POST /intake-logs` |
-| 운동 루틴·캘린더·체중 (Phase 1) | ❌ | ⚠️ 화면만 | 발표 이후 |
+| 운동 루틴 (규칙 엔진) | ✅ 추천·현재 루틴 | ⚠️ 화면만 | 화면 연결, 완료 기록 |
+| 캘린더·체중 | ❌ | ⚠️ 화면만 | API |
 
 - 대시보드의 예시 데이터는 `frontend/src/api/dashboard.js`의 `MOCK` 값으로 영역별로 끈다. API가 완성되면 `false`로 바꾼다.
 - 하루 3끼 추천은 `MealPlanAiClient` 구현 빈이 없어 검증된 로컬 대체 레시피(`V2__seed_fallback_recipes.sql`)를 쓴다. 프로필의 알레르기·제외 재료는 `UserDietProfileProviderImpl`로 식단 확정과 15분 요리 추천 검증에 반영된다.
@@ -33,7 +34,7 @@
 |---|---|---|
 | AI 엔진 | OpenAI API | **Gemini API** (`google-genai` SDK) |
 | AI 서비스 | Python FastAPI | **Python Flask** (`ai-service/`) |
-| DB | MySQL 또는 PostgreSQL | **PostgreSQL 16 (+pgvector)**. 운영 목표는 Amazon RDS for PostgreSQL (2026-11 MariaDB에서 전환) |
+| DB | MySQL 또는 PostgreSQL | **PostgreSQL 16 (+pgvector)**. 운영은 Amazon RDS for PostgreSQL (2026-11 MariaDB에서 전환) |
 | 디자인 | Figma | 사용 안 함. AI Studio 프로토타입 화면을 기준으로 바로 구현 |
 | 프론트 언어 | React + TypeScript | **React + JavaScript** (`.js` / `.jsx`) |
 | Spring Boot | 3.x | 3.5.16 (Java 21) |
@@ -55,8 +56,8 @@ MealFit/
 │        ├─ model/                DB에 저장하지 않는 값 객체 (Quantity, CookingPlan, UserDietProfile …)
 │        ├─ dto/                  요청·응답 (View로 나가는 모양)
 │        └─ client/ config/ exception/   외부 AI 호출, 설정, 도메인 예외 (필요한 도메인만)
-│        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, ai
-├─ backend/src/main/resources/db/migration/postgresql/   V1 ~ V7 (아래 DB 스키마 참고)
+│        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, workout, ai
+├─ backend/src/main/resources/db/migration/postgresql/   V1–V7, V9–V11 (V8은 db/vendor/postgresql/)
 ├─ ai-service/                    Python Flask + Gemini
 │  ├─ app.py                      실행 진입점 (python app.py)
 │  ├─ mealfit_ai/
@@ -79,7 +80,8 @@ MealFit/
 │  │  ├─ routes/                  router.jsx (페이지별 지연 로딩), RequireAuth
 │  │  └─ lib/                     enums.js, labels.js, 날짜·기한·숫자 형식, queryClient
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
-├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약)
+├─ AGENTS.md                      AI 도구 작업 규칙
+├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약, rds-setup.md: RDS 준비)
 ├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
 ├─ docker-compose.prod.yml        운영(EC2) 구성 (DB는 RDS)
 ├─ docker-compose.ci.yml          CI 통합 검사용 (운영 구성 + PostgreSQL 컨테이너)
@@ -110,14 +112,16 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
    CREATE ROLE mealfit LOGIN PASSWORD 'mealfit';
    CREATE DATABASE mealfit OWNER mealfit;
    ```
-3. Windows용 PostgreSQL에는 pgvector가 없어서 V8(`recipe_embeddings`, 레시피 검색용)이 실패한다. 로컬에서는 `.env`에 아래 한 줄을 넣어 V1–V7만 적용한다. 화면 흐름(회원·냉장고·식단·장보기·조리)은 모두 동작한다.
+3. Windows용 PostgreSQL에는 pgvector가 없어서 V8(`recipe_embeddings`, 레시피 검색용)이 실패한다. 로컬에서는 `.env`에 아래 한 줄을 넣어 V8만 건너뛴다. 화면 흐름(회원·냉장고·식단·장보기·조리)은 모두 동작한다.
    ```
    spring.flyway.locations=classpath:db/migration/postgresql
    ```
-   벡터 검색까지 확인하려면 Docker의 `pgvector/pgvector:pg16`을 쓴다. 나중에 pgvector를 쓰는 DB로 바꾸면 이 줄을 지우면 V8이 이어서 적용된다.
+   벡터 검색까지 확인하려면 Docker의 `pgvector/pgvector:pg16`을 쓴다. **V8을 건너뛴 DB에서 이 줄만 지우면 안 된다.** 이미 V9 이후가 적용돼 있어 Flyway 검증 오류로 백엔드가 뜨지 않는다. pgvector가 있는 DB를 새로 만들어 연결하고 이 줄을 지운다.
 4. 이후는 위와 같이 `backend`·`frontend`를 실행한다.
 
 **현재 화면에서 예시 데이터인 부분:** 대시보드의 식단·운동·체중·AI 코칭 영역과 섭취 기록(먹었어요/건너뛰었어요)은 아직 API가 없어 예시 데이터다 (`frontend/src/api/dashboard.js`의 `MOCK`). 냉장고·식단 추천·확정·장보기·조리·취소는 실제 DB로 동작한다.
+- **회원가입 후 이메일 인증을 해야 로그인된다.** 기본(`MAIL_PROVIDER=log`)은 메일을 보내지 않고 인증 링크를 백엔드 콘솔에 출력한다. 실제 발송이 필요할 때만 `.env`에 SMTP 값을 넣는다.
+- **로컬 백엔드를 운영 DB(RDS)에 연결하지 않는다.** 실행만 해도 작업 중인 마이그레이션이 운영에 적용될 수 있다.
 - 테이블은 Spring 실행 시 Flyway가 자동으로 만든다. 예전 스키마로 실행한 적이 있어 Flyway 오류가 나면 `docker compose down -v` 후 다시 띄운다.
 - **Swagger:** http://localhost:8080/swagger-ui.html (로그인 응답의 `accessToken`을 Authorize에 넣는다)
 - 모든 API는 로그인이 필요하다(회원가입·로그인·재발급·로그아웃 제외). 사용자는 JWT의 회원 ID로만 식별한다.
@@ -136,9 +140,9 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 - Flask가 꺼져 있으면 15분 요리 추천은 `QUICK_AI_002`(503) 오류를 낸다. 하루 3끼 추천은 Flask와 관계없이 로컬 대체 레시피로 동작한다.
 
 **테스트**
-- 백엔드: `cd backend && ./gradlew test` (H2 메모리 DB)
-- 프론트: `cd frontend && npm run lint && npm run build`, 로직 테스트는 `node --test tests/*.test.mjs`
-- AI 서비스: `cd ai-service && .venv/Scripts/python -m unittest -v` (Gemini SDK를 mock해서 외부 호출 없음)
+- 백엔드: `cd backend && ./gradlew test` (H2 메모리 DB). CI는 `PG_TEST_URL`로 실제 PostgreSQL 검증도 하고, 그 테스트가 건너뛰어지면 실패한다
+- 프론트: `cd frontend && npm run lint && npm test && npm run build`
+- AI 서비스: `cd ai-service && .venv/Scripts/python -m pip install -r requirements-test.txt` 후 `.venv/Scripts/python -m unittest -v` (Gemini SDK를 mock해서 외부 호출 없음)
 
 ## 배포 (AWS EC2)
 
@@ -148,28 +152,19 @@ EC2 한 대에서 Docker Compose로 frontend(nginx) · backend(Spring) · ai-ser
 
 ```
 브라우저 ──80──▶ frontend(nginx) ──/api──▶ backend(:8080) ──TLS──▶ Amazon RDS PostgreSQL(:5432)
-                                                     └──────▶ ai-service(:8000, 운영 미배포)
+                                                     └──────▶ ai-service(:8000)
 ```
-
-### 배포 미반영 항목
-
-코드는 `main`에 있지만 운영 배포 구성에는 아직 빠져 있다.
-
-| 항목 | 현재 상태 | 필요한 작업 |
-|---|---|---|
-| `JWT_SECRET` | `docker-compose.prod.yml`의 backend 환경 변수에 없고 `.env.prod.example`에도 없음. 로그인 기능 머지(10/22) 이후 배포에서 백엔드가 뜨지 못함 | compose backend `environment`에 `JWT_SECRET: ${JWT_SECRET:?...}` 추가, 서버 `.env`와 `.env.prod.example`에 항목 추가 |
-| ai-service | Dockerfile 없음, `docker-compose.prod.yml`에서 주석 처리 | Dockerfile 작성, compose 주석 해제, 서버 `.env`에 `GEMINI_API_KEY` |
-| CI | ai-service 테스트를 실행하지 않음 | `ci.yml`에 Python 테스트 작업 추가 |
 
 ### 자동 배포 (GitHub Actions)
 
-> **현재 배포 중단 (2026-11-13)**: 발표 이후 운영 서버를 꺼 두었고, 자동 배포 단계는 저장소 변수 `DEPLOY_ENABLED=true`일 때만 실행된다. 지금은 `main` 머지 시 테스트·빌드만 돈다.
+> **운영 중 (2026-11-20 재개).** 저장소 변수 `DEPLOY_ENABLED=true`라서 **`main` 머지 = EC2 자동 배포**다. 변수를 끄면 테스트·빌드만 돈다.
 
-배포를 켜 두면 `main`에 push(PR 머지 포함)되고 CI가 통과한 뒤 EC2에 자동 배포된다. 반영까지 약 2~3분.
+`main`에 push(PR 머지 포함)되고 통합 검사까지 통과하면 EC2에 자동 배포된다. 전체 약 10분.
 
 ```
 main push ─▶ backend (test) ─┐
-          └▶ frontend (lint, build) ─┴▶ deploy (EC2): git pull → docker compose up --build → 화면·API 응답 확인
+          ├▶ frontend (lint, build) ─┤
+          └▶ ai-service (test) ──────┴▶ integration ─▶ deploy (EC2): git pull → docker compose up --build → 화면·API 응답 확인
 ```
 
 | 이벤트 | 테스트 | 배포 |
@@ -225,8 +220,9 @@ cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up 
 
 | 상태 | 영역 | Method | Endpoint | 설명 |
 |---|---|---|---|---|
-| ✅ | 인증 | POST | `/auth/signup`, `/auth/login` | 회원가입(자동 로그인), 로그인 |
-| ✅ | 인증 | POST | `/auth/refresh`, `/auth/logout` | 토큰 재발급(Refresh 1회용), 로그아웃 |
+| ✅ | 인증 | POST | `/auth/signup`, `/auth/login` | 회원가입(인증 메일 발송, 자동 로그인 없음), 로그인(이메일 인증 필요) |
+| ✅ | 인증 | POST | `/auth/email-verification/confirm`, `/auth/email-verification/resend` | 이메일 인증 완료, 인증 메일 재발송 |
+| ✅ | 인증 | POST | `/auth/refresh`, `/auth/logout` | 토큰 재발급(HttpOnly 쿠키, Refresh 1회용), 로그아웃. `X-Requested-With` 헤더 필요 |
 | ✅ | 회원 | GET / DELETE | `/me` | 내 계정, 회원 탈퇴(비밀번호 확인) |
 | ✅ | 마이페이지 | GET / PUT | `/me/profile` | 목표·알레르기·조리 시간·예산·제외 재료 |
 | ✅ | 마이페이지 | GET | `/me/profile/details` | 모든 탭 조회 |
@@ -245,6 +241,7 @@ cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up 
 | ✅ | 조리 | POST | `/cooking-events`, `/cooking-events/{id}/cancel` | 확정 식단 조리(재고 차감), 취소(원본 복원) |
 | ✅ | 조리 | POST | `/cooking/ingredients/preview`, `/cooking-events/ingredients` | 식단 없는 조리 미리보기·완료 |
 | ✅ | AI | POST | `/quick-recipes/recommend` | 본인 재고로 15분 요리 추천 (저장·차감 없음) |
+| ✅ | 운동 | POST / GET | `/workout-routines/recommend`, `/workout-routines/current` | 루틴 추천(규칙 엔진), 현재 루틴 |
 | ❌ | 대시보드 | GET | `/dashboard?date=` | 오늘의 식단, 기한 임박 재료, 부족분 |
 | ❌ | 섭취 | POST | `/intake-logs` | 먹음/건너뜀 기록 |
 | ✅ | (내부) ai-service | POST / GET | `/ai/quick-recipes`, `/health` | Flask → Gemini 15분 요리 추천, 상태 확인 |
@@ -254,7 +251,7 @@ cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up 
 
 ### 브랜치 · 커밋
 ```
-feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 재개 시) 배포
+feature/* ──PR──▶ develop(벽) ──PR──▶ main ──자동──▶ 운영 배포
 ```
 - `main`: 검증이 끝난 코드만 있는 브랜치. **develop 또는 `hotfix/*`에서 온 PR만** 받는다 (CI의 `source branch` 검사가 막는다)
 - `develop`: 팀원 작업을 모아 함께 돌려 보는 벽 브랜치. 저장소 기본 브랜치이며 모든 작업 PR은 여기로 보낸다
@@ -270,7 +267,7 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 �
 | `develop` → `main` | 위 검사 + `source branch` + `integration (docker compose)` (운영과 같은 구성으로 전체 컨테이너를 띄워 응답 확인) |
 
 - 급한 수정: `main`에서 `hotfix/*`를 만들어 main으로 PR → 머지 후 `main`을 `develop`에도 합친다
-- `deploy (EC2)`는 배포 중단 중이라 건너뜀으로 표시된다
+- `deploy (EC2)`는 `main` push에서만 실행된다. PR과 `develop`에서는 건너뜀이 정상이다
 
 ### DB 스키마 (Flyway)
 - 스키마는 `backend/src/main/resources/db/migration/postgresql`의 SQL로만 바꾼다 (`ddl-auto: validate`)
@@ -278,8 +275,8 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 �
 - pgvector처럼 실제 PostgreSQL에서만 되는 마이그레이션은 `db/vendor/postgresql/`에 두고 번호는 이어서 매긴다 (V8 = `recipe_embeddings`, 레시피 검색). RDS에서는 관리 계정으로 `CREATE EXTENSION vector;`를 먼저 실행한다
 - 테스트는 H2(PostgreSQL 모드)로 돌고, CI의 backend 작업은 실제 PostgreSQL(pgvector/pgvector:pg16)에서 마이그레이션·엔티티 검증(`PostgresSchemaIntegrationTest`)을 함께 돈다
 - PostgreSQL IDENTITY는 ID를 직접 넣어도 다음 값이 올라가지 않는다. 데이터 이관 뒤에는 시퀀스를 `setval`로 맞춘다
-- 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각). 애플리케이션 테이블 18개
-- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 `db/migration/postgresql/`에 다음 번호의 새 파일 `V8__설명.sql`
+- 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각) · V8(레시피 임베딩, vendor) · V9(이메일 인증) · V10(운동 사전) · V11(운동 루틴). 애플리케이션 테이블 24개
+- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 `db/migration/postgresql/`에 다음 번호의 새 파일 `V12__설명.sql` (2026-11-24 기준, 최신 develop에서 다시 확인)
 - 같은 날 여러 명이 마이그레이션을 만들면 번호가 겹칠 수 있으니 단톡방에 번호를 먼저 말하고 쓴다
 - 수량은 `NUMERIC(12,3)` + `BigDecimal`, 시각은 `TIMESTAMP(6)` + `LocalDateTime`, enum은 `VARCHAR(20)` + `@Enumerated(EnumType.STRING)`
 
@@ -297,7 +294,7 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──(배포 �
 
 ### 프론트엔드
 - **JavaScript만 사용** (TypeScript 문법 금지). 화면(JSX가 있는 파일)은 `.jsx`, 그 외는 `.js`
-- API 호출은 `src/api/client.js`의 `api` 인스턴스만 사용한다. 토큰 첨부와 401 시 자동 재발급이 여기에 들어 있다
+- API 호출은 `src/api/client.js`의 `api` 인스턴스만 사용한다. 토큰 첨부와 401 시 자동 재발급이 여기에 들어 있다. Access JWT는 메모리에만 두고 localStorage에 저장하지 않는다
 - 로그인 세션은 `src/stores/authStore.js`(Zustand)에서만 다룬다. 화면에서 토큰을 직접 읽거나 저장하지 않는다
 - 계층 나누기: 서버 요청 함수는 `src/api/{domain}.js`, `useQuery`/`useMutation` 훅은 `src/hooks/use{Domain}.js`, 화면에서 쓰는 계산·검증은 `src/models/`, 화면은 `pages/`·`components/`
 - `src/models/`는 Node 테스트가 직접 불러오므로 `@/` 대신 상대 경로(`../lib/enums.js`)로 import한다
