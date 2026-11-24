@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { profileApi, profileKeys } from '@/api/profile'
 import { queryKeys } from '@/api/queryKeys'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,18 +26,19 @@ export function useUpdateMyProfile() {
   const queryClient = useQueryClient()
   const userId = useAuthStore((state) => state.user?.id)
 
-  return useMutation({
+  return useSessionMutation({
     mutationFn: profileApi.updateProfile,
     retry: false,
 
     onSuccess: async (profile) => {
+      const version = useAuthStore.getState().sessionVersion
       const currentUser = useAuthStore.getState().user
 
       // 요청 중 계정이 변경됐다면 이전 회원의 응답을 반영하지 않습니다.
       if (!currentUser || currentUser.id !== userId) return
 
       await queryClient.cancelQueries({ queryKey: profileKeys.detail(userId) })
-      if (useAuthStore.getState().user?.id !== userId) return
+      if (useAuthStore.getState().user?.id !== userId || useAuthStore.getState().sessionVersion !== version) return
 
       // 저장 결과를 프로필 조회 캐시에 바로 반영합니다.
       queryClient.setQueryData(profileKeys.detail(userId), profile)
@@ -79,15 +81,16 @@ export function useProfileDetails() {
 export function useUpdateProfileSection() {
   const queryClient = useQueryClient()
   const userId = useAuthStore((state) => state.user?.id)
-  return useMutation({
+  return useSessionMutation({
     mutationFn: profileApi.updateSection,
     retry: false,
     onSuccess: async (details) => {
+      const version = useAuthStore.getState().sessionVersion
       const currentUser = useAuthStore.getState().user
       if (!currentUser || currentUser.id !== userId) return
       // 조회 중이던 오래된 응답이 저장 결과를 덮지 않게 취소합니다.
       await queryClient.cancelQueries({ queryKey: profileKeys.settings(userId) })
-      if (useAuthStore.getState().user?.id !== userId) return
+      if (useAuthStore.getState().user?.id !== userId || useAuthStore.getState().sessionVersion !== version) return
       queryClient.setQueryData(profileKeys.settings(userId), details)
       useAuthStore.setState({ user: { ...currentUser, nickname: details.body.nickname } })
       await Promise.all([

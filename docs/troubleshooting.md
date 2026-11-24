@@ -21,6 +21,8 @@
 |---|---|---|---|
 | TS-20261124-01 | 로컬 PostgreSQL에서 V8 마이그레이션 실패 | DB | 해결 |
 | TS-20261124-02 | 오전 9시 전에 날짜가 하루 밀림 | frontend | 해결 |
+| TS-20261124-03 | 세션 처리 작업과 최신 develop의 인증 코드 충돌 | frontend / Git | 해결 |
+| TS-20261124-04 | 로그인 후 원래 요청한 화면으로 돌아가지 않음 | frontend | 해결 |
 
 ## 양식 (복사해서 "기록" 맨 아래에 붙여 넣기)
 
@@ -72,3 +74,33 @@
 | 해결 | lib/date.js의 toLocalDateString()·today()를 쓴다. |
 | 재발 방지 | 가이드라인 3장에 규칙으로 추가 |
 | 관련 | frontend/src/lib/date.js |
+
+### TS-20261124-03 세션 처리 작업과 최신 develop의 인증 코드 충돌
+
+| 항목 | 내용 |
+|---|---|
+| 작성일 / 작성자 | 2026-11-24 / Codex (MEALFIT-49 작업 보조) |
+| 영역 | frontend / Git |
+| 상태 | 해결 |
+| 증상 | 로컬 세션 처리 변경을 최신 develop에 적용할 때 frontend/src/api/auth.js에서 내용 충돌이 발생했다. useAuth.js는 자동 병합됐지만 소셜 계정 해제 훅이 사용하는 useQueryClient import가 빠져 있었다. |
+| 발생 상황 | 로컬 develop에 미커밋 작업 27개가 있고, 원격 develop에 팀원 커밋 14개가 추가된 상태에서 별도 fix 브랜치로 작업을 옮겼다. 기존 상태에는 진행 중인 merge/rebase나 미해결 파일이 없었다. |
+| 원인 | 세션 처리 변경과 소셜 로그인 기능이 같은 인증 API 파일의 로그아웃 주변을 수정했다. 자동 병합은 useQueryClient의 새 사용처와 기존 import 제거 사이의 의존성을 반영하지 못했다. |
+| 시도한 방법 | 작업 파일 27개를 해시와 함께 별도 백업하고 전용 stash로 보관했다. develop을 fast-forward한 뒤 새 브랜치에서 stash를 적용해 충돌 위치를 확인했다. |
+| 해결 | 소셜 계정 조회·연동·해제 API와 훅을 유지하면서 로그인·로그아웃을 세션 처리 함수에 연결했다. useQueryClient import를 복구했다. npm ci, lint(오류 0개·기존 경고 3개), 테스트(222개 통과·실패 0개), build를 통과했다. |
+| 재발 방지 | 커밋 전 충돌 표시와 변경 파일 범위를 검사하고, npm ci · npm run lint · npm test · npm run build로 통합 결과를 검증한다. 세션 관련 회귀 테스트는 tests/session*.test.mjs에 유지한다. |
+| 관련 | MEALFIT-49 / frontend/src/api/auth.js / frontend/src/hooks/useAuth.js / fix/mealfit-49-session-guard-sync |
+
+### TS-20261124-04 로그인 후 원래 요청한 화면으로 돌아가지 않음
+
+| 항목 | 내용 |
+|---|---|
+| 작성일 / 작성자 | 2026-11-24 / Codex (MEALFIT-52 작업 보조) |
+| 영역 | frontend |
+| 상태 | 해결 |
+| 증상 | 로그인하지 않은 상태에서 장보기·레시피 상세 주소로 진입해 로그인하면 원래 화면 대신 대시보드로 이동한다. |
+| 발생 상황 | 보호 경로에서 /login으로 이동한 뒤 이메일 로그인하거나 소셜 로그인으로 전체 페이지를 왕복할 때 |
+| 원인 | RequireAuth는 원래 경로를 state.from에 저장하지만 LoginPage는 항상 /dashboard로 이동했다. 소셜 로그인은 서버도 /dashboard로 돌려보내므로 React Router state만으로 원래 경로를 전달할 수 없다. |
+| 시도한 방법 | 기존 보호 경로, 로그인 완료 처리, OAuth 성공·실패 처리와 메뉴 목적지를 확인했다. 서버 OAuth 코드는 변경하지 않았다. |
+| 해결 | 허용된 내부 업무 경로의 쿼리·앵커를 유지해 로그인 후 replace로 이동한다. OAuth 시작 시에는 주소만 탭 저장소에 15분간 보관하고 회원 확인 완료 후 1회 사용한다. 소셜 계정 연동의 마이페이지 이동은 유지한다. npm ci, lint(오류 0개·기존 경고 3개), 테스트(233개 통과·실패 0개), build를 통과했다. 실제 계정의 이메일·소셜 로그인 화면 검증은 별도로 필요하다. |
+| 재발 방지 | 외부 주소·인증 화면·존재하지 않는 경로 차단, 로그인 실패 시 이동 방지, OAuth 복귀·만료·연동 유지와 라우터 뒤로 가기를 회귀 테스트한다. |
+| 관련 | MEALFIT-52 / frontend/src/models/loginNavigation.js / frontend/src/hooks/loginNavigation.js / frontend/tests/loginNavigation.test.mjs |
