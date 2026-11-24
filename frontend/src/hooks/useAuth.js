@@ -99,3 +99,37 @@ export function useCurrentUser({ enabled }) {
     retry: false,
   })
 }
+
+/** [소셜로그인] 로그인한 회원의 소셜 연동 현황을 조회합니다. */
+export function useSocialAccounts() {
+  const userId = useAuthStore((state) => state.user?.id)
+  const accessToken = useAuthStore((state) => state.accessToken)
+  return useQuery({
+    queryKey: ['auth', 'socialAccounts', userId],
+    queryFn: authApi.getSocialAccounts,
+    enabled: Boolean(userId && accessToken),
+    staleTime: 30_000,
+    retry: false,
+  })
+}
+
+/** [소셜로그인] 마이페이지·최초 1회 팝업에서 OAuth2 연동 쿠키를 발급합니다. */
+export function usePrepareSocialLink() {
+  return useMutation({
+    mutationFn: authApi.prepareSocialLink,
+    retry: false,
+  })
+}
+
+/** [소셜로그인] 연동된 소셜 계정을 해제하고 연동 현황 캐시를 갱신합니다. */
+export function useUnlinkSocialAccount() {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((state) => state.user?.id)
+  return useMutation({
+    mutationFn: authApi.unlinkSocialAccount,
+    retry: false,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['auth', 'socialAccounts', userId] })
+    },
+  })
+}

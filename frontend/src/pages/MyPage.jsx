@@ -6,6 +6,7 @@ import { FitnessProfileForm } from "@/components/mypage/FitnessProfileForm";
 import { FitnessTestForm } from "@/components/mypage/FitnessTestForm";
 import { MyPageHeader } from "@/components/mypage/MyPageHeader";
 import { MyPageTabs } from "@/components/mypage/MyPageTabs";
+import { SocialAccountsCard } from "@/components/mypage/SocialAccountsCard";
 import { TrainerProfileForm } from "@/components/mypage/TrainerProfileForm";
 import { ProfileSettings } from "@/components/profile/ProfileSettings";
 import { WithdrawalSection } from "@/components/profile/WithdrawalSection";
@@ -56,6 +57,9 @@ function MyPageContent({ details, activeTab, setActiveTab }) {
       <fieldset disabled={isSaving} className="min-w-0">
         {TabForm && <TabForm form={form} updateField={updateField} onSubmit={handleSave} isSaving={isSaving} />}
       </fieldset>
+
+      {/* [소셜로그인] Google·Naver·Kakao 이메일 가입자 및 소셜 연동 회원에게만 표시됩니다. */}
+      <SocialAccountsCard disabled={isSaving || logout.isPending} />
 
       {/* Privacy Notice & Account Deletion */}
       <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200 shadow-xs max-w-2xl space-y-4">

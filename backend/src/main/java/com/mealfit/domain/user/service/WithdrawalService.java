@@ -2,6 +2,7 @@ package com.mealfit.domain.user.service;
 
 import com.mealfit.domain.auth.repository.EmailVerificationTokenRepository;
 import com.mealfit.domain.auth.repository.RefreshTokenRepository;
+import com.mealfit.domain.auth.repository.UserSocialAccountRepository;
 import com.mealfit.domain.user.dto.WithdrawRequest;
 import com.mealfit.domain.user.entity.User;
 import com.mealfit.domain.user.repository.UserRepository;
@@ -22,6 +23,8 @@ public class WithdrawalService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    // [소셜로그인] 탈퇴 시 소셜 계정 연동을 함께 해제해 동일 소셜 계정 재가입을 허용합니다.
+    private final UserSocialAccountRepository userSocialAccountRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -35,7 +38,9 @@ public class WithdrawalService {
 
         // 비밀번호 앞뒤 공백도 비밀번호의 일부이므로 trim하지 않습니다.
         // BCrypt가 처리할 수 없는 바이트 길이는 비교 전에 거절합니다.
-        if (request.password().getBytes(StandardCharsets.UTF_8).length > BCRYPT_MAX_BYTES
+        // [소셜로그인] 비밀번호가 없는 소셜 전용 계정도 null 안전하게 검사합니다.
+        if (!user.hasPassword()
+                || request.password().getBytes(StandardCharsets.UTF_8).length > BCRYPT_MAX_BYTES
                 || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.USER_PASSWORD_MISMATCH);
         }
@@ -44,5 +49,7 @@ public class WithdrawalService {
         user.withdraw();
         refreshTokenRepository.revokeAllByUserId(userId);
         emailVerificationTokenRepository.invalidateUnusedByUserId(userId, LocalDateTime.now());
+        // [소셜로그인] 탈퇴한 회원의 소셜 연동을 제거해 동일 소셜 계정으로 재가입할 수 있게 합니다.
+        userSocialAccountRepository.deleteAllByUserId(userId);
     }
 }

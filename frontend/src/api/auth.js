@@ -23,4 +23,16 @@ export const authApi = {
   // [HttpOnly쿠키] 서버가 HttpOnly 쿠키의 Refresh Token을 읽어 폐기 및 삭제합니다.
   logout: () =>
     api.post('/auth/logout'),
+
+  // [소셜로그인] 내 소셜 연동 현황 조회 (3개 도메인·소셜 연동 여부 포함)
+  getSocialAccounts: () =>
+    api.get('/me/social-accounts').then((response) => response.data),
+
+  // [소셜로그인] OAuth2 연동 시작 전 1회용 연동 쿠키 발급 요청
+  prepareSocialLink: (provider) =>
+    api.post('/auth/social/link-intent', { provider }),
+
+  // [소셜로그인] 연동된 특정 소셜 계정 해제
+  unlinkSocialAccount: (provider) =>
+    api.delete(`/me/social-accounts/${encodeURIComponent(provider)}`),
 }

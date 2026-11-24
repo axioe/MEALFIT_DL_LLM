@@ -56,6 +56,27 @@ public enum ErrorCode {
         HttpStatus.TOO_MANY_REQUESTS, "AUTH_008",
         "인증 메일은 60초마다 다시 요청할 수 있습니다."
     ),
+    // [소셜로그인] 소셜 로그인·계정 연결/해제 오류
+    AUTH_SOCIAL_EMAIL_ALREADY_REGISTERED(
+        HttpStatus.CONFLICT, "AUTH_009",
+        "이미 이메일로 가입된 계정입니다. 일반 로그인 후 마이페이지에서 소셜 계정을 연동해 주세요."
+    ),
+    AUTH_SOCIAL_ALREADY_LINKED_OTHER(
+        HttpStatus.CONFLICT, "AUTH_010",
+        "이미 다른 계정에 연동된 소셜 계정입니다."
+    ),
+    AUTH_SOCIAL_PROVIDER_UNSUPPORTED(
+        HttpStatus.BAD_REQUEST, "AUTH_011",
+        "지원하지 않는 소셜 로그인 제공자입니다."
+    ),
+    AUTH_SOCIAL_LINK_DOMAIN_MISMATCH(
+        HttpStatus.BAD_REQUEST, "AUTH_012",
+        "현재 계정 이메일과 일치하는 소셜 플랫폼만 연동할 수 있습니다."
+    ),
+    AUTH_SOCIAL_UNLINK_NOT_ALLOWED(
+        HttpStatus.BAD_REQUEST, "AUTH_013",
+        "비밀번호가 설정되지 않은 계정은 마지막 소셜 연동을 해제할 수 없습니다."
+    ),
 
     // 회원 탈퇴 본인 확인 오류는 400으로 응답해 토큰 만료와 구분합니다.
     USER_PASSWORD_MISMATCH(
