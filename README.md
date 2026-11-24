@@ -142,7 +142,7 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 **테스트**
 - 백엔드: `cd backend && ./gradlew test` (H2 메모리 DB). CI는 `PG_TEST_URL`로 실제 PostgreSQL 검증도 하고, 그 테스트가 건너뛰어지면 실패한다
 - 프론트: `cd frontend && npm run lint && npm test && npm run build`
-- AI 서비스: `cd ai-service && .venv/Scripts/python -m unittest -v` (Gemini SDK를 mock해서 외부 호출 없음)
+- AI 서비스: `cd ai-service && .venv/Scripts/python -m pip install -r requirements-test.txt` 후 `.venv/Scripts/python -m unittest -v` (Gemini SDK를 mock해서 외부 호출 없음)
 
 ## 배포 (AWS EC2)
 

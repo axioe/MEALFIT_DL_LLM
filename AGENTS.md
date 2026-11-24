@@ -161,7 +161,7 @@ cd backend && ./gradlew test            # Windows: gradlew.bat test
 cd frontend && npm ci && npm run lint && npm test && npm run build
 
 # ai-service
-cd ai-service && python -m unittest -v
+cd ai-service && python -m pip install -r requirements-test.txt && python -m unittest -v
 ```
 
 - 프론트 로직(models/)을 바꾸면 frontend/tests/*.test.mjs에 테스트를 추가한다.
