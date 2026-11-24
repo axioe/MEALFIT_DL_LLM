@@ -55,6 +55,9 @@ dependencies {
     // Spring Security 버전은 Spring Boot가 관리합니다.
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // [소셜로그인] Google·Naver·Kakao OAuth2 로그인 연동에 사용합니다.
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
     // [이메일인증][SMTP] 실제 인증 메일 발송에 사용합니다.
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
