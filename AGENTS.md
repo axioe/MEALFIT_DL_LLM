@@ -10,7 +10,7 @@
 |---|---|
 | 저장소 | axioe/MEALFIT_DL_LLM |
 | 작성 | PL 김영현 |
-| 기준일 | 2026-11-24 (운영 배포 재개, 중간발표 일정 반영) |
+| 기준일 | 2026-11-24 (운영 배포 재개, 중간발표 일정, 소셜 로그인 반영) |
 
 ## 0. 가장 먼저 지킬 것 (요약)
 
@@ -30,7 +30,7 @@
 
 | 영역 | 기술 |
 |---|---|
-| backend | Spring Boot 3.5 · Java 21 · JPA · Flyway · PostgreSQL 16 + pgvector (테스트는 H2 PostgreSQL 모드, CI는 실제 PostgreSQL, 운영은 Amazon RDS for PostgreSQL·TLS 인증서 검증) · JWT |
+| backend | Spring Boot 3.5 · Java 21 · JPA · Flyway · PostgreSQL 16 + pgvector (테스트는 H2 PostgreSQL 모드, CI는 실제 PostgreSQL, 운영은 Amazon RDS for PostgreSQL·TLS 인증서 검증) · JWT · 소셜 로그인(OAuth2: Google·Naver·Kakao) |
 | frontend | React + JavaScript(TypeScript 금지) · Vite · TanStack Query · Zustand · Tailwind |
 | ai-service | Python 3.12 · Flask · 현재 Gemini (google-genai), 자체 모델로 전환 예정 |
 | CI | GitHub Actions (.github/workflows/ci.yml) |
@@ -94,6 +94,8 @@ backend (backend/src/main/java/com/mealfit/)
 
 - 도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, workout, ai. 클래스를 도메인 폴더 바로 아래에 두지 않는다.
 - 현재 사용자는 컨트롤러 파라미터 @CurrentUserId Long userId로만 받는다. 요청 본문·헤더의 userId는 믿지 않는다.
+- 소셜 전용 회원은 password_hash가 NULL이다. 비밀번호를 비교하기 전에 user.hasPassword()를 확인한다. 같은 이메일의 일반 회원과 자동으로 합치지 않는다(연동은 로그인 후 마이페이지에서).
+- 서버 세션은 OAuth2 로그인 과정에서만 잠깐 쓴다. API 인증은 JWT로 하고, 새 기능에서 세션에 값을 저장하지 않는다.
 - 조회는 findByIdAndUserId(id, userId)처럼 항상 본인 데이터만 가져온다.
 - 오류는 throw new BusinessException(ErrorCode.XXX). 새 코드는 ErrorCode에 도메인 접두어로 추가(INVENTORY_001).
 - 상태 변경은 엔티티 메서드에서 status.validateTransition(next)로.
@@ -108,6 +110,7 @@ frontend (frontend/src/)
 | stores/ | Model(상태) | Zustand. 로그인 세션은 authStore.js에서만. Access JWT는 메모리에만 두고(localStorage 금지), Refresh는 HttpOnly 쿠키, /refresh·/logout은 CSRF 헤더(X-Requested-With)가 필요하다 |
 | hooks/ | Controller | useQuery/useMutation, 화면 상태 흐름 |
 | pages/, components/ | View | JSX만. 계산·검증·API 호출을 직접 하지 않고 hooks·models를 쓴다 |
+| routes/ | View | 화면 경로(router.jsx)와 로그인 확인(RequireAuth.jsx) |
 | lib/ | 공용 | enums.js(백엔드 enum 상수), labels.js(한글 라벨), 날짜·숫자 형식 |
 
 - JavaScript만. JSX가 있으면 .jsx, 아니면 .js.
@@ -139,7 +142,7 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 | docs/ | 모델 카드, 데이터 설명, 실험 결과 요약 |
 
 - 위 표에 없는 최상위 폴더(새 서비스, 새 언어 등)를 만들어야 하면 먼저 사용자(PL)에게 확인한다.
-- 새 Python 패키지는 requirements.txt에 버전을 고정해서 추가한다(torch==x.y.z). 학습 전용 패키지는 ai-service/ml/requirements.txt에 따로 둔다.
+- 새 Python 패키지는 requirements.txt에 버전을 고정해서 추가한다(torch==x.y.z). 서비스 추론용 DL 패키지는 ai-service/requirements-vision.txt, 데이터 전처리는 ai-service/ml/requirements.txt, 학습은 ai-service/ml/requirements-train.txt에 나눠 둔다(전처리와 학습 파일은 같은 환경에 함께 설치하지 않는다).
 
 ## 4. DL · LLM 작업 규칙
 
@@ -193,7 +196,9 @@ cd ai-service && python -m pip install -r requirements-test.txt && python -m uni
 - 비밀값을 코드에 하드코딩하지 않는다. 환경 변수로 받는다.
 - 운영 서버(EC2)와 운영 DB(RDS)에 접속하거나 명령을 실행하지 않는다 (SSH 터널 포함). PL이 직접 요청한 읽기 전용 점검만 예외다.
 - 로컬 백엔드를 운영 DB에 연결하지 않는다. 실행만 해도 작업 중인 Flyway 마이그레이션이 운영 DB에 적용될 수 있다.
-- DB_URL·DB 비밀번호·JWT_SECRET·MAIL_PASSWORD·SSH 키 값은 출력·커밋하지 않고 AI 요청에도 넣지 않는다. 주석 처리된 줄에도 실제 값이 있을 수 있다. 예시 파일(.env.example, .env.prod.example)에는 자리 표시만 둔다.
+- 공용 개발 DB(mealfit_dev)는 운영 DB와 다르다. 사람이 개발 DB 접속 안내에 따라 터널을 연 경우에만 쓰고, develop 최신 코드만 연결한다. 새 마이그레이션이 있는 작업 브랜치는 각자 로컬 DB에서 확인한다.
+- DB_URL·DB 비밀번호·JWT_SECRET·MAIL_PASSWORD·소셜 로그인 키(GOOGLE_·NAVER_·KAKAO_CLIENT_ID/SECRET)·SSH 키 값은 출력·커밋하지 않고 AI 요청에도 넣지 않는다. 주석 처리된 줄에도 실제 값이 있을 수 있다. 예시 파일(.env.example, .env.prod.example)에는 자리 표시만 둔다.
+- .env 파일을 연 화면의 캡처도 AI 대화에 올리지 않는다. 값이 노출되면 바로 사용자에게 알리고 교체하도록 한다.
 - 저장소 설정(보호 규칙, Secrets, Variables, 기본 브랜치)을 바꾸지 않는다. 필요하면 PL에게 요청한다.
 - 출처가 불분명한 파일·패키지를 내려받아 실행하지 않는다. 새 의존성은 이름과 이유를 사용자에게 알린다.
 - 외부 데이터셋·모델을 쓸 때는 라이선스를 확인하고 docs/에 출처를 적는다.
