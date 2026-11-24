@@ -16,13 +16,20 @@ const EXPIRATION_PRIORITY = [
 const isActive = (lot) => lot.status === LOT_STATUS.ACTIVE
 const isArchived = (lot) => lot.status === LOT_STATUS.DEPLETED || lot.status === LOT_STATUS.DISPOSED
 
-/** 보관 중 묶음의 총량·사용 가능량·기한 경과량. 소수 셋째 자리까지 정수로 합산해 표시 오차를 줄인다 */
+// 서버는 같은 재료를 단위 계열로 묶고 그룹 단위를 기본 단위(g·ml)로 준다. 묶음은 원래 단위(kg·L 포함)를 유지한다
+const BASE_UNIT_FACTOR = { kg: 1000, l: 1000 }
+
+/** 묶음 수량을 기본 단위(g·ml)의 1/1000 정수로. kg·L이 아니면 그대로 */
+const baseMilli = (lot) =>
+  Math.round(Number(lot.quantity) * 1000) * (BASE_UNIT_FACTOR[String(lot.unit ?? '').trim().toLowerCase()] ?? 1)
+
+/** 보관 중 묶음의 총량·사용 가능량·기한 경과량 (기본 단위). 소수 셋째 자리까지 정수로 합산해 표시 오차를 줄인다 */
 export function summarizeLots(lots) {
   const activeLots = lots.filter(isActive)
-  const total = activeLots.reduce((sum, lot) => sum + Math.round(Number(lot.quantity) * 1000), 0)
+  const total = activeLots.reduce((sum, lot) => sum + baseMilli(lot), 0)
   const expired = activeLots
     .filter((lot) => lot.expirationStatus === EXPIRATION_STATUS.EXPIRED)
-    .reduce((sum, lot) => sum + Math.round(Number(lot.quantity) * 1000), 0)
+    .reduce((sum, lot) => sum + baseMilli(lot), 0)
   return { totalQuantity: total / 1000, availableQuantity: (total - expired) / 1000, expiredQuantity: expired / 1000 }
 }
 
