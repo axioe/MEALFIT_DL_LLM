@@ -4,7 +4,8 @@ import { useResendEmailVerification } from "@/hooks/useAuth";
 import { useLoginNavigation } from "@/hooks/useLoginNavigation";
 import { getErrorCode, getErrorMessage } from "@/api/client";
 import { getSocialErrorMessage, SOCIAL_PROVIDERS } from "@/models/socialAuth";
-import { AlertCircle, Lock, Mail, Sparkles } from "lucide-react";
+import { AlertCircle, Lock, Mail } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 /** [소셜로그인] Google·Naver·Kakao 공식 브랜드 심볼 SVG 아이콘 */
 function SocialProviderIcon({ providerId }) {
@@ -92,9 +93,7 @@ export function LoginPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-lg max-w-md w-full">
         {/* Brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-3 shadow-md shadow-emerald-200">
-            <Sparkles className="w-7 h-7" />
-          </div>
+          <BrandLogo className="w-14 h-14 mx-auto mb-3" />
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">
             MealFit{" "}
             <span className="text-emerald-600 text-base font-bold">밀핏</span>
