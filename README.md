@@ -57,7 +57,7 @@ MealFit/
 │        ├─ dto/                  요청·응답 (View로 나가는 모양)
 │        └─ client/ config/ exception/   외부 AI 호출, 설정, 도메인 예외 (필요한 도메인만)
 │        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, workout, ai
-├─ backend/src/main/resources/db/migration/postgresql/   V1–V7, V9–V11 (V8은 db/vendor/postgresql/)
+├─ backend/src/main/resources/db/migration/postgresql/   V1–V7, V9–V12 (V8은 db/vendor/postgresql/)
 ├─ ai-service/                    Python Flask + Gemini
 │  ├─ app.py                      실행 진입점 (python app.py)
 │  ├─ mealfit_ai/
@@ -81,7 +81,7 @@ MealFit/
 │  │  └─ lib/                     enums.js, labels.js, 날짜·기한·숫자 형식, queryClient
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
 ├─ AGENTS.md                      AI 도구 작업 규칙
-├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약, rds-setup.md: RDS 준비)
+├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약, rds-setup.md: RDS 준비, troubleshooting.md: 트러블슈팅 기록)
 ├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
 ├─ docker-compose.prod.yml        운영(EC2) 구성 (DB는 RDS)
 ├─ docker-compose.ci.yml          CI 통합 검사용 (운영 구성 + PostgreSQL 컨테이너)
@@ -275,8 +275,8 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──자동─�
 - pgvector처럼 실제 PostgreSQL에서만 되는 마이그레이션은 `db/vendor/postgresql/`에 두고 번호는 이어서 매긴다 (V8 = `recipe_embeddings`, 레시피 검색). RDS에서는 관리 계정으로 `CREATE EXTENSION vector;`를 먼저 실행한다
 - 테스트는 H2(PostgreSQL 모드)로 돌고, CI의 backend 작업은 실제 PostgreSQL(pgvector/pgvector:pg16)에서 마이그레이션·엔티티 검증(`PostgresSchemaIntegrationTest`)을 함께 돈다
 - PostgreSQL IDENTITY는 ID를 직접 넣어도 다음 값이 올라가지 않는다. 데이터 이관 뒤에는 시퀀스를 `setval`로 맞춘다
-- 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각) · V8(레시피 임베딩, vendor) · V9(이메일 인증) · V10(운동 사전) · V11(운동 루틴). 애플리케이션 테이블 24개
-- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 `db/migration/postgresql/`에 다음 번호의 새 파일 `V12__설명.sql` (2026-11-24 기준, 최신 develop에서 다시 확인)
+- 현재 V1(핵심 업무 테이블) · V2(로컬 대체 레시피) · V3(회원·프로필) · V4(Refresh Token) · V5(식단 없는 조리) · V6(마이페이지 상세) · V7(탈퇴 시각) · V8(레시피 임베딩, vendor) · V9(이메일 인증) · V10(운동 사전) · V11(운동 루틴) · V12(소셜 계정). 애플리케이션 테이블 25개
+- **이미 머지된 `V*.sql`은 절대 수정하지 않는다.** 변경은 `db/migration/postgresql/`에 다음 번호의 새 파일 `V13__설명.sql` (2026-11-24 기준, 최신 develop에서 다시 확인)
 - 같은 날 여러 명이 마이그레이션을 만들면 번호가 겹칠 수 있으니 단톡방에 번호를 먼저 말하고 쓴다
 - 수량은 `NUMERIC(12,3)` + `BigDecimal`, 시각은 `TIMESTAMP(6)` + `LocalDateTime`, enum은 `VARCHAR(20)` + `@Enumerated(EnumType.STRING)`
 
