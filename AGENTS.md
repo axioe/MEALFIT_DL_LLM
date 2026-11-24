@@ -157,9 +157,9 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 ## 5. DB 스키마 (Flyway)
 
 - 스키마는 backend/src/main/resources/db/migration/postgresql/의 SQL로만 바꾼다 (ddl-auto: validate). db/migration/ 바로 아래 V1–V7은 MariaDB 시절 이력이라 실행하지 않고 수정하지도 않는다.
-- pgvector처럼 H2가 모르는 타입을 쓰는 마이그레이션은 db/vendor/postgresql/에 둔다. 번호는 두 폴더를 합쳐 이어서 매긴다 (2026-11-24 develop 기준 마지막: V11 운동 루틴. 새로 만들 때는 최신 develop에서 다시 확인한다).
+- pgvector처럼 H2가 모르는 타입을 쓰는 마이그레이션은 db/vendor/postgresql/에 둔다. 번호는 두 폴더를 합쳐 이어서 매긴다 (2026-11-24 develop 기준 마지막: V12 소셜 계정. 새로 만들 때는 최신 develop에서 다시 확인한다).
 - recipe_embeddings(V8)는 레시피 검색 전용이다: bge-m3, vector(1024), HNSW 코사인. CREATE EXTENSION vector는 RDS 관리 계정으로만 실행한다. 벡터 테스트는 H2가 아닌 PostgreSQL(pgvector/pgvector:pg16)에서 하고, 임베딩 모델을 바꾸면 model_version 기준으로 전체를 다시 임베딩한다.
-- 이미 머지된 V*.sql은 절대 수정하지 않는다. 변경은 다음 번호의 새 파일 (V12__설명.sql …).
+- 이미 머지된 V*.sql은 절대 수정하지 않는다. 변경은 다음 번호의 새 파일 (V13__설명.sql …).
 - main에 머지되면 새 마이그레이션이 운영 RDS에 바로 적용된다. 로컬·CI에서 먼저 확인한다.
 - 번호가 겹치지 않게, 새 마이그레이션을 만들기 전에 사용자에게 번호를 확인받는다.
 - 수량은 NUMERIC(12,3) + BigDecimal, 시각은 TIMESTAMP(6) + LocalDateTime, enum은 VARCHAR(20) + @Enumerated(EnumType.STRING). 시간대는 Asia/Seoul로 고정돼 있으므로 TIMESTAMPTZ로 바꾸려면 먼저 PL과 상의한다.
