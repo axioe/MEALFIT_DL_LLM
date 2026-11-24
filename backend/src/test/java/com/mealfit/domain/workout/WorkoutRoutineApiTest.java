@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mealfit.support.TestUserFixture;
+import jakarta.persistence.EntityManager;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -48,6 +49,7 @@ class WorkoutRoutineApiTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired JdbcTemplate jdbc;
+    @Autowired EntityManager em;
 
     @BeforeEach
     void prepareUsers() {
@@ -214,11 +216,26 @@ class WorkoutRoutineApiTest {
 
     @Test
     void 요청값이_없으면_프로필_운동조건을_쓴다() throws Exception {
-        Map<String, Object> fitness = new HashMap<>(Map.of("workoutGoal", "loss", "workoutLevel", "beginner",
+        // [운동조건설정] 신규 프로필 저장은 D1(15·30·45·60분)만 허용하므로 40분 저장은 거절된다
+        Map<String, Object> invalidFitness = new HashMap<>(Map.of("workoutGoal", "loss", "workoutLevel", "beginner",
             "workoutMinutes", 40, "daysPerWeek", 2, "equipment", List.of("none"), "injuries", List.of("허리")));
+        mvc.perform(put("/api/v1/me/profile/details/fitness").with(user(USER))
+                .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(invalidFitness)))
+            .andExpect(status().isBadRequest());
+
+        Map<String, Object> fitness = new HashMap<>(invalidFitness);
+        fitness.put("workoutMinutes", 45);
         mvc.perform(put("/api/v1/me/profile/details/fitness").with(user(USER))
                 .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(fitness)))
             .andExpect(status().isOk());
+
+        // [운동조건설정] 기존 DB에 저장된 40분 데이터 호환성: 루틴 생성 시 가까운 아래 허용값 30분으로 내린다
+        em.flush();
+        jdbc.update(
+            "UPDATE profile_details SET workout_minutes = 40 WHERE profile_id = (SELECT id FROM profiles WHERE user_id = ?)",
+            USER
+        );
+        em.clear();
 
         JsonNode routine = recommendOk(USER, Map.of("startDate", NEXT_MONDAY.toString()));
         assertThat(routine.get("goal").asText()).isEqualTo("loss");

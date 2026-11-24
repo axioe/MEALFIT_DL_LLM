@@ -14,7 +14,8 @@ public record TrainerProfileRequest(
     @NotNull @Pattern(regexp = "loss|hypertrophy|stamina|health") String workoutGoal,
     @NotNull @Pattern(regexp = "starter|beginner|intermediate|advanced") String workoutLevel,
     @Pattern(regexp = "home|gym|outdoor") String environment,
-    @Min(10) @Max(90) @JsonDeserialize(using = WholeNumberDeserializer.class) Integer workoutMinutes,
+    // [운동조건설정] D1 합의 기준: 회당 운동 시간은 15/30/45/60분만 허용 (세부 검증은 ProfileDetailsService)
+    @Min(15) @Max(60) @JsonDeserialize(using = WholeNumberDeserializer.class) Integer workoutMinutes,
     @Pattern(regexp = "regular|high_protein|low_carb|keto|vegan|balanced") String dietType,
      @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) @Pattern(regexp = "dumbbell|band|mat|pullup_bar|foam_roller|kettlebell|none|barbell|gym") String> equipment,
      @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> injuries,

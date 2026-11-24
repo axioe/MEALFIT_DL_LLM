@@ -1,15 +1,16 @@
-import { EQUIPMENT_OPTIONS } from '@/lib/profileOptions'
-import { toggleExclusiveItem } from '@/models/profileForm'
+import { EQUIPMENT_OPTIONS, INJURY_AREA_OPTIONS, WORKOUT_MINUTES_OPTIONS } from '@/lib/profileOptions'
+import { toggleExclusiveItem, toggleItem } from '@/models/profileForm'
 
 /** 마이페이지 탭: 운동 목표와 장비 (화면만 담당, 상태·저장은 hooks/useMyPageForm) */
 export function FitnessProfileForm({ form, updateField, onSubmit, isSaving }) {
-  const { fitnessGoal, experience, equipment, daysPerWeek, durationMinutes, uncomfortableAreasText } = form
+  const { fitnessGoal, experience, equipment, daysPerWeek, durationMinutes, fitnessInjuries } = form
   const setDaysPerWeek = (value) => updateField('daysPerWeek', value)
   const setDurationMinutes = (value) => updateField('durationMinutes', value)
   const setExperience = (value) => updateField('experience', value)
   const setFitnessGoal = (value) => updateField('fitnessGoal', value)
-  const setUncomfortableAreasText = (value) => updateField('uncomfortableAreasText', value)
   const toggleEquipment = (eq) => updateField('equipment', (previous) => toggleExclusiveItem(previous, eq))
+  // [운동조건설정] D3 합의 기준: 7개 부상 부위 토글 선택
+  const toggleInjury = (area) => updateField('fitnessInjuries', (previous) => toggleItem(previous, area))
 
   return (
     <form
@@ -79,13 +80,44 @@ export function FitnessProfileForm({ form, updateField, onSubmit, isSaving }) {
         </div>
       </div>
 
+      {/* [운동조건설정] D1 합의 기준: 회당 운동 시간 15/30/45/60분 선택 */}
       <div>
-        <label className="font-bold text-gray-700 block mb-1">
-          1회 운동 시간
-        </label>
-        <input type="number" min="10" max="90" step="5" value={durationMinutes}
-          onChange={(e) => setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value))}
-          className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm" />
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="font-bold text-gray-700">
+            1회 운동 시간 (15·30·45·60분)
+          </label>
+          {durationMinutes !== "" && (
+            <button
+              type="button"
+              onClick={() => setDurationMinutes("")}
+              className="text-[11px] text-gray-500 underline cursor-pointer"
+            >
+              설정 해제
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {WORKOUT_MINUTES_OPTIONS.map((opt) => {
+            const isSelected = Number(durationMinutes) === opt.value
+            return (
+              <button
+                type="button"
+                key={opt.value}
+                onClick={() => setDurationMinutes(isSelected ? "" : opt.value)}
+                className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-bold text-xs block">{opt.label}</span>
+                <span className={`text-[10px] block ${isSelected ? "text-emerald-100" : "text-gray-400"}`}>
+                  {opt.desc}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Equipment checkboxes */}
@@ -111,19 +143,32 @@ export function FitnessProfileForm({ form, updateField, onSubmit, isSaving }) {
         </div>
       </div>
 
-      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
-        <label className="font-bold block mb-1">
-          불편한 부위 / 관절 통증 (쉼표 구분)
+      {/* [운동조건설정] D3 합의 기준: 허용된 7개 부상 부위만 선택 */}
+      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+        <label className="font-bold block mb-2">
+          불편한 부위 / 관절 통증 (해당 부위 선택)
         </label>
-        <input
-          type="text"
-          placeholder="예: 허리, 무릎, 손목, 어깨"
-          value={uncomfortableAreasText}
-          onChange={(e) => setUncomfortableAreasText(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-sm focus:outline-amber-500"
-        />
-        <p className="text-[11px] text-amber-800 mt-1">
-          * 불편한 부위를 프로필에 저장합니다. 운동 추천 적용은 별도로 연결합니다.
+        <div className="flex flex-wrap gap-2">
+          {INJURY_AREA_OPTIONS.map((area) => {
+            const isSelected = (fitnessInjuries ?? []).includes(area)
+            return (
+              <button
+                type="button"
+                key={area}
+                onClick={() => toggleInjury(area)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-amber-200 border-amber-500 text-amber-950 shadow-2xs"
+                    : "bg-white border-amber-200 text-amber-900 hover:bg-amber-100/60"
+                }`}
+              >
+                {area} {isSelected && "✓"}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[11px] text-amber-800 mt-2">
+          * 선택한 부위에 부담이 큰 운동은 루틴 추천·검증 시 자동으로 제외됩니다.
         </p>
       </div>
 
