@@ -169,11 +169,19 @@ class ProfileDetailsApiTest {
             var request = body(); request.putAll(change);
             save("common", request).andExpect(status().isBadRequest());
         }
-        for (var change : List.of(Map.of("workoutMinutes", 31), Map.of("daysPerWeek", 7),
+        for (var change : List.of(Map.of("workoutMinutes", 10), Map.of("workoutMinutes", 20),
+                Map.of("workoutMinutes", 31), Map.of("workoutMinutes", 40), Map.of("workoutMinutes", 90),
+                Map.of("daysPerWeek", 7),
                 Map.of("workoutGoal", "bad"), Map.of("equipment", List.of("bad")),
-                Map.of("equipment", List.of("none", "dumbbell")), Map.of("injuries", List.of(" ")))) {
+                Map.of("equipment", List.of("none", "dumbbell")), Map.of("injuries", List.of(" ")),
+                Map.of("injuries", List.of("팔꿈치")))) {
             var request = fitness(); request.putAll(change);
             save("fitness", request).andExpect(status().isBadRequest());
+        }
+        // [운동조건설정] Trainer 탭도 D1(15/30/45/60분) · D3(부상 7개) 검증을 동일하게 적용
+        for (var change : List.of(Map.of("workoutMinutes", 25), Map.of("injuries", List.of("손가락")))) {
+            var request = trainer(); request.putAll(change);
+            save("trainer", request).andExpect(status().isBadRequest());
         }
         for (var change : List.of(Map.of("cookTimeMin", 15), Map.of("mealBudget", 0),
                 Map.of("defaultServings", 7), Map.of("preferredFoods", List.of(" ")),

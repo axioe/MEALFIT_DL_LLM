@@ -19,7 +19,16 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_405", "지원하지 않는 요청 방식입니다."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "COMMON_415", "지원하지 않는 요청 형식입니다."),
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT, "COMMON_409", "허용되지 않은 상태 변경입니다."),
+    CONCURRENT_REQUEST(HttpStatus.CONFLICT, "COMMON_409_LOCK", "다른 요청이 처리 중입니다. 잠시 후 다시 시도해 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 오류가 발생했습니다."),
+
+    // 사진 업로드 및 식재료 인식 오류를 구분함.
+    PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "COMMON_413", "업로드 가능한 파일 크기를 초과했습니다."),
+    INVENTORY_VISION_INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVENTORY_VISION_001", "정상적인 JPEG·PNG 이미지 한 장을 입력해 주세요."),
+    INVENTORY_VISION_UNSUPPORTED_IMAGE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "INVENTORY_VISION_002", "JPEG·PNG 이미지만 지원합니다."),
+    INVENTORY_VISION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "INVENTORY_VISION_003", "사진 인식 서비스를 사용할 수 없습니다. 직접 입력하거나 잠시 후 다시 시도해 주세요."),
+    INVENTORY_VISION_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "INVENTORY_VISION_004", "사진 인식 응답 시간이 초과되었습니다. 다시 시도해 주세요."),
+    INVENTORY_VISION_BAD_RESPONSE(HttpStatus.BAD_GATEWAY, "INVENTORY_VISION_005", "사진 인식 결과를 확인하지 못했습니다. 다시 시도해 주세요."),
 
     // 인증·사용자(AUTH_*, USER_*)는 로그인 담당자가 추가한다
     // 인증 오류
@@ -55,6 +64,27 @@ public enum ErrorCode {
     AUTH_VERIFICATION_COOLDOWN(
         HttpStatus.TOO_MANY_REQUESTS, "AUTH_008",
         "인증 메일은 60초마다 다시 요청할 수 있습니다."
+    ),
+    // [소셜로그인] 소셜 로그인·계정 연결/해제 오류
+    AUTH_SOCIAL_EMAIL_ALREADY_REGISTERED(
+        HttpStatus.CONFLICT, "AUTH_009",
+        "이미 이메일로 가입된 계정입니다. 일반 로그인 후 마이페이지에서 소셜 계정을 연동해 주세요."
+    ),
+    AUTH_SOCIAL_ALREADY_LINKED_OTHER(
+        HttpStatus.CONFLICT, "AUTH_010",
+        "이미 다른 계정에 연동된 소셜 계정입니다."
+    ),
+    AUTH_SOCIAL_PROVIDER_UNSUPPORTED(
+        HttpStatus.BAD_REQUEST, "AUTH_011",
+        "지원하지 않는 소셜 로그인 제공자입니다."
+    ),
+    AUTH_SOCIAL_LINK_DOMAIN_MISMATCH(
+        HttpStatus.BAD_REQUEST, "AUTH_012",
+        "현재 계정 이메일과 일치하는 소셜 플랫폼만 연동할 수 있습니다."
+    ),
+    AUTH_SOCIAL_UNLINK_NOT_ALLOWED(
+        HttpStatus.BAD_REQUEST, "AUTH_013",
+        "비밀번호가 설정되지 않은 계정은 마지막 소셜 연동을 해제할 수 없습니다."
     ),
 
     // 회원 탈퇴 본인 확인 오류는 400으로 응답해 토큰 만료와 구분합니다.

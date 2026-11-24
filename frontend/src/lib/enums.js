@@ -31,3 +31,10 @@ export const RECIPE_SOURCE = Object.freeze({
   LOCAL_FALLBACK: 'LOCAL_FALLBACK',
   SEED: 'SEED',
 })
+
+/** [소셜로그인] 백엔드 SocialProvider registrationId와 일치하는 상수 */
+export const SOCIAL_PROVIDER = Object.freeze({
+  GOOGLE: 'google',
+  NAVER: 'naver',
+  KAKAO: 'kakao',
+})

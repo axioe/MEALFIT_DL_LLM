@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi } from '@/api/inventory'
 import { queryKeys } from '@/api/queryKeys'
 import { countImminentLots } from '@/models/fridge'
@@ -13,7 +14,7 @@ export function useInventory() {
 
 export function useStockIn() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: inventoryApi.stockIn,
     retry: false,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all }),
@@ -30,7 +31,7 @@ export function useInventoryTransactions(lotId) {
 
 export function useUpdateLot() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: inventoryApi.updateLot,
     retry: false,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all }),

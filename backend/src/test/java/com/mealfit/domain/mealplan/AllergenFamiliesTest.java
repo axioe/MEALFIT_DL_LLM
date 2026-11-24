@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-/** 알레르기는 이름이 다른 동의어·가공식품까지 막는다 (D09 확정 전 임시 확장표) */
+/** D09 동의어 비교와 알레르기 확장 정책을 검증한다. */
 class AllergenFamiliesTest {
 
     private static List<String> violations(Set<String> allergies, Set<String> excluded, String... ingredients) {
@@ -48,8 +48,12 @@ class AllergenFamiliesTest {
     }
 
     @Test
-    void 제외_재료는_넓히지_않는다() {
-        // 취향으로 뺀 우유는 우유만 막고 치즈는 허용한다
-        assertThat(violations(Set.of(), Set.of("우유"), "우유", "치즈")).containsExactly("우유");
+    void 취향_제외는_동의어를_막고_가공식품은_허용한다() {
+        assertThat(violations(Set.of(), Set.of("우유"), "우유", " Milk ", "치즈"))
+                .containsExactly("우유", " Milk ");
+        assertThat(violations(Set.of(), Set.of("달걀"), "계란", "EGG", "eggplant", "마요네즈", "감자"))
+                .containsExactly("계란", "EGG");
+        assertThat(violations(Set.of(), Set.of("계란"), "달걀", "마요네즈"))
+                .containsExactly("달걀");
     }
 }

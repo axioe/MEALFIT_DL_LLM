@@ -22,7 +22,8 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, unique = true, length = 254)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 100)
+    // [소셜로그인] 소셜 전용 회원은 비밀번호가 없으므로 NULL을 허용합니다 (V12).
+    @Column(name = "password_hash", nullable = true, length = 100)
     private String passwordHash;
 
     /** null이면 정상 회원이며, 탈퇴하면 최초 탈퇴 시각을 기록합니다. */
@@ -46,6 +47,21 @@ public class User extends BaseTimeEntity {
         // [이메일인증] 신규 가입 직후에는 메일 인증 전이므로 false로 시작
         user.emailVerified = false;
         return user;
+    }
+
+    /** [소셜로그인] 비밀번호 없이 소셜 인증으로 가입하는 회원을 생성합니다. (이메일 인증 완료 처리) */
+    public static User createSocial(String email) {
+        User user = new User();
+        user.email = email.trim().toLowerCase(Locale.ROOT);
+        user.passwordHash = null;
+        user.emailVerified = true;
+        user.emailVerifiedAt = LocalDateTime.now();
+        return user;
+    }
+
+    /** [소셜로그인] 일반 비밀번호가 설정된 계정인지 여부를 반환합니다. */
+    public boolean hasPassword() {
+        return this.passwordHash != null && !this.passwordHash.isBlank();
     }
 
     // [이메일인증] 이메일 인증 완료 여부 (신규 가입자는 false, 기존 가입자는 V8 마이그레이션에서 true)

@@ -44,11 +44,25 @@ public class ProfileDetailsService {
         return values.stream().map(String::trim).collect(Collectors.toSet());
     }
 
-    private void validateWorkout(Integer minutes, Set<String> equipment) {
-        if (minutes != null && minutes % 5 != 0)
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "운동 시간은 5분 단위로 입력해 주세요.");
+    // [운동조건설정] D1(회당 시간 15/30/45/60분) · D3(부상 부위 7개 고정) 허용 목록
+    private static final Set<Integer> ALLOWED_WORKOUT_MINUTES = Set.of(15, 30, 45, 60);
+    private static final Set<String> ALLOWED_INJURIES = Set.of(
+        "허리", "무릎", "어깨", "목", "손목", "발목", "고관절"
+    );
+
+    private void validateWorkout(Integer minutes, Set<String> equipment, Set<String> injuries) {
+        if (minutes != null && !ALLOWED_WORKOUT_MINUTES.contains(minutes))
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "운동 시간은 15분, 30분, 45분, 60분 중 선택해 주세요.");
         if (equipment.contains("none") && equipment.size() > 1)
             throw new BusinessException(ErrorCode.INVALID_INPUT, "장비 없음은 다른 장비와 함께 선택할 수 없습니다.");
+        for (String injury : injuries) {
+            if (!ALLOWED_INJURIES.contains(injury)) {
+                throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "부상 부위는 허리, 무릎, 어깨, 목, 손목, 발목, 고관절 중에서 선택해 주세요."
+                );
+            }
+        }
     }
 
     @Transactional
@@ -64,11 +78,12 @@ public class ProfileDetailsService {
     @Transactional
     public ProfileDetailsResponse updateTrainer(Long userId, TrainerProfileRequest request) {
         Profile profile = findProfile(userId, true);
-        validateWorkout(request.workoutMinutes(), request.equipment());
+        Set<String> normalizedInjuries = normalize(request.injuries());
+        validateWorkout(request.workoutMinutes(), request.equipment(), normalizedInjuries);
         ProfileDetails details = details(profile);
         profile.updateDietProfile(profile.getNickname(), profile.getGoal(), profile.getCookTimeMin(),
             request.mealBudget(), normalize(request.allergies()), normalize(request.excludedIngredients()));
-        details.updateTrainer(request.age(), request.height(), request.currentWeight(), request.workoutGoal(), request.workoutLevel(), request.environment(), request.workoutMinutes(), request.dietType(), normalize(request.equipment()), normalize(request.injuries()));
+        details.updateTrainer(request.age(), request.height(), request.currentWeight(), request.workoutGoal(), request.workoutLevel(), request.environment(), request.workoutMinutes(), request.dietType(), normalize(request.equipment()), normalizedInjuries);
         return response(profile, details);
     }
 
@@ -88,9 +103,10 @@ public class ProfileDetailsService {
     @Transactional
     public ProfileDetailsResponse updateFitness(Long userId, FitnessProfileRequest request) {
         Profile profile = findProfile(userId, true);
-        validateWorkout(request.workoutMinutes(), request.equipment());
+        Set<String> normalizedInjuries = normalize(request.injuries());
+        validateWorkout(request.workoutMinutes(), request.equipment(), normalizedInjuries);
         ProfileDetails details = details(profile);
-        details.updateFitness(request.workoutGoal(), request.workoutLevel(), request.workoutMinutes(), request.daysPerWeek(), normalize(request.equipment()), normalize(request.injuries()));
+        details.updateFitness(request.workoutGoal(), request.workoutLevel(), request.workoutMinutes(), request.daysPerWeek(), normalize(request.equipment()), normalizedInjuries);
         return response(profile, details);
     }
 

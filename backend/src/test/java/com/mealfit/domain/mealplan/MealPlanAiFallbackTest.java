@@ -140,7 +140,7 @@ class MealPlanAiFallbackTest {
 
     @Test
     void 제외_재료가_든_로컬_대체_레시피는_고르지_않는다() throws Exception {
-        given(profileProvider.getProfile(any())).willReturn(restrict(Set.of(), Set.of("달걀")));
+        given(profileProvider.getProfile(any())).willReturn(restrict(Set.of(), Set.of("계란")));
 
         JsonNode plans = recommendOk();
 

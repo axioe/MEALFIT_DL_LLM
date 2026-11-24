@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertCircle, CheckCircle2, Mail, Sparkles, Zap } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Mail, Zap } from 'lucide-react'
+import { BrandLogo } from '@/components/common/BrandLogo'
 import { useResendEmailVerification, useSignup } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/api/client'
 import { buildSignupBody, validateSignupForm } from '@/models/authForm'
@@ -116,9 +117,7 @@ export function SignupPage() {
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xl max-w-lg w-full">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center mx-auto mb-2 shadow-md shadow-emerald-200">
-            <Sparkles aria-hidden="true" className="w-6 h-6" />
-          </div>
+          <BrandLogo className="w-12 h-12 mx-auto mb-2" />
           <h1 className="text-xl font-black text-gray-900 tracking-tight">
             MealFit 회원가입
           </h1>

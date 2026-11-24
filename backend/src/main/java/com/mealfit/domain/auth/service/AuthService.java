@@ -110,9 +110,9 @@ public class AuthService {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
         }
 
-        if (!passwordEncoder.matches(
-            request.password(),
-            user.getPasswordHash())) {
+        // [소셜로그인] 비밀번호가 없는 소셜 전용 계정은 일반 비밀번호 로그인을 차단합니다.
+        if (!user.hasPassword()
+            || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.AUTH_LOGIN_FAILED);
         }
         // [이메일인증] 비밀번호가 맞더라도 이메일 미인증 계정은 로그인 차단 (403)

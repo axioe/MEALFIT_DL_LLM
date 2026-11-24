@@ -2,16 +2,16 @@ import { useLogout } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { NAV_ITEMS } from '@/components/layout/navItems';
 import React, { useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Sparkles } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { BrandLogo } from '@/components/common/BrandLogo';
 export function Sidebar({ user: providedUser = {}, profile = {} } = {}) {
     const logout = useLogout();
-    const navigate = useNavigate();
     const logoutLock = useRef(false);
     const sessionUser = useAuthStore((state) => state.user);
     const user = providedUser.id ? providedUser : (sessionUser ?? {});
 
-    /** 서버 토큰 폐기와 로컬 상태 정리가 끝나면 로그인 화면으로 이동합니다. */
+    /** 로컬 세션 종료와 화면 이동은 공통 인증 흐름에서 처리합니다. */
     function handleLogout() {
         if (logoutLock.current || logout.isPending) return;
         logoutLock.current = true;
@@ -20,24 +20,21 @@ export function Sidebar({ user: providedUser = {}, profile = {} } = {}) {
             // 서버 응답이 실패해도 useLogout이 로컬 로그인 정보는 정리합니다.
             onSettled: () => {
                 logoutLock.current = false;
-                navigate('/login', { replace: true, state: null });
             },
         });
     }
 
     return (<aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 min-h-screen p-4 sticky top-0 h-screen select-none">
       {/* Brand Header */}
-      <div className="flex items-center gap-3 px-3 py-4 mb-4 border-b border-gray-100">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
-          <Sparkles className="w-5 h-5"/>
-        </div>
+      <Link to="/dashboard" aria-label="MealFit 홈" className="flex items-center gap-3 px-3 py-4 mb-4 border-b border-gray-100">
+        <BrandLogo className="w-10 h-10" />
         <div>
           <h1 className="font-bold text-lg text-gray-900 tracking-tight flex items-center gap-1.5">
             MealFit <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">밀핏</span>
           </h1>
           <p className="text-xs text-gray-500">AI 식단 & 스마트 냉장고</p>
         </div>
-      </div>
+      </Link>
 
       {/* Navigation Links */}
       <nav className="flex-1 space-y-1 overflow-y-auto">

@@ -1,5 +1,5 @@
 import { AlertTriangle, Award, CheckCircle2, Clock, Sparkles, Target, Zap } from 'lucide-react'
-import { DIET_TYPE_OPTIONS, EQUIPMENT_OPTIONS, INJURY_AREA_OPTIONS } from '@/lib/profileOptions'
+import { DIET_TYPE_OPTIONS, EQUIPMENT_OPTIONS, INJURY_AREA_OPTIONS, WORKOUT_MINUTES_OPTIONS } from '@/lib/profileOptions'
 import { toggleExclusiveItem, toggleItem } from '@/models/profileForm'
 
 /** 마이페이지 탭: AI 트레이너 프로필: 신체 정보·운동 환경·식단 설정 (화면만 담당, 상태·저장은 hooks/useMyPageForm) */
@@ -240,33 +240,38 @@ export function TrainerProfileForm({ form, updateField, onSubmit, isSaving }) {
           </div>
         </div>
 
-        {/* 하루 운동 가능 시간 (10~90분) */}
-        <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+        {/* [운동조건설정] D1 합의 기준: 하루 운동 가능 시간 (15/30/45/60분) */}
+        <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-2.5">
           <div className="flex items-center justify-between">
             <label className="font-bold text-gray-800 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-600" />
-              하루 운동 가능 시간 (10~90분)
+              하루 운동 가능 시간 (15·30·45·60분)
             </label>
             <span className="font-extrabold text-emerald-800 text-sm">
               {trainerAvailableTime === "" ? "미설정" : trainerAvailableTime + "분"}
             </span>
           </div>
-          <input
-            type="range"
-            min="10"
-            max="90"
-            step="5"
-            value={trainerAvailableTime === "" ? 10 : trainerAvailableTime}
-            onChange={(e) =>
-              setTrainerAvailableTime((e.target.value === "" ? "" : Number(e.target.value)))
-            }
-            className="w-full accent-emerald-600 cursor-pointer"
-          />
-          <div className="flex justify-between text-[10px] text-gray-400">
-            <span>10분 (가벼운 스트레칭)</span>
-            <span>30분 (표준)</span>
-            <span>60분 (집중)</span>
-            <span>90분 (완전 분할)</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {WORKOUT_MINUTES_OPTIONS.map((opt) => {
+              const isSelected = Number(trainerAvailableTime) === opt.value;
+              return (
+                <button
+                  type="button"
+                  key={opt.value}
+                  onClick={() => setTrainerAvailableTime(isSelected ? "" : opt.value)}
+                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                      : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-bold text-xs block">{opt.label}</span>
+                  <span className={`text-[10px] block ${isSelected ? "text-emerald-100" : "text-gray-400"}`}>
+                    {opt.desc}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
-import { useMutation } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
 import { quickRecipesApi } from '@/api/quickRecipes'
 
 export function useQuickRecommendation() {
-  return useMutation({ mutationFn: quickRecipesApi.recommend, retry: false })
+  return useSessionMutation({ mutationFn: quickRecipesApi.recommend, retry: false })
 }

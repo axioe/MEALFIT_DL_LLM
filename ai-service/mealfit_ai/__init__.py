@@ -7,6 +7,7 @@
 - clients/      Gemini 호출
 """
 import os
+import sys
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -18,6 +19,7 @@ from mealfit_ai.clients.gemini_client import generate
 from mealfit_ai.controllers.error_handlers import register_error_handlers
 from mealfit_ai.controllers.health_controller import health_bp
 from mealfit_ai.controllers.vision_controller import vision_bp
+from mealfit_ai.services.label_ocr_service import LabelOcrService
 from mealfit_ai.controllers.meal_plan_controller import meal_plan_bp
 from mealfit_ai.controllers.quick_recipe_controller import quick_recipe_bp
 from mealfit_ai.services.meal_plan_service import generate_meals
@@ -39,8 +41,15 @@ def create_app(config=None):
     app.config.update(VISION_MODEL_PATH=os.getenv('VISION_MODEL_PATH', ''),
                       VISION_MODEL_SHA256=os.getenv('VISION_MODEL_SHA256', ''),
                       VISION_MODEL_VERSION=os.getenv('VISION_MODEL_VERSION', 'efficientnet-b0-stage3-epoch19'))
+    app.config.update(OCR_PYTHON=os.getenv('OCR_PYTHON', sys.executable),
+                      OCR_DET_MODEL_DIR=os.getenv('OCR_DET_MODEL_DIR', ''),
+                      OCR_REC_MODEL_DIR=os.getenv('OCR_REC_MODEL_DIR', ''),
+                      OCR_TIMEOUT_SECONDS=8)
     app.config.update(config or {})
     app.extensions['vision_lock'] = threading.Lock()
+    if 'OCR_PREDICTOR' not in app.config:
+        app.extensions['label_ocr'] = LabelOcrService(app.config)
+        app.extensions['label_ocr'].warmup()
     app.register_blueprint(vision_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(quick_recipe_bp)

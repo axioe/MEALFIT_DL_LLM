@@ -1,5 +1,6 @@
 package com.mealfit.domain.auth.service;
 
+import com.mealfit.global.common.LogMasker;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
@@ -44,9 +45,9 @@ public class SmtpEmailSender implements EmailSender {
             helper.setSubject("[MealFit] 이메일 인증을 완료해 주세요");
             helper.setText(buildHtmlBody(verificationUrl), true);
             mailSender.send(message);
-            log.info("[이메일인증][SMTP] 인증 메일 발송 완료: to={}", toEmail);
+            log.info("[이메일인증][SMTP] 인증 메일 발송 완료: to={}", LogMasker.maskEmail(toEmail));
         } catch (MessagingException | UnsupportedEncodingException ex) {
-            log.error("[이메일인증][SMTP] 인증 메일 구성 실패: to={}", toEmail, ex);
+            log.error("[이메일인증][SMTP] 인증 메일 구성 실패: to={}", LogMasker.maskEmail(toEmail), ex);
             throw new IllegalStateException("이메일 인증 메일을 발송하지 못했습니다.", ex);
         }
     }
