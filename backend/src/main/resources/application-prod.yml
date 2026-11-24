@@ -4,6 +4,11 @@ spring:
   jpa:
     show-sql: false
 
+server:
+  # nginx가 알려 준 실제 접속 방식(X-Forwarded-Proto)을 따른다. 없으면 HTTPS에서도 소셜 로그인 콜백이 http로 만들어진다
+  # backend는 외부에 열지 않으므로 nginx(사설망)가 보낸 헤더만 들어온다
+  forward-headers-strategy: native
+
 logging:
   level:
     root: INFO

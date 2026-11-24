@@ -89,6 +89,34 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # 운영 이미지로 nginx 설정을 확인한다: 인증서 없음(HTTP)과 임시 인증서(HTTPS) 두 경우
+      - name: nginx config (http and https)
+        run: |
+          docker build -q -t mealfit-frontend-test .
+          fail() { echo "::error::$1"; docker logs fe-http 2>&1 | tail -20; docker logs fe-https 2>&1 | tail -20; exit 1; }
+          docker run -d --name fe-http -p 8081:80 -e HTTPS_DOMAIN=nocert.test mealfit-frontend-test > /dev/null
+          D="$RUNNER_TEMP/le"; mkdir -p "$D/live/mealfit.test" "$RUNNER_TEMP/acme/.well-known/acme-challenge"
+          echo ok > "$RUNNER_TEMP/acme/.well-known/acme-challenge/probe"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=mealfit.test \
+            -keyout "$D/live/mealfit.test/privkey.pem" -out "$D/live/mealfit.test/fullchain.pem" 2> /dev/null
+          docker run -d --name fe-https -p 8082:80 -p 8443:443 -e HTTPS_DOMAIN=mealfit.test \
+            -v "$D:/etc/letsencrypt:ro" -v "$RUNNER_TEMP/acme:/var/www/certbot:ro" mealfit-frontend-test > /dev/null
+          sleep 4
+          code() { curl -s -k -o /dev/null -w '%{http_code}' "$@" || true; }
+          [ "$(code http://localhost:8081/)" = 200 ] || fail "HTTP 모드 화면"
+          [ "$(code http://localhost:8082/fridge)" = 301 ] || fail "HTTPS 모드 80 이동"
+          [ "$(code --resolve mealfit.test:8443:127.0.0.1 https://mealfit.test:8443/fridge)" = 200 ] || fail "HTTPS 화면"
+          [ "$(curl -s http://localhost:8082/.well-known/acme-challenge/probe)" = ok ] || fail "인증서 갱신 경로"
+          head -c 2000000 /dev/zero > "$RUNNER_TEMP/2mb"; head -c 12000000 /dev/zero > "$RUNNER_TEMP/12mb"
+          post() { code -X POST --data-binary "@$1" "http://localhost:8081$2"; }
+          P=/api/v1/inventory/recognitions/photo
+          [ "$(post "$RUNNER_TEMP/2mb" /api/v1/other)" = 413 ] || fail "일반 API 1MB 제한"
+          [ "$(post "$RUNNER_TEMP/2mb" $P)" = 502 ] || fail "사진 2MB 통과 (backend가 없어 502가 정상)"
+          [ "$(post "$RUNNER_TEMP/12mb" $P)" = 413 ] || fail "사진 11MB 제한"
+          [ "$(post "$RUNNER_TEMP/2mb" /api/v1/workout/pose-analyses)" = 502 ] || fail "자세 2MB 통과"
+          code 'http://localhost:8081/verify-email?token=SECRETVALUE' > /dev/null
+          ! docker logs fe-http 2>/dev/null | grep -q SECRETVALUE || fail "접근 로그에 쿼리가 남음"
+          echo "nginx 확인 통과"
 
   ai-service:
     name: ai-service (test)
@@ -144,6 +172,8 @@ jobs:
             echo "JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')"
             echo "DB_URL=jdbc:postgresql://postgres:5432/mealfit"
             echo "RDS_CA_DIR=$RUNNER_TEMP/rds-ca"
+            echo "LETSENCRYPT_DIR=$RUNNER_TEMP/rds-ca"
+            echo "ACME_WEBROOT=$RUNNER_TEMP/rds-ca"
           } > .env
       # 운영은 RDS라 DB 컨테이너가 없다. CI는 docker-compose.ci.yml로 PostgreSQL(+pgvector) 컨테이너를 붙인다
       - name: Build and start all services
@@ -223,8 +253,9 @@ jobs:
       - name: Health check
         run: |
           for i in $(seq 1 36); do
-            web=$(curl -s -o /dev/null -w '%{http_code}' "http://$EC2_HOST/" || true)
-            api=$(curl -s -o /dev/null -w '%{http_code}' "http://$EC2_HOST/api/v1/health-check" || true)
+            # -L: HTTPS가 켜지면 80이 https 도메인으로 이동하므로 따라가서 확인한다
+            web=$(curl -sL -o /dev/null -w '%{http_code}' "http://$EC2_HOST/" || true)
+            api=$(curl -sL -o /dev/null -w '%{http_code}' "http://$EC2_HOST/api/v1/health-check" || true)
             if [ "$web" = "200" ] && [ "${api:0:1}" = "4" ]; then
               echo "배포 완료: http://$EC2_HOST (web=$web, api=$api)"
               exit 0
