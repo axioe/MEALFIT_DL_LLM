@@ -1,6 +1,7 @@
 import io
+import sys
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from PIL import Image
 from mealfit_ai import create_app
 from mealfit_ai.errors import ServiceError
@@ -70,8 +71,10 @@ class VisionApiTest(unittest.TestCase):
         classifier=IngredientClassifier({})
         classifier.model=Mock(side_effect=RuntimeError('fixture'))
         classifier.transform=Mock()
-        with self.assertRaises(ServiceError) as caught:
-            classifier.predict(read_image(image_bytes()))
+        with patch.dict(sys.modules, {'torch': MagicMock()}):
+            with self.assertRaises(ServiceError) as caught:
+                classifier.predict(read_image(image_bytes()))
+        classifier.model.assert_called_once()
         self.assertEqual(caught.exception.code,'VISION_003')
 
     # 예측 전에 최대 픽셀 수를 검사함.
