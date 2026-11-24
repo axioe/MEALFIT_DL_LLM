@@ -169,9 +169,8 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml down -v
 
-  # [배포 중단 2026-11-13] 저장소 변수 DEPLOY_ENABLED 가 'true' 일 때만 실행한다 (기본: 건너뜀).
-  # 다시 배포하려면 Settings → Secrets and variables → Actions → Variables 에 DEPLOY_ENABLED=true 를 추가하고
-  # 아래 EC2_HOST 가 서버의 현재 IP인지 확인한다.
+  # [운영 중 2026-11-20 재개] 저장소 변수 DEPLOY_ENABLED 가 'true' 일 때만 실행한다 (현재 true).
+  # 배포를 멈추려면 Settings → Secrets and variables → Actions → Variables 에서 DEPLOY_ENABLED 를 지운다.
   # 켜져 있으면 main 에 push되거나 Actions 화면에서 main으로 Run workflow를 누를 때,
   # 모든 검사(통합 검사 포함)가 통과한 뒤 EC2에 배포한다
   # 필요한 Secret: EC2_SSH_KEY(.pem 파일 내용)
