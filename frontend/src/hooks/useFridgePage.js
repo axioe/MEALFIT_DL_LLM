@@ -9,6 +9,8 @@ import { ALL_STORAGE, buildFridgeView, lotSavedMessage, stockInMessage } from '@
 export function useFridgePage() {
   const inventory = useInventory()
   const [showStockIn, setShowStockIn] = useState(false)
+  const [showPhotoRecognition, setShowPhotoRecognition] = useState(false)
+  const [initialIngredientName, setInitialIngredientName] = useState('')
   const [lotAction, setLotAction] = useState(null)
   const [showHistory, setShowHistory] = useState(false)
   const [historyLotId, setHistoryLotId] = useState(null)
@@ -19,8 +21,22 @@ export function useFridgePage() {
   const view = buildFridgeView({ groups, searchQuery, storageFilter })
 
   function openStockIn() {
+    setInitialIngredientName('')
     setSuccessMessage('')
     setShowStockIn(true)
+  }
+
+  // 사진에서 등록 폼으로 이름만 전달하고 자동 입고하지 않음.
+  function openStockInFromPhoto(name) {
+    setInitialIngredientName(name)
+    setShowPhotoRecognition(false)
+    setShowStockIn(true)
+  }
+
+  // 새 사진 인식을 열 때 이전 성공 안내를 지움.
+  function openPhotoRecognition() {
+    setSuccessMessage('')
+    setShowPhotoRecognition(true)
   }
 
   function openEdit(lot) {
@@ -57,6 +73,8 @@ export function useFridgePage() {
   return {
     inventory, groups, view, successMessage,
     searchQuery, setSearchQuery, storageFilter, setStorageFilter, resetFilters,
+    initialIngredientName, showPhotoRecognition, openPhotoRecognition, openStockInFromPhoto,
+    closePhotoRecognition: () => setShowPhotoRecognition(false),
     showStockIn, openStockIn, closeStockIn: () => setShowStockIn(false), handleStockedIn,
     lotAction, openEdit, openDispose, closeLotAction: () => setLotAction(null), handleLotSaved,
     showHistory, historyLotId, setHistoryLotId, openHistory, closeHistory: () => setShowHistory(false),

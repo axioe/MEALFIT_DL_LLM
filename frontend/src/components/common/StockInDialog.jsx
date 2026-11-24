@@ -7,11 +7,12 @@ import { STORAGE_LABEL } from '@/lib/labels'
 import { buildStockInBody, STOCK_IN_INITIAL_FORM as INITIAL_FORM, STOCK_IN_UNITS as UNITS, validateStockInForm as validateForm } from '@/models/inventoryForm'
 
 
-export function StockInDialog({ onClose, onSuccess }) {
+// 전달한 이름만 초기값으로 사용하고 기존 수동 등록 기본값은 유지함.
+export function StockInDialog({ onClose, onSuccess, initialIngredientName = '' }) {
   const dialogRef = useRef(null)
   const submitLock = useRef(false)
   const id = useId()
-  const [form, setForm] = useState(INITIAL_FORM)
+  const [form, setForm] = useState(() => ({ ...INITIAL_FORM, ingredientName: initialIngredientName }))
   const [errors, setErrors] = useState({})
   const stockIn = useStockIn()
 

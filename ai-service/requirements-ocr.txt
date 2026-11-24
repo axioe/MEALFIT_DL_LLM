@@ -1,0 +1,5 @@
+# 기존 Flask·추론 환경과 분리 설치 후 호환성을 검증함.
+paddleocr==3.3.2
+paddlepaddle==3.2.2
+
+paddlex[ocr-core]==3.3.13

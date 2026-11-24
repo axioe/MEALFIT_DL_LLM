@@ -1,7 +1,11 @@
+import time
+
 from flask import Blueprint, current_app, jsonify, request
 
 from mealfit_ai.errors import ServiceError
 from mealfit_ai.services.ingredient_classifier import IngredientClassifier, MAX_IMAGE_BYTES, read_image
+
+from mealfit_ai.services.label_ocr_service import LabelOcrService
 
 vision_bp = Blueprint('vision', __name__)
 
@@ -21,4 +25,20 @@ def recognize_ingredients():
             if predictor is None:
                 predictor = IngredientClassifier(current_app.config)
                 current_app.extensions['vision_classifier'] = predictor
-    return jsonify(predictor.predict(image))
+    started = time.perf_counter()
+    result = dict(predictor.predict(image))
+    dl_ms = round((time.perf_counter() - started) * 1000)
+    ocr = current_app.config.get('OCR_PREDICTOR')
+    if ocr is None:
+        with current_app.extensions['vision_lock']:
+            ocr = current_app.extensions.get('label_ocr')
+            if ocr is None:
+                ocr = LabelOcrService(current_app.config)
+                current_app.extensions['label_ocr'] = ocr
+    try:
+        result['ocr'] = ocr.recognize(image)
+    except Exception:
+        result['ocr'] = {'status': 'ERROR', 'candidates': [], 'elapsedMs': 0}
+    # 이미지·텍스트 대신 처리 시간만 기록함.
+    current_app.logger.info('vision timings dlMs=%d ocrMs=%d', dl_ms, result['ocr'].get('elapsedMs', 0))
+    return jsonify(result)
