@@ -90,6 +90,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(code.getStatus()).body(ErrorResponse.of(code));
     }
 
+    // 서버가 먼저 차단한 대용량 업로드도 공통 오류 형식으로 반환함.
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException error) {
+        return ResponseEntity.status(ErrorCode.PAYLOAD_TOO_LARGE.getStatus())
+                .body(ErrorResponse.of(ErrorCode.PAYLOAD_TOO_LARGE));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
         // 위에서 따로 처리하지 않은 Spring MVC 예외(헤더 누락 등)도 4xx면 500으로 내리지 않는다

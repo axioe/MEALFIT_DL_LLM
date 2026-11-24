@@ -21,6 +21,14 @@ public enum ErrorCode {
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT, "COMMON_409", "허용되지 않은 상태 변경입니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "서버 오류가 발생했습니다."),
 
+    // 사진 업로드 및 식재료 인식 오류를 구분함.
+    PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "COMMON_413", "업로드 가능한 파일 크기를 초과했습니다."),
+    INVENTORY_VISION_INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVENTORY_VISION_001", "정상적인 JPEG·PNG 이미지 한 장을 입력해 주세요."),
+    INVENTORY_VISION_UNSUPPORTED_IMAGE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "INVENTORY_VISION_002", "JPEG·PNG 이미지만 지원합니다."),
+    INVENTORY_VISION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "INVENTORY_VISION_003", "사진 인식 서비스를 사용할 수 없습니다. 직접 입력하거나 잠시 후 다시 시도해 주세요."),
+    INVENTORY_VISION_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "INVENTORY_VISION_004", "사진 인식 응답 시간이 초과되었습니다. 다시 시도해 주세요."),
+    INVENTORY_VISION_BAD_RESPONSE(HttpStatus.BAD_GATEWAY, "INVENTORY_VISION_005", "사진 인식 결과를 확인하지 못했습니다. 다시 시도해 주세요."),
+
     // 인증·사용자(AUTH_*, USER_*)는 로그인 담당자가 추가한다
     // 인증 오류
     AUTH_EMAIL_DUPLICATED(

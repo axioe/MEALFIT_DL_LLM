@@ -30,7 +30,7 @@ class VisionApiTest(unittest.TestCase):
         response=self.client.post('/ai/vision/ingredients',data={'image':(io.BytesIO(image_bytes()),'test.png')})
         self.assertEqual(response.status_code,200)
         self.assertEqual(len(response.json['candidates']),3)
-        self.assertEqual(set(response.json),{'modelVersion','candidates'})
+        self.assertEqual(set(response.json),{'modelVersion','candidates','ocr'})
 
     # 누락·잘못된 필드·손상 이미지를 차단함.
     def test_bad_requests(self):

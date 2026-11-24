@@ -1,9 +1,10 @@
-import { History, Plus, Refrigerator, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Camera, History, Plus, Refrigerator, RefreshCw, TriangleAlert } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
 import { InventoryHistoryPanel } from '@/components/common/InventoryHistoryPanel'
 import { InventoryLotDialog } from '@/components/common/InventoryLotDialog'
 import { Spinner } from '@/components/common/Spinner'
 import { StockInDialog } from '@/components/common/StockInDialog'
+import { PhotoRecognitionDialog } from '@/components/fridge/PhotoRecognitionDialog'
 import { ArchivedLots } from '@/components/fridge/ArchivedLots'
 import { FridgeFilters } from '@/components/fridge/FridgeFilters'
 import { FridgeSummary } from '@/components/fridge/FridgeSummary'
@@ -26,6 +27,9 @@ export function FridgePage() {
           <RefreshCw aria-hidden="true" className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? '불러오는 중...' : '새로고침'}
         </button>
+        <button type="button" onClick={page.openPhotoRecognition} className="btn-secondary min-h-11 text-xs">
+          <Camera aria-hidden="true" className="h-4 w-4" />사진으로 등록
+        </button>
         <button type="button" onClick={page.openStockIn} className="btn-primary min-h-11 text-xs">
           <Plus aria-hidden="true" className="h-4 w-4" />식재료 추가
         </button>
@@ -36,7 +40,8 @@ export function FridgePage() {
         onClose={page.closeLotAction}
         onSuccess={page.handleLotSaved} />}
       {page.showHistory && <InventoryHistoryPanel lotId={page.historyLotId} lots={view.allLots} onSelectLot={page.setHistoryLotId} onClose={page.closeHistory} />}
-      {page.showStockIn && <StockInDialog onClose={page.closeStockIn} onSuccess={page.handleStockedIn} />}
+      {page.showPhotoRecognition && <PhotoRecognitionDialog onClose={page.closePhotoRecognition} onConfirm={page.openStockInFromPhoto} />}
+      {page.showStockIn && <StockInDialog initialIngredientName={page.initialIngredientName} onClose={page.closeStockIn} onSuccess={page.handleStockedIn} />}
 
       <FridgeFilters searchQuery={page.searchQuery} onSearchChange={page.setSearchQuery}
         storageFilter={page.storageFilter} onStorageChange={page.setStorageFilter} />
