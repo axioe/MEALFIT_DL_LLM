@@ -1,4 +1,4 @@
-import { api } from '@/api/client'
+import { api, loginSession, logoutSession } from '@/api/client'
 
 /** 인증 요청도 기존 공통 Axios 인스턴스만 사용합니다. */
 export const authApi = {
@@ -14,15 +14,13 @@ export const authApi = {
   resendEmailVerification: (email) =>
     api.post('/auth/email-verification/resend', { email }),
 
-  login: (body) =>
-    api.post('/auth/login', body).then((response) => response.data),
+  login: loginSession,
 
   getMe: () =>
     api.get('/me').then((response) => response.data),
 
   // [HttpOnly쿠키] 서버가 HttpOnly 쿠키의 Refresh Token을 읽어 폐기 및 삭제합니다.
-  logout: () =>
-    api.post('/auth/logout'),
+  logout: logoutSession,
 
   // [소셜로그인] 내 소셜 연동 현황 조회 (3개 도메인·소셜 연동 여부 포함)
   getSocialAccounts: () =>

@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useLogout } from '@/hooks/useAuth'
 import { useUpdateProfileSection } from '@/hooks/useProfile'
 import { buildProfileSectionBody, createProfileForm, profileSaveErrorMessage } from '@/models/profileForm'
@@ -55,10 +54,9 @@ export function useMyPageForm({ details, activeTab, setActiveTab }) {
   return { form, updateField, changeTab, handleSave, isSaving, message, error, setDirty, setIsProfileSaving }
 }
 
-/** 서버 토큰 폐기와 로컬 상태 정리가 끝나면 로그인 화면으로 이동합니다. (중복 클릭 방지) */
+/** 화면 이동은 공통 인증 흐름에 맡기고 로그아웃 중복 클릭을 막습니다. */
 export function useLogoutAction() {
   const logout = useLogout()
-  const navigate = useNavigate()
   const logoutLock = useRef(false)
 
   function handleLogout() {
@@ -68,7 +66,6 @@ export function useLogoutAction() {
       // 서버 응답이 실패해도 useLogout이 로컬 로그인 정보는 정리합니다.
       onSettled: () => {
         logoutLock.current = false
-        navigate('/login', { replace: true, state: null })
       },
     })
   }

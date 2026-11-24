@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { dashboardApi } from '@/api/dashboard'
 import { queryKeys } from '@/api/queryKeys'
 
@@ -13,7 +14,7 @@ export function useDashboard(date) {
 
 export function useRecordIntake() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: dashboardApi.recordIntake,
     retry: false,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
@@ -30,7 +31,7 @@ export function useTodayWorkout(date) {
 
 export function useSetWorkoutCompleted() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: dashboardApi.setWorkoutCompleted,
     retry: false,
     onSuccess: (_, { date }) => queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.workout(date) }),
@@ -47,7 +48,7 @@ export function useCoaching() {
 
 export function useCheckCondition() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: dashboardApi.checkCondition,
     retry: false,
     onSuccess: (coaching) => queryClient.setQueryData(queryKeys.dashboard.coaching, coaching),

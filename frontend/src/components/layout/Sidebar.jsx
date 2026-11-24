@@ -2,16 +2,15 @@ import { useLogout } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { NAV_ITEMS } from '@/components/layout/navItems';
 import React, { useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { LogOut, Sparkles } from 'lucide-react';
 export function Sidebar({ user: providedUser = {}, profile = {} } = {}) {
     const logout = useLogout();
-    const navigate = useNavigate();
     const logoutLock = useRef(false);
     const sessionUser = useAuthStore((state) => state.user);
     const user = providedUser.id ? providedUser : (sessionUser ?? {});
 
-    /** 서버 토큰 폐기와 로컬 상태 정리가 끝나면 로그인 화면으로 이동합니다. */
+    /** 로컬 세션 종료와 화면 이동은 공통 인증 흐름에서 처리합니다. */
     function handleLogout() {
         if (logoutLock.current || logout.isPending) return;
         logoutLock.current = true;
@@ -20,7 +19,6 @@ export function Sidebar({ user: providedUser = {}, profile = {} } = {}) {
             // 서버 응답이 실패해도 useLogout이 로컬 로그인 정보는 정리합니다.
             onSettled: () => {
                 logoutLock.current = false;
-                navigate('/login', { replace: true, state: null });
             },
         });
     }
