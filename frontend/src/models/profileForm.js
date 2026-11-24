@@ -34,7 +34,8 @@ export function createProfileForm({ body, trainer, diet, fitness, tests }) {
     equipment: fitness.equipment,
     daysPerWeek: fitness.daysPerWeek ?? "",
     durationMinutes: fitness.workoutMinutes ?? "",
-    uncomfortableAreasText: fitness.injuries.join(", "),
+    // [운동조건설정] D3 합의 기준: Fitness 탭도 7개 부상 부위 배열 토글로 통일
+    fitnessInjuries: fitness.injuries,
     restingHeartRate: tests.restingHeartRate ?? "",
     pushups: tests.pushups ?? "",
     squat30s: tests.squat30s ?? "",
@@ -79,7 +80,7 @@ export function buildProfileSectionBody(section, form) {
   if (section === 'fitness') return {
     workoutGoal: optional(form.fitnessGoal), workoutLevel: optional(form.experience),
     equipment: form.equipment, daysPerWeek: n(form.daysPerWeek),
-    workoutMinutes: n(form.durationMinutes), injuries: items(form.uncomfortableAreasText),
+    workoutMinutes: n(form.durationMinutes), injuries: form.fitnessInjuries,
   }
   if (section === 'tests') return {
     restingHeartRate: n(form.restingHeartRate), pushups: n(form.pushups),
