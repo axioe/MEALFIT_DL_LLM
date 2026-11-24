@@ -1,10 +1,14 @@
 import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getErrorMessage, restoreSession } from '@/api/client'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
+import { resumeSocialLogin } from '@/hooks/loginNavigation'
 
 /** 세션 복구·회원 확인의 흐름은 Controller에서 처리하고 View에는 표시 상태만 전달합니다. */
 export function useSessionRecovery() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const accessToken = useAuthStore((state) => state.accessToken)
   const bootstrapped = useAuthStore((state) => state.bootstrapped)
   const restoring = useAuthStore((state) => state.restoring)
@@ -22,6 +26,10 @@ export function useSessionRecovery() {
     : !accessToken ? 'anonymous'
     : me.isPending ? 'checking-user'
     : me.isError ? 'user-error' : 'authenticated'
+
+  useEffect(() => {
+    void resumeSocialLogin({ status, location, navigate })
+  }, [status, location, navigate])
 
   function retry() {
     if (!bootstrapped) void restoreSession().catch(() => {})

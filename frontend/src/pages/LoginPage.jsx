@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useLogin, useResendEmailVerification } from "@/hooks/useAuth";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useResendEmailVerification } from "@/hooks/useAuth";
+import { useLoginNavigation } from "@/hooks/useLoginNavigation";
 import { getErrorCode, getErrorMessage } from "@/api/client";
-import { buildLoginBody } from "@/models/authForm";
 import { getSocialErrorMessage, SOCIAL_PROVIDERS } from "@/models/socialAuth";
 import { AlertCircle, Lock, Mail, Sparkles } from "lucide-react";
 
@@ -41,9 +41,8 @@ export function LoginPage() {
   const [email, setEmail] = useState(location.state?.email ?? "");
   const [password, setPassword] = useState("");
   const [resendNotice, setResendNotice] = useState("");
-  const login = useLogin();
+  const { login, submitLogin, startSocialLogin } = useLoginNavigation();
   const resend = useResendEmailVerification();
-  const navigate = useNavigate();
   const submitLock = useRef(false);
 
   // [소셜로그인] OAuth2 실패 또는 기존 이메일 중복 안내 쿼리(?oauthError=...) 표시
@@ -67,8 +66,7 @@ export function LoginPage() {
     setResendNotice("");
 
     try {
-      await login.mutateAsync(buildLoginBody({ email, password }));
-      navigate("/dashboard", { replace: true, state: null });
+      await submitLogin({ email, password });
     } catch {
       // useLogin이 보관한 오류를 위의 error 문구로 표시합니다.
     } finally {
@@ -119,6 +117,7 @@ export function LoginPage() {
               <a
                 key={provider.id}
                 href={provider.authPath}
+                onClick={startSocialLogin}
                 className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors min-h-[42px] ${styleByProvider}`}
               >
                 <SocialProviderIcon providerId={provider.id} />
