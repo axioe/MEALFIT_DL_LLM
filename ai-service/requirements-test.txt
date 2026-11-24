@@ -1,0 +1,5 @@
+# -*- coding: utf-8 -*-
+-r requirements.txt
+# 모델 추론은 대역으로 검증하며 이미지·수치 처리만 설치함.
+numpy==2.2.6
+Pillow==12.0.0

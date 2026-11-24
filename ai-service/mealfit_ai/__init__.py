@@ -7,6 +7,7 @@
 - clients/      Gemini 호출
 """
 import os
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from flask import Flask
 from mealfit_ai.clients.gemini_client import generate
 from mealfit_ai.controllers.error_handlers import register_error_handlers
 from mealfit_ai.controllers.health_controller import health_bp
+from mealfit_ai.controllers.vision_controller import vision_bp
 from mealfit_ai.controllers.meal_plan_controller import meal_plan_bp
 from mealfit_ai.controllers.quick_recipe_controller import quick_recipe_bp
 from mealfit_ai.services.meal_plan_service import generate_meals
@@ -23,6 +25,7 @@ from mealfit_ai.services.meal_plan_service import generate_meals
 KST = timezone(timedelta(hours=9))
 
 
+# 설정과 Blueprint를 등록해 앱을 생성함.
 def create_app(config=None):
     # ai-service/.env (루트 .env는 읽지 않는다). 프로세스 환경 변수가 우선한다
     load_dotenv(Path(__file__).resolve().parent.parent / '.env', override=False)
@@ -33,8 +36,12 @@ def create_app(config=None):
                       # 테스트는 GENERATOR·MEAL_GENERATOR·TODAY를 바꿔 끼워 Gemini 없이 검증한다
                       GENERATOR=generate, MEAL_GENERATOR=generate_meals,
                       TODAY=lambda: datetime.now(KST).date())
+    app.config.update(VISION_MODEL_PATH=os.getenv('VISION_MODEL_PATH', ''),
+                      VISION_MODEL_SHA256=os.getenv('VISION_MODEL_SHA256', ''),
+                      VISION_MODEL_VERSION=os.getenv('VISION_MODEL_VERSION', 'efficientnet-b0-stage3-epoch19'))
     app.config.update(config or {})
-
+    app.extensions['vision_lock'] = threading.Lock()
+    app.register_blueprint(vision_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(quick_recipe_bp)
     app.register_blueprint(meal_plan_bp)
