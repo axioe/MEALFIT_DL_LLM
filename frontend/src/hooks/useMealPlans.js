@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { mealPlansApi } from '@/api/mealPlans'
 import { queryKeys } from '@/api/queryKeys'
 import { mealPlanQueryOptions, refreshMealPlanQueries } from '@/models/mealPlanQueries'
@@ -9,7 +10,7 @@ export function useMealPlans(date) {
 
 export function useMealPlanAction() {
   const client = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     retry: false,
     onMutate: ({ date }) => client.cancelQueries({ queryKey: queryKeys.mealPlans.byDate(date), exact: true }),
     mutationFn: ({ action, id, date, servings }) => action === 'recommend'

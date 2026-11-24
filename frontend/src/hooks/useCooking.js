@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cookingApi } from '@/api/cooking'
 import { queryKeys } from '@/api/queryKeys'
 import { cookingKeys, refreshCookingQueries, validateCookingPreview } from '@/models/cookingFlows'
@@ -15,7 +16,7 @@ export function useCookingPreview(plan, enabled) {
 
 export function useCookingAction(date) {
   const client = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     mutationFn: ({ action, id }) => action === 'complete' ? cookingApi.complete(id) : cookingApi.cancel(id),
     retry: false,
     onSettled: () => refreshCookingQueries(client, date),
@@ -35,7 +36,7 @@ export function useActualUsagePreview({ mode, body, snapshot, enabled }) {
 /** 실제 사용량으로 조리 완료하거나 조리를 취소하고, 식단·재고 조회를 다시 받는다 */
 export function useActualCookingAction({ mode, date }) {
   const client = useQueryClient()
-  return useMutation({ retry: false,
+  return useSessionMutation({ retry: false,
     mutationFn: ({ action, payload, eventId }) => action === 'cancel' ? cookingApi.cancel(eventId)
       : mode === 'meal' ? cookingApi.completeUsages(payload) : cookingApi.completeIngredients(payload),
     onSettled: () => Promise.allSettled([refreshCookingQueries(client, date), client.invalidateQueries({ queryKey: queryKeys.mealPlans.all })]),

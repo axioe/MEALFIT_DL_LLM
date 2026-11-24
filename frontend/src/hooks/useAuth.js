@@ -1,29 +1,7 @@
-import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '@/api/auth'
 import { queryKeys } from '@/api/queryKeys'
 import { useAuthStore } from '@/stores/authStore'
-
-/**
- * 로그인 성공 시 이전 회원의 캐시를 비우고
- * 서버에서 받은 새 로그인 정보를 저장합니다.
- */
-function useSessionMutation(mutationFn) {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn,
-
-    // 인증 요청은 자동 반복하지 않습니다.
-    retry: false,
-
-    onSuccess: async (session) => {
-      await queryClient.cancelQueries()
-      queryClient.clear()
-      useAuthStore.getState().setSession(session)
-    },
-  })
-}
 
 /** [이메일인증] 회원가입은 인증 메일 발송까지만 수행하고 토큰을 저장하지 않습니다. */
 export function useSignup() {
@@ -51,37 +29,14 @@ export function useResendEmailVerification() {
 
 /** 이메일 로그인 성공 후 토큰과 회원 정보를 저장합니다. */
 export function useLogin() {
-  return useSessionMutation(authApi.login)
+  return useMutation({ mutationFn: authApi.login, retry: false })
 }
 
 /**
- * [HttpOnly쿠키] 서버에서 쿠키의 Refresh Token을 폐기한 뒤 로컬 상태를 정리합니다.
- * 서버 요청이 실패해도 이 브라우저의 로그인 정보는 제거합니다.
+ * 명시적인 로그아웃은 즉시 로컬 상태를 정리합니다. 서버 요청은 세션 경계를 확인하며 처리합니다.
  */
 export function useLogout() {
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-
-  return useMutation({
-    retry: false,
-
-    mutationFn: async () => {
-      await authApi.logout()
-    },
-
-    onSettled: async () => {
-      try {
-        await navigate('/login', { replace: true, state: null })
-      } finally {
-        useAuthStore.getState().clear()
-        try {
-          await queryClient.cancelQueries()
-        } finally {
-          queryClient.clear()
-        }
-      }
-    },
-  })
+  return useMutation({ mutationFn: authApi.logout, retry: false })
 }
 
 /**

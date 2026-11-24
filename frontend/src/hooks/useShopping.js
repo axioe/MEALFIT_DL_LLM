@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSessionMutation } from '@/hooks/useSessionMutation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/api/queryKeys'
 import { shoppingApi } from '@/api/shopping'
 
@@ -9,7 +10,7 @@ export function useShopping() {
 
 export function useShoppingAction() {
   const client = useQueryClient()
-  return useMutation({
+  return useSessionMutation({
     retry: false,
     mutationFn: ({ action, body }) => shoppingApi[action](body),
     onSuccess: (result, { action }) => {

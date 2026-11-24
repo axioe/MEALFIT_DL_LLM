@@ -14,3 +14,6 @@ Thumbs.db
 
 # Claude Code 로컬 설정
 .claude/settings.local.json
+
+# MEALFIT-49 로컬 검증·개발 서버 로그
+/outputs/mealfit-49-guideline-check/
