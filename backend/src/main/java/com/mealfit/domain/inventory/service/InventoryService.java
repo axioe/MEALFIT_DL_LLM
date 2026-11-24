@@ -13,6 +13,7 @@ import com.mealfit.domain.inventory.entity.InventoryTransactionType;
 import com.mealfit.domain.inventory.entity.LotStatus;
 import com.mealfit.domain.inventory.repository.InventoryLotRepository;
 import com.mealfit.domain.inventory.repository.InventoryTransactionRepository;
+import com.mealfit.domain.recipe.model.Quantity;
 import com.mealfit.global.exception.BusinessException;
 import com.mealfit.global.exception.ErrorCode;
 import java.math.BigDecimal;
@@ -34,11 +35,16 @@ public class InventoryService {
     private final InventoryLotRepository lotRepository;
     private final InventoryTransactionRepository transactionRepository;
 
+    /**
+     * 냉장고 목록. 같은 재료는 단위 계열로 묶는다 (1kg 묶음과 300g 묶음 → 한 그룹, 1300g).
+     * 그룹 단위와 합계는 기본 단위(g·ml, 그 밖의 단위는 입력 그대로)이고, 묶음은 원래 단위를 유지한다.
+     * 조리 차감·장보기 부족량과 같은 환산 규칙(Quantity)을 쓴다.
+     */
     public InventoryResponse getInventory(Long userId) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         Map<IngredientKey, List<InventoryLot>> groups = new LinkedHashMap<>();
         for (InventoryLot lot : lotRepository.findByUserIdOrderByExpiryDateAscIdAsc(userId)) {
-            groups.computeIfAbsent(new IngredientKey(lot.getIngredientName(), lot.getUnit()),
+            groups.computeIfAbsent(new IngredientKey(lot.getIngredientName().strip(), baseQuantity(lot).unit()),
                     key -> new ArrayList<>()).add(lot);
         }
         List<InventoryResponse.IngredientGroup> responses = groups.entrySet().stream()
@@ -130,14 +136,20 @@ public class InventoryService {
         BigDecimal expired = BigDecimal.ZERO;
         for (InventoryLot lot : lots) {
             if (lot.getStatus() == LotStatus.ACTIVE) {
-                total = total.add(lot.getQuantity());
+                BigDecimal amount = baseQuantity(lot).amount();
+                total = total.add(amount);
                 if (lot.expirationStatus(today) == ExpirationStatus.EXPIRED) {
-                    expired = expired.add(lot.getQuantity());
+                    expired = expired.add(amount);
                 }
             }
         }
         return new InventoryResponse.IngredientGroup(key.ingredientName(), key.unit(), total,
                 total.subtract(expired), expired, lots.stream().map(lot -> LotResponse.from(lot, today)).toList());
+    }
+
+    /** 묶음 수량을 기본 단위로 (kg → g, L → ml) */
+    private static Quantity baseQuantity(InventoryLot lot) {
+        return Quantity.of(lot.getQuantity(), lot.getUnit()).toBaseUnit();
     }
 
     private record IngredientKey(String ingredientName, String unit) {

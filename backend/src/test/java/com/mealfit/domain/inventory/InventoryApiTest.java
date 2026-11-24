@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,26 +97,48 @@ class InventoryApiTest {
     }
 
     @Test
-    void groupsKeepLotsSeparateAndDoNotConvertUnitsOrMixUsers() throws Exception {
+    void groupsSameUnitFamilyInBaseUnitAndDoNotMixUsers() throws Exception {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         createLot(1, "두부", "100", "g", today.minusDays(1));
         createLot(1, "두부", "200", "g", null);
         createLot(1, "두부", "50", "g", today);
-        createLot(1, "두부", "1", "kg", null);
+        createLot(1, "두부", "1.5", "kg", null);
         createLot(2, "두부", "999", "g", null);
         JsonNode response = read(mockMvc.perform(get(LOTS).with(TestJwt.user(1L))).andExpect(status().isOk()));
-        assertThat(response.path("groups").size()).isEqualTo(2);
-        JsonNode grams = null;
-        for (JsonNode group : response.path("groups")) {
-            if (group.path("unit").asText().equals("g")) {
-                grams = group;
+        assertThat(response.path("groups").size()).isEqualTo(1);
+        JsonNode tofu = response.path("groups").get(0);
+        assertThat(tofu.path("unit").asText()).isEqualTo("g");
+        assertThat(tofu.path("lots").size()).isEqualTo(4);
+        assertThat(tofu.path("totalQuantity").decimalValue()).isEqualByComparingTo("1850");
+        assertThat(tofu.path("availableQuantity").decimalValue()).isEqualByComparingTo("1750");
+        assertThat(tofu.path("expiredQuantity").decimalValue()).isEqualByComparingTo("100");
+        // 묶음은 입고한 단위를 그대로 보여준다
+        JsonNode kgLot = null;
+        for (JsonNode lot : tofu.path("lots")) {
+            if (lot.path("unit").asText().equals("kg")) {
+                kgLot = lot;
             }
         }
-        assertThat(grams).isNotNull();
-        assertThat(grams.path("lots").size()).isEqualTo(3);
-        assertThat(grams.path("totalQuantity").decimalValue()).isEqualByComparingTo("350");
-        assertThat(grams.path("availableQuantity").decimalValue()).isEqualByComparingTo("250");
-        assertThat(grams.path("expiredQuantity").decimalValue()).isEqualByComparingTo("100");
+        assertThat(kgLot).isNotNull();
+        assertThat(kgLot.path("quantity").decimalValue()).isEqualByComparingTo("1.5");
+    }
+
+    @Test
+    void groupsLitersWithMillilitersButKeepsCountUnitsApart() throws Exception {
+        createLot(1, "우유", "1", "L", null);
+        createLot(1, "우유", "200", "mL", null);
+        createLot(1, "달걀", "10", "개", null);
+        createLot(1, "달걀", "1", "팩", null);
+        JsonNode response = read(mockMvc.perform(get(LOTS).with(TestJwt.user(1L))).andExpect(status().isOk()));
+        assertThat(response.path("groups").size()).isEqualTo(3);
+        Map<String, JsonNode> byUnit = new HashMap<>();
+        for (JsonNode group : response.path("groups")) {
+            byUnit.put(group.path("ingredientName").asText() + "/" + group.path("unit").asText(), group);
+        }
+        assertThat(byUnit).containsOnlyKeys("우유/ml", "달걀/개", "달걀/팩");
+        assertThat(byUnit.get("우유/ml").path("totalQuantity").decimalValue()).isEqualByComparingTo("1200");
+        assertThat(byUnit.get("달걀/개").path("totalQuantity").decimalValue()).isEqualByComparingTo("10");
+        assertThat(byUnit.get("달걀/팩").path("totalQuantity").decimalValue()).isEqualByComparingTo("1");
     }
 
     @Test

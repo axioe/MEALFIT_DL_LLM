@@ -9,6 +9,13 @@ test('보관 중 묶음만 합산하고 기한 경과량은 사용 가능량에�
   assert.deepEqual(result, { totalQuantity: 0.3, availableQuantity: 0.1, expiredQuantity: 0.2 })
 })
 
+test('kg·L 묶음은 g·ml로 바꿔 합산한다 (서버 그룹 단위와 같게)', () => {
+  const grams = summarizeLots([lot(1, '1.5', { unit: 'kg' }), lot(2, '300'), lot(3, '0.1', { unit: 'kg', expirationStatus: 'EXPIRED' })])
+  assert.deepEqual(grams, { totalQuantity: 1900, availableQuantity: 1800, expiredQuantity: 100 })
+  const ml = summarizeLots([lot(1, '1', { unit: 'L' }), lot(2, '200', { unit: 'mL' })])
+  assert.equal(ml.totalQuantity, 1200)
+})
+
 test('그룹 요약: 가장 급한 기한 상태와 가장 빠른 기한을 고른다', () => {
   const group = { lots: [
     lot(1, '1', { expirationStatus: 'IMMINENT', expiryDate: '2026-11-15' }),
