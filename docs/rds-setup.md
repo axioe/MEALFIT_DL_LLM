@@ -2,7 +2,7 @@
 
 운영 DB를 EC2 안의 컨테이너에서 Amazon RDS for PostgreSQL 16으로 옮긴다.
 기존 MariaDB·컨테이너 데이터는 옮기지 않고 **빈 DB로 새로 시작**한다 (2026-11-20 결정).
-테이블과 기본 레시피 데이터는 백엔드가 처음 뜰 때 Flyway(V1–V8)가 만든다.
+테이블과 기본 레시피 데이터는 백엔드가 처음 뜰 때 Flyway가 만든다.
 
 > 비밀값(RDS 엔드포인트, 비밀번호, 인증서 파일)은 EC2 서버의 `.env`와 `/etc/mealfit/`에만 둔다. 저장소·문서·채팅에 적지 않는다.
 
@@ -62,12 +62,12 @@ cd ~/MealFit && docker compose -f docker-compose.prod.yml down        # 1차 저
 [ -d ~/MEALFIT_DL_LLM ] || git clone https://github.com/axioe/MEALFIT_DL_LLM.git ~/MEALFIT_DL_LLM
 cd ~/MEALFIT_DL_LLM && cp .env.prod.example .env && nano .env         # 3단계 값 입력
 docker compose -f docker-compose.prod.yml up -d --build --remove-orphans   # 옛 mealfit-postgres 컨테이너를 정리한다
-docker compose -f docker-compose.prod.yml logs backend | grep -i flyway     # "Successfully applied 8 migrations" 확인
+docker compose -f docker-compose.prod.yml logs backend | grep -i flyway     # "Successfully applied N migrations" 확인
 ```
 
 - 옛 컨테이너 DB 볼륨(`mealfit-pg`)은 새로 시작하므로 쓰지 않는다. 확인이 끝나면 `docker volume rm mealfit_mealfit-pg`로 지운다
 - 자동 배포는 저장소 변수 `DEPLOY_ENABLED=true`와 Secret `EC2_SSH_KEY`(EC2 키 파일 내용)가 있을 때만 돈다. 서버 폴더는 `~/MEALFIT_DL_LLM`
-- RDS·서버 준비가 끝나기 전에는 `DEPLOY_ENABLED`를 켜지 않는다
+- 현재 상태: 2026-11-20 첫 배포 완료, `DEPLOY_ENABLED=true`. `main` 머지 시 새 마이그레이션이 RDS에 바로 적용된다
 
 ## 5. 비용·운영 메모
 

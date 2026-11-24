@@ -20,6 +20,13 @@ WBS(11/18 최종본)를 따릅니다.
 | 테이블 | `exercise_catalog`, `workout_routines`, `workout_sessions` | `workout_logs`, 키워드 사전 테이블 |
 | 공통 | 검증기와 세션 구성기는 조정 API에서도 그대로 호출합니다 (같은 검증, PRD FR-WORK-02) | 운동 조건 저장(FR-PROF-05)은 입력 값 범위를 이 문서 3장과 맞춥니다 |
 
+### 1.1 무게 단위 (2026-11-24 유지훈 결정)
+
+- 운동에서 쓰는 무게(중량 기록, 덤벨·바벨 무게 등)는 **kg**로 저장하고 표시합니다. 마이페이지 체중(`currentWeight`·`targetWeight`)도 kg라서 앱 전체가 같습니다.
+- 컬럼·필드 이름에 단위를 붙입니다 (예: `weight_kg`). 2.5kg 원판처럼 소수가 있으므로 `DECIMAL(6,2)`로 둡니다.
+- 지금 무게 칸이 있는 테이블은 없습니다. `workout_logs`(최원석)에 중량 기록을 넣을 때 이 규칙을 따릅니다.
+- 냉장고 재고는 다릅니다: 그룹 합계를 g·ml로 보여줍니다 (MEALFIT-56).
+
 ## 2. 패키지 구조
 
 가이드라인 MVC 배치를 따릅니다: `com.mealfit.domain.workout`
