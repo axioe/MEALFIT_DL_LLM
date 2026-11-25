@@ -1,5 +1,6 @@
 package com.mealfit.domain.workout.entity;
 
+import com.mealfit.domain.workout.model.SessionAdjustment;
 import com.mealfit.global.common.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -81,5 +82,30 @@ public class WorkoutSession extends BaseTimeEntity {
 
     public boolean isActive() {
         return activeKey != null;
+    }
+
+    // [문장조정] 키워드 해석 결과로 세션을 갱신한다 (위험 신호로 차단된 당일 세션은 해제 불가)
+    public void applyAdjustment(String focusArea, String title, int plannedMinutes,
+                                String items, String source, String adjustNote) {
+        if (isStartBlocked()) {
+            throw new IllegalStateException("위험 신호로 차단된 세션은 조정할 수 없습니다.");
+        }
+        this.focusArea = focusArea;
+        this.title = title;
+        this.plannedMinutes = plannedMinutes;
+        this.items = items;
+        this.source = source;
+        this.adjusted = true;
+        this.adjustNote = adjustNote;
+    }
+
+    // [문장조정] 위험 신호 감지 시 세션을 바꾸지 않고 운동 시작 차단 표시만 기록한다
+    public void blockByEmergency(String adjustNote) {
+        this.adjustNote = adjustNote;
+    }
+
+    // [문장조정] 위험 신호로 오늘 운동 시작이 차단된 상태인지 반환한다
+    public boolean isStartBlocked() {
+        return SessionAdjustment.isEmergencyNote(this.adjustNote);
     }
 }
