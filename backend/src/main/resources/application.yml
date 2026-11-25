@@ -111,6 +111,11 @@ mealfit:
     connect-timeout: 3s
     read-timeout: 20s
 
+ai:
+  pose:
+    # 운동 자세 판별(FR-WORK-05). 기본 꺼짐 — 운영에서 켤 시점은 PL이 정한다 (AI_POSE_ENABLED=true)
+    enabled: ${AI_POSE_ENABLED:false}
+
 logging:
   pattern:
     # 요청 식별자(X-Request-Id)를 모든 로그 줄에 표시한다
