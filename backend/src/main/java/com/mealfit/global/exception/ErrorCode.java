@@ -142,6 +142,15 @@ public enum ErrorCode {
     WORKOUT_CONCURRENT_REQUEST(HttpStatus.CONFLICT, "WORKOUT_005",
             "루틴을 동시에 여러 번 요청했습니다. 잠시 뒤 다시 시도해 주세요."),
 
+    // 운동 자세 판별 (FR-WORK-05, AI-05). AI 서비스 오류 내용은 노출하지 않고 이 코드로 바꾼다
+    WORKOUT_POSE_INVALID_INPUT(HttpStatus.BAD_REQUEST, "WORKOUT_POSE_001",
+            "관절 좌표 형식을 확인해 주세요. (fps 5~30, 60초·900프레임 이하, 프레임마다 관절 33개)"),
+    WORKOUT_POSE_UNSUPPORTED_EXERCISE(HttpStatus.BAD_REQUEST, "WORKOUT_POSE_002", "자세 판별을 지원하지 않는 운동입니다."),
+    WORKOUT_POSE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "WORKOUT_POSE_003",
+            "자세 판별을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+    WORKOUT_POSE_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "WORKOUT_POSE_004", "자세 판별 응답 시간이 초과되었습니다. 다시 시도해 주세요."),
+    WORKOUT_POSE_BAD_RESPONSE(HttpStatus.BAD_GATEWAY, "WORKOUT_POSE_005", "자세 판별 결과를 확인하지 못했습니다. 다시 시도해 주세요."),
+
     // AI 서비스
     AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI_001", "AI 서비스에 연결할 수 없습니다.");
 
