@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 
 import jakarta.validation.constraints.Positive;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +43,16 @@ class GlobalExceptionHandlerTest {
             return body.name();
         }
 
+        @GetMapping("/lock")
+        String lock() {
+            throw new CannotAcquireLockException("lock");
+        }
+
+        @GetMapping("/optimistic")
+        String optimistic() {
+            throw new OptimisticLockingFailureException("version");
+        }
+
         @GetMapping("/boom")
         String boom() {
             throw new IllegalStateException("boom");
@@ -50,6 +62,15 @@ class GlobalExceptionHandlerTest {
     private final MockMvc mockMvc = standaloneSetup(new SampleController())
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
+
+    @Test
+    void DB_잠금_충돌은_500이_아니라_409() throws Exception {
+        for (String path : new String[]{"/lock", "/optimistic"}) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("COMMON_409_LOCK"));
+        }
+    }
 
     @Test
     void 필수_파라미터가_없으면_400과_필드명() throws Exception {

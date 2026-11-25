@@ -38,8 +38,8 @@ public class SecurityConfig {
             );
 
         http
-            // 현재 인증은 자동 전송 쿠키가 아닌 Bearer 헤더를 사용합니다.
-            // 향후 Refresh Token을 쿠키로 옮기면 CSRF 정책도 변경해야 합니다.
+            // API 인증은 자동 전송되지 않는 Bearer 헤더를 사용합니다.
+            // Refresh 쿠키를 쓰는 /refresh·/logout은 AuthController가 전용 헤더(X-Requested-With)와 Origin을 검사합니다.
             .csrf(AbstractHttpConfigurer::disable)
 
             // Spring 기본 로그인 화면과 HTTP Basic 인증을 사용하지 않습니다.

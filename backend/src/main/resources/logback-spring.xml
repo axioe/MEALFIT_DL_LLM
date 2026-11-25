@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 로컬: 콘솔에 찍힌 이메일 인증 링크로 개발하므로 가리지 않는다 -->
+    <springProfile name="local">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    </springProfile>
+
+    <!-- 그 밖(운영·테스트): 토큰·비밀번호·이메일을 가린다 -->
+    <springProfile name="!local">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                <charset>${CONSOLE_LOG_CHARSET}</charset>
+                <layout class="com.mealfit.global.config.MaskingPatternLayout">
+                    <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+                </layout>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

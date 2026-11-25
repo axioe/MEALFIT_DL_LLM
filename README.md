@@ -81,7 +81,7 @@ MealFit/
 │  │  └─ lib/                     enums.js, labels.js, 날짜·기한·숫자 형식, queryClient
 │  └─ tests/                      Node 기본 테스트 (*.test.mjs, models/ 대상)
 ├─ AGENTS.md                      AI 도구 작업 규칙
-├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약, rds-setup.md: RDS 준비, troubleshooting.md: 트러블슈팅 기록)
+├─ docs/                          보조 문서 (quick-ai.md: 15분 요리 AI 계약, rds-setup.md: RDS 준비, https-setup.md: HTTPS 적용, troubleshooting.md: 트러블슈팅 기록)
 ├─ docker-compose.yml             로컬 PostgreSQL (pgvector/pgvector:pg16)
 ├─ docker-compose.prod.yml        운영(EC2) 구성 (DB는 RDS)
 ├─ docker-compose.ci.yml          CI 통합 검사용 (운영 구성 + PostgreSQL 컨테이너)

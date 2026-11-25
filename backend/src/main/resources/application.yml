@@ -111,6 +111,11 @@ mealfit:
     connect-timeout: 3s
     read-timeout: 20s
 
+logging:
+  pattern:
+    # 요청 식별자(X-Request-Id)를 모든 로그 줄에 표시한다
+    correlation: "[%X{requestId:-}] "
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
