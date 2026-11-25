@@ -107,7 +107,8 @@ class PoseModelClient:
                     def model(x, params=params):
                         x = np.asarray(x, np.float64)
                         z = np.stack([((x - mu) / sc) @ coef + b for mu, sc, coef, b in params], 1)
-                        return 1 / (1 + np.exp(-z))
+                        # 학습 분포에서 먼 입력은 z 가 매우 커져 exp 가 넘친다(경고). 확률은 0·1 에 붙으므로 범위만 제한한다
+                        return 1 / (1 + np.exp(-np.clip(z, -500, 500)))
                 else:
                     raise _unavailable()
                 self._models[exercise] = model
