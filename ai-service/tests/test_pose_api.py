@@ -224,6 +224,25 @@ class PoseModelClientTest(unittest.TestCase):
         self.assertEqual(sum(1 for c in self.calls if c[:2] == ('open', 'model.onnx')), 1)
         self.assertTrue(all(c[2] == ['CPUExecutionProvider'] for c in self.calls if c[0] == 'open'))
 
+    # 학습 분포에서 먼 입력으로 LogReg z 가 아주 커져도 exp overflow 경고 없이 0~1 확률을 낸다
+    def test_logreg_extreme_input_no_overflow(self):
+        import warnings
+        root = tempfile.mkdtemp(dir=self.tmp.name)
+        os.makedirs(os.path.join(root, 'ex99'))
+        write_json(os.path.join(root, 'ex99', 'logreg_c0.json'), {'mean': [0.0] * 4, 'scale': [1.0] * 4, 'coef': [1.0] * 4, 'intercept': 0.0})
+        write_json(os.path.join(root, 'ex99', 'logreg_c1.json'), {'mean': [0.0] * 4, 'scale': [1.0] * 4, 'coef': [-1.0] * 4, 'intercept': 0.0})
+        write_json(os.path.join(root, 'manifest.json'), {'버피 테스트': {'dir': 'ex99', 'model': 'logreg', 'conditions': ['a', 'b'],
+                                                               'files': ['logreg_c0.joblib', 'logreg_c1.joblib']}})
+        client = PoseModelClient(root)
+        x = np.array([[1e3] * 4, [-1e3] * 4, [0.0] * 4])  # z = ±4000, 0
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            p = client.predict('버피 테스트', x)
+        self.assertTrue(np.isfinite(p).all() and ((p >= 0) & (p <= 1)).all())
+        np.testing.assert_allclose(p[0], [1.0, 0.0], atol=1e-12)
+        np.testing.assert_allclose(p[1], [0.0, 1.0], atol=1e-12)
+        np.testing.assert_allclose(p[2], [0.5, 0.5])
+
     def test_unavailable(self):
         from mealfit_ai.errors import ServiceError
         client = PoseModelClient(self.tmp.name)
