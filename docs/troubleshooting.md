@@ -23,6 +23,7 @@
 | TS-20261124-02 | 오전 9시 전에 날짜가 하루 밀림 | frontend | 해결 |
 | TS-20261124-03 | 세션 처리 작업과 최신 develop의 인증 코드 충돌 | frontend / Git | 해결 |
 | TS-20261124-04 | 로그인 후 원래 요청한 화면으로 돌아가지 않음 | frontend | 해결 |
+| TS-20261125-01 | 루틴을 다시 받으면 위험 신호 운동 차단이 풀림 | backend | 해결 |
 
 ## 양식 (복사해서 "기록" 맨 아래에 붙여 넣기)
 
@@ -104,3 +105,18 @@
 | 해결 | 허용된 내부 업무 경로의 쿼리·앵커를 유지해 로그인 후 replace로 이동한다. OAuth 시작 시에는 주소만 탭 저장소에 15분간 보관하고 회원 확인 완료 후 1회 사용한다. 소셜 계정 연동의 마이페이지 이동은 유지한다. npm ci, lint(오류 0개·기존 경고 3개), 테스트(233개 통과·실패 0개), build를 통과했다. 실제 계정의 이메일·소셜 로그인 화면 검증은 별도로 필요하다. |
 | 재발 방지 | 외부 주소·인증 화면·존재하지 않는 경로 차단, 로그인 실패 시 이동 방지, OAuth 복귀·만료·연동 유지와 라우터 뒤로 가기를 회귀 테스트한다. |
 | 관련 | MEALFIT-52 / frontend/src/models/loginNavigation.js / frontend/src/hooks/loginNavigation.js / frontend/tests/loginNavigation.test.mjs |
+
+### TS-20261125-01 루틴을 다시 받으면 위험 신호 운동 차단이 풀림
+
+| 항목 | 내용 |
+|---|---|
+| 작성일 / 작성자 | 2026-11-25 / 유지훈 (Claude Code 보조) |
+| 영역 | backend |
+| 상태 | 해결 |
+| 증상 | 위험 신호 문장(가슴 통증·호흡곤란 등)으로 그날 운동 시작이 차단(startBlocked=true)된 뒤, 같은 날을 시작일로 POST /workout-routines/recommend를 다시 호출하면 새 세션의 startBlocked가 false가 된다. 이어서 일반 문장("15분만")으로 조정하면 조정까지 적용된다(adjusted=true). |
+| 발생 상황 | 로컬 H2 테스트, develop 1c09b5b(PR #34 머지 후). 루틴 생성 → 같은 날짜에 위험 신호 문장으로 조정 → 같은 시작일로 루틴 재추천 → GET /current 또는 조정 재요청. develop에만 있었고 운영(main)과 화면에는 아직 반영되지 않은 상태였다. |
+| 원인 | 차단 상태를 따로 저장하지 않고 세션 행의 adjust_note가 "위험신호:운동중단"으로 시작하는지로만 판단한다. 재추천은 시작일 이후 활성 세션을 모두 비활성화하고 adjust_note가 빈 새 세션을 만들기 때문에 차단 표시가 이어지지 않았다. |
+| 시도한 방법 | 위 순서를 통합 테스트로 재현해 재추천 응답·/current·조정 응답 모두 startBlocked=false임을 확인했다. 수정 범위는 담당자와 정했다: 오늘 날짜의 차단만 이어 가고, 미래 날짜 차단은 이어 가지 않는다. |
+| 해결 | 재추천 시작일이 오늘이면, 오늘 날짜에 차단 표시가 남은 세션(교체된 비활성 세션 포함)이 있는지 확인하고 새로 만든 오늘 세션에 같은 차단 표시를 다시 넣는다. DB 스키마 변경 없음. backend에서 gradlew.bat test 실행 결과 372개 중 실패 0개(기존 조건부 건너뜀 10개). |
+| 재발 방지 | WorkoutSessionAdjustApiTest에 회귀 테스트 2개 추가: 오늘 차단 후 재추천(2회)·조회·일반 문장 조정에서도 startBlocked=true 유지, 미래 날짜 차단은 재추천 후 이어 가지 않음. 오늘 차단 테스트는 일요일(주 6일 루틴에 세션 없음)에는 건너뛴다. |
+| 관련 | PR #34 / MEALFIT-116 / WorkoutRoutineService.java / WorkoutSessionRepository.java / WorkoutSessionAdjustApiTest.java / feature/workout-keep-emergency-block |
