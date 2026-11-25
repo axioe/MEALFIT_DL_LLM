@@ -30,4 +30,9 @@ export const queryKeys = {
   shopping: {
     all: ['shopping'],
   },
+  // [문장조정] 운동 루틴 쿼리 키
+  workout: {
+    all: ['workout'],
+    current: (week) => ['workout', 'current', week ?? null],
+  },
 }

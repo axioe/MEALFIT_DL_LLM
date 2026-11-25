@@ -11,4 +11,7 @@ public interface WorkoutRoutineRepository extends JpaRepository<WorkoutRoutine, 
     List<WorkoutRoutine> findByUserIdAndStatus(Long userId, RoutineStatus status);
 
     Optional<WorkoutRoutine> findFirstByUserIdAndStatusOrderByIdDesc(Long userId, RoutineStatus status);
+
+    // [문장조정] 본인 소유 루틴만 조회한다
+    Optional<WorkoutRoutine> findByIdAndUserId(Long id, Long userId);
 }

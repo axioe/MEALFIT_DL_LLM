@@ -191,12 +191,13 @@ public class WorkoutRoutineService {
                 LocalDate day = date;
                 boolean rest = routine.map(r -> r.covers(day)).orElse(false);
                 days.add(new DayResponse(date, dayOfWeek, rest, null, null, null, null, null, null,
-                    null, null, null));
+                    null, null, null, null, null));
                 continue;
             }
             List<PlannedItem> items = readItems(session.getItems());
             days.add(new DayResponse(date, dayOfWeek, false, session.getId(), session.getFocusArea(),
                 session.getTitle(), session.getPlannedMinutes(), session.getSource(), session.isAdjusted(),
+                session.getAdjustNote(), session.isStartBlocked(),
                 itemsOf(items, Phase.WARM_UP), itemsOf(items, Phase.MAIN), itemsOf(items, Phase.COOL_DOWN)));
         }
 
