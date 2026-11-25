@@ -4,7 +4,7 @@
 - controllers/  HTTP 라우트(Blueprint)와 오류 응답 — Controller
 - services/     추천 프롬프트·응답 검증 — Model(비즈니스 로직)
 - schemas/      요청 본문 검증 — Model(입력 규칙)
-- clients/      Gemini 호출
+- clients/      Gemini 호출, 자세 판별 모델(ONNX) 호출
 """
 import os
 import sys
@@ -21,6 +21,7 @@ from mealfit_ai.controllers.health_controller import health_bp
 from mealfit_ai.controllers.vision_controller import vision_bp
 from mealfit_ai.services.label_ocr_service import LabelOcrService
 from mealfit_ai.controllers.meal_plan_controller import meal_plan_bp
+from mealfit_ai.controllers.pose_controller import pose_bp
 from mealfit_ai.controllers.quick_recipe_controller import quick_recipe_bp
 from mealfit_ai.services.meal_plan_service import generate_meals
 
@@ -45,8 +46,12 @@ def create_app(config=None):
                       OCR_DET_MODEL_DIR=os.getenv('OCR_DET_MODEL_DIR', ''),
                       OCR_REC_MODEL_DIR=os.getenv('OCR_REC_MODEL_DIR', ''),
                       OCR_TIMEOUT_SECONDS=8)
+    # 자세 판별 모델 폴더(manifest.json). 비어 있으면 판정 요청에 503 POSE_003
+    app.config.update(POSE_MODEL_DIR=os.getenv('POSE_MODEL_DIR', ''),
+                      POSE_MODEL_VERSION=os.getenv('POSE_MODEL_VERSION', 'pose-20261123-41'))
     app.config.update(config or {})
     app.extensions['vision_lock'] = threading.Lock()
+    app.extensions['pose_lock'] = threading.Lock()
     if 'OCR_PREDICTOR' not in app.config:
         app.extensions['label_ocr'] = LabelOcrService(app.config)
         app.extensions['label_ocr'].warmup()
@@ -54,5 +59,6 @@ def create_app(config=None):
     app.register_blueprint(health_bp)
     app.register_blueprint(quick_recipe_bp)
     app.register_blueprint(meal_plan_bp)
+    app.register_blueprint(pose_bp)
     register_error_handlers(app)
     return app
