@@ -155,6 +155,24 @@ class PoseApiTest(unittest.TestCase):
         response = self.app().test_client().post(URL, json=self.body())
         self.assertEqual((response.status_code, response.json['code']), (503, 'POSE_003'))
 
+    # 지원 운동 목록: manifest 의 운동만(_replaced 제외), 조건 이름 포함, 모델 버전
+    def test_exercises(self):
+        with patch('mealfit_ai.clients.pose_model_client.inference_ready', return_value=True):
+            response = self.client.get('/ai/pose/exercises')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {'modelVersion': 'pose-test',
+                                         'exercises': [{'name': EXERCISE, 'conditions': ['팔꿈치 고정', '어깨 으쓱 없음']}]})
+
+    # 모델 폴더나 추론 패키지가 없으면 목록도 503 POSE_003 (판정을 할 수 없으므로)
+    def test_exercises_unavailable(self):
+        with patch('mealfit_ai.clients.pose_model_client.inference_ready', return_value=False):
+            response = self.client.get('/ai/pose/exercises')
+        self.assertEqual((response.status_code, response.json['code']), (503, 'POSE_003'))
+        with patch('mealfit_ai.clients.pose_model_client.inference_ready', return_value=True):
+            response = self.app(POSE_MODEL_DIR='').test_client().get('/ai/pose/exercises')
+        self.assertEqual((response.status_code, response.json['code']), (503, 'POSE_003'))
+        self.assertEqual(self.client.post('/ai/pose/exercises').status_code, 405)
+
     # 모델 결과 모양이 조건 수와 다르면 500 POSE_004
     def test_bad_model_output(self):
         class Broken(PoseModelClient):

@@ -22,6 +22,14 @@ def pose_client():
     return client
 
 
+@pose_bp.get('/ai/pose/exercises')
+# 지원 운동 목록(모델 manifest 기준). Spring 이 판정 요청 전에 지원 여부를 확인하고, 화면의 운동 선택 목록에도 쓴다.
+def pose_exercises():
+    items = pose_client().exercises()
+    return jsonify(modelVersion=current_app.config['POSE_MODEL_VERSION'],
+                   exercises=[{'name': name, 'conditions': conditions} for name, conditions in items])
+
+
 @pose_bp.post('/ai/pose/analyze')
 # 관절 좌표만 받아 판정한다. 영상·이미지·회원 정보는 받지 않고 좌표도 저장하지 않는다.
 def analyze_pose():

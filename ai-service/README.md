@@ -140,6 +140,7 @@ Spring 담당자: Python 주소·경로·선택 재료 식별·알레르기/제�
 - `exercise`: 자세 판별 운동명 (`exercise_catalog.pose_exercise_key`). `frames`: 프레임마다 MediaPipe world 좌표 33개 `[x, y, z, visibility]`, 사람을 못 찾은 프레임은 `null`.
 - 제한: fps 5~30, 60초·900프레임 이하, 본문 3MB 이하.
 - 응답: `status`(`OK`/`RETAKE`), `retakeCode`(`POSE_NO_PERSON`/`POSE_TOO_FEW_FRAMES`), `modelVersion`, `repCount`, `reps[].conditions[]`(확률·판정), `conditions[]`(올바른 반복 수, 정확도, 정확도 기준 `EXTERNAL`/`CV`, 피드백 문구), `notice`. 모든 판정은 참고용입니다 (D20).
+- 지원 운동 목록: `GET /ai/pose/exercises` → `{ "modelVersion", "exercises": [{ "name", "conditions": [...] }] }` (모델 manifest 기준, 운동명 순). Spring이 판정 요청 전에 지원 여부를 확인하고 화면의 운동 선택 목록에도 쓴다. 모델 폴더나 추론 패키지가 없으면 503 `POSE_003`.
 - 오류: 400 `POSE_001`(형식), 400 `POSE_002`(지원하지 않는 운동), 503 `POSE_003`(모델 폴더·onnxruntime 없음), 500 `POSE_004`(모델 결과 이상).
 - 설정: `POSE_MODEL_DIR`(manifest.json이 있는 모델 폴더, git에 없음), `POSE_MODEL_VERSION`. 추론 패키지는 `requirements-pose.txt`(numpy, onnxruntime)이며, 기본 `requirements.txt`만 설치하면 판정 요청에만 503을 돌려줍니다.
 - 전처리는 학습 코드와 같은 계산입니다 (`services/pose_preprocess.py`). 고치면 학습 환경 예측과의 차이(1e-4 이하)를 다시 확인합니다. 모델 설명은 `docs/pose-model-card.md`에 있습니다.
