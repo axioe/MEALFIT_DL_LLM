@@ -17,6 +17,7 @@ import com.mealfit.domain.workout.model.Equipment;
 import com.mealfit.domain.workout.model.ExerciseDef;
 import com.mealfit.domain.workout.model.Phase;
 import com.mealfit.domain.workout.model.PlannedItem;
+import com.mealfit.domain.workout.model.SessionAdjustment;
 import com.mealfit.domain.workout.model.SessionPlan;
 import com.mealfit.domain.workout.model.Violation;
 import com.mealfit.domain.workout.model.WorkoutConditions;
@@ -103,6 +104,12 @@ public class WorkoutRoutineService {
             plans.add(validated(plan, conditions, byCode));
         }
 
+        // 오늘 위험 신호로 운동 시작이 차단됐으면 루틴을 다시 받아도 오늘 세션의 차단을 유지한다 (FR-WORK-02, D18).
+        // 미래 날짜의 차단은 이어 가지 않는다.
+        boolean todayBlocked = startDate.equals(today)
+            && sessionRepository.existsByUserIdAndSessionDateAndAdjustNoteStartingWith(
+                userId, today, SessionAdjustment.EMERGENCY_NOTE);
+
         // 기존 루틴은 교체 상태로 바꾸고, 시작일 이후의 활성 세션만 비활성화한다. 지난 세션은 그대로 둔다.
         // TODO(workout_logs 추가 후): 기록이 있는 세션은 비활성화하지 않고 새 루틴에서 그 날짜를 건너뛴다.
         routineRepository.findByUserIdAndStatus(userId, RoutineStatus.ACTIVE).forEach(WorkoutRoutine::replace);
@@ -139,6 +146,11 @@ public class WorkoutRoutineService {
                 .source(plan.source())
                 .build())
             .toList();
+        if (todayBlocked) {
+            sessions.stream()
+                .filter(session -> session.getSessionDate().equals(today))
+                .forEach(session -> session.blockByEmergency(SessionAdjustment.EMERGENCY_NOTE));
+        }
         try {
             sessionRepository.saveAllAndFlush(sessions);
         } catch (DataIntegrityViolationException e) {

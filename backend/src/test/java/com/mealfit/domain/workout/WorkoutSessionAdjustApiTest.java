@@ -2,6 +2,7 @@ package com.mealfit.domain.workout;
 
 import static com.mealfit.support.TestJwt.user;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -61,6 +62,11 @@ class WorkoutSessionAdjustApiTest {
 
     private JsonNode createRoutine(long userId, String level, int days, int minutes, List<String> equipment)
             throws Exception {
+        return createRoutine(userId, level, days, minutes, equipment, NEXT_MONDAY);
+    }
+
+    private JsonNode createRoutine(long userId, String level, int days, int minutes, List<String> equipment,
+                                   LocalDate startDate) throws Exception {
         // 수준을 프로필에 먼저 저장
         Map<String, Object> fitness = new HashMap<>(Map.of(
             "workoutGoal", "hypertrophy",
@@ -80,7 +86,7 @@ class WorkoutSessionAdjustApiTest {
             "sessionMinutes", minutes,
             "equipment", equipment,
             "injuries", List.of(),
-            "startDate", NEXT_MONDAY.toString()
+            "startDate", startDate.toString()
         );
         String json = mvc.perform(post(PATH + "/recommend").with(user(userId))
                 .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(body)))
@@ -181,6 +187,63 @@ class WorkoutSessionAdjustApiTest {
             .andReturn().getResponse().getContentAsString();
         JsonNode retry = mapper.readTree(retryJson);
         assertThat(mainCodes(retry.get("day"))).isEqualTo(beforeCodes);
+    }
+
+    @Test
+    void 오늘_위험신호로_차단된_뒤_같은날_루틴을_다시_받아도_오늘_차단이_유지된다() throws Exception {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        // 주 6일 루틴은 월–토에 세션이 있다. 일요일에는 오늘 세션이 없어 차단할 대상이 없다.
+        assumeTrue(today.getDayOfWeek() != DayOfWeek.SUNDAY, "일요일에는 오늘 운동 세션이 없음");
+
+        JsonNode routine = createRoutine(USER, "beginner", 6, 30, List.of("none"), today);
+        long routineId = routine.get("routineId").asLong();
+        adjust(USER, routineId, today, "가슴이 답답하고 숨이 안 쉬어져")
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.startBlocked").value(true));
+
+        // 같은 날 루틴 재추천: 새로 생긴 오늘 세션도 차단 상태여야 한다
+        JsonNode again = createRoutine(USER, "beginner", 6, 30, List.of("none"), today);
+        long newRoutineId = again.get("routineId").asLong();
+        assertThat(newRoutineId).isNotEqualTo(routineId);
+        assertThat(dayOf(again, today).get("startBlocked").asBoolean()).isTrue();
+
+        String currentJson = mvc.perform(get(PATH + "/current").param("week", today.toString()).with(user(USER)))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        assertThat(dayOf(mapper.readTree(currentJson), today).get("startBlocked").asBoolean()).isTrue();
+
+        // 새 루틴에 일반 문장으로 조정해도 차단이 풀리지 않는다
+        adjust(USER, newRoutineId, today, "괜찮아졌어 15분만 할래")
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.adjusted").value(false))
+            .andExpect(jsonPath("$.startBlocked").value(true))
+            .andExpect(jsonPath("$.riskLevel").value("EMERGENCY"));
+
+        // 한 번 더 재추천해도(이전 세션이 모두 비활성이어도) 오늘 차단이 이어진다
+        JsonNode third = createRoutine(USER, "beginner", 6, 30, List.of("none"), today);
+        assertThat(dayOf(third, today).get("startBlocked").asBoolean()).isTrue();
+    }
+
+    @Test
+    void 미래_날짜의_위험신호_차단은_루틴을_다시_받으면_이어가지_않는다() throws Exception {
+        JsonNode routine = createRoutine(USER, "beginner", 3, 30, List.of("none"));
+        long routineId = routine.get("routineId").asLong();
+        adjust(USER, routineId, NEXT_MONDAY, "가슴이 답답하고 숨이 안 쉬어져")
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.startBlocked").value(true));
+
+        // 차단은 오늘 날짜만 이어 간다 (2026-11-25 결정)
+        JsonNode again = createRoutine(USER, "beginner", 3, 30, List.of("none"));
+        assertThat(dayOf(again, NEXT_MONDAY).get("startBlocked").asBoolean()).isFalse();
+    }
+
+    private static JsonNode dayOf(JsonNode routine, LocalDate date) {
+        for (JsonNode day : routine.get("days")) {
+            if (date.toString().equals(day.get("date").asText())) {
+                return day;
+            }
+        }
+        throw new AssertionError("응답에 날짜가 없음: " + date);
     }
 
     @Test
