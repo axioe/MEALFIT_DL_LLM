@@ -123,7 +123,7 @@
 
 ## 7. 파일 보관 (git에 넣지 않음)
 
-| 파일 | 크기 | 위치 (D20 ① 제안, PL 확인 중) |
+| 파일 | 크기 | 위치 (D20 ①) |
 |---|---|---|
 | 판정 모델 (운동별 ONNX + manifest.json) | 41종 합계 약 17 MB | 운영 서버 `/opt/mealfit/models/pose/<버전>/`, ai-service에 읽기 전용 연결 (`POSE_MODEL_DIR`) |
 | 포즈 모델 `pose_landmarker_heavy.task` · MediaPipe WASM | 약 30 MB | 같은 서버, frontend(nginx)가 정적 파일로 제공. 외부 CDN 미사용 |
@@ -132,4 +132,4 @@
 - **무결성:** manifest.json의 운동 항목에 파일별 SHA-256(`sha256`)을 기록하면, ai-service가 그 파일을 처음 불러올 때 대조하고 다르면 판정하지 않는다(503 `POSE_003`).
 - **버전:** 폴더 이름이 버전이고, 응답의 `modelVersion`에 같은 값을 넣는다. 되돌릴 때는 환경 변수만 이전 폴더로 바꾼다.
 - **교체 이력:** 교체 전 모델은 manifest의 `_replaced`에 남긴다 (최원석 모델 2종 교체, 바벨 로우 LogReg → CNN).
-- **백업 위치:** 미정 (PL 결정 필요).
+- **백업 위치:** 유지훈 PC 원본과 운영 서버 두 곳에만 둔다. S3·공유 드라이브에는 올리지 않는다 (PL 결정). 배포 절차는 `docs/pose-deploy.md`.

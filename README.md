@@ -180,7 +180,7 @@ main push ─▶ backend (test) ─┐
 
 ### 서버 구성
 
-- 파일: `docker-compose.prod.yml`, `docker-compose.ci.yml`(CI 전용), `docs/rds-setup.md`, `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
+- 파일: `docker-compose.prod.yml`, `docker-compose.ci.yml`(CI 전용), `docs/rds-setup.md`, `docs/pose-deploy.md`(자세 판별 모델), `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.env.prod.example`, `application-prod.yml`
 - EC2: Ubuntu 24.04, t3.small(2GB + 스왑 2GB), 서울 리전
 - 보안 그룹: 22(자동 배포 때문에 전체, 키 파일로만 접속), 80(전체). 8080·8000은 열지 않는다. RDS 보안 그룹은 5432를 EC2 보안 그룹에서만 허용
 

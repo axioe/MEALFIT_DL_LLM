@@ -5,8 +5,9 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 자세 판별 추론(numpy·onnxruntime)까지 설치한다. 모델 파일은 이미지에 넣지 않고 서버 폴더를 읽기 전용으로 붙인다 (docs/pose-deploy.md)
+COPY requirements.txt requirements-pose.txt ./
+RUN pip install --no-cache-dir -r requirements-pose.txt
 
 COPY . .
 
