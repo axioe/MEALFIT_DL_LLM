@@ -1,0 +1,6 @@
+# -*- coding: utf-8 -*-
+# 운동 자세 판별(POST /ai/pose/analyze) 추론용. 모델은 ONNX·계수 JSON이라 TensorFlow·scikit-learn은 필요 없다.
+# onnxruntime 버전은 41종 ONNX 변환을 검증한 버전과 같다. 운영 이미지 반영은 PL Dockerfile PR에서 한다.
+-r requirements.txt
+numpy==2.2.6
+onnxruntime==1.32.0

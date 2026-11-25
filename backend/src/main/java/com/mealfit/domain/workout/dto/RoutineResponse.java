@@ -34,6 +34,9 @@ public record RoutineResponse(
         Integer durationMinutes,
         String source,
         Boolean adjusted,
+        // [문장조정] 해석 키워드 요약 및 위험 신호 시 운동 시작 차단 여부
+        String adjustNote,
+        Boolean startBlocked,
         List<ItemResponse> warmUp,
         List<ItemResponse> exercises,
         List<ItemResponse> coolDown
