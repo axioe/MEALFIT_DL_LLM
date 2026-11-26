@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+# [자세판별] 포즈 모델 파일(.task)은 git에 넣지 않는다. 로컬 확인용은 public/models/pose/에 둔다
+/public/models/
+*.task
 dist-ssr
 *.local
 

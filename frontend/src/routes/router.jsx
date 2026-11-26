@@ -22,6 +22,8 @@ export const router = createBrowserRouter([
             { path: '/calendar', lazy: page(() => import('@/pages/CalendarPage'), 'CalendarPage') },
             { path: '/weight', lazy: page(() => import('@/pages/WeightPage'), 'WeightPage') },
             { path: '/mypage', lazy: page(() => import('@/pages/MyPage'), 'MyPage') },
+            // [자세판별] 개발 서버 전용: 운동 화면 연결 전 자세 분석 패널 확인
+            ...(import.meta.env.DEV ? [{ path: '/dev/pose', lazy: page(() => import('@/pages/PoseDevPage'), 'PoseDevPage') }] : []),
         ] },
     ] },
     { path: '*', element: <Navigate to="/dashboard" replace/> },

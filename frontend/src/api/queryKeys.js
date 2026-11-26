@@ -42,4 +42,8 @@ export const queryKeys = {
     all: ['intake'],
     byDate: (date) => ['intake', date ?? null],
   },
+  // [자세판별] 자세 판별 지원 운동 목록
+  pose: {
+    exercises: ['pose', 'exercises'],
+  },
 }
