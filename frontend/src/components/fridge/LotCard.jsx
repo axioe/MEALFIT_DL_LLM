@@ -1,3 +1,4 @@
+import { readInventoryMemo, inventoryProductLabel } from '@/models/inventoryMemo'
 import { ExpirationBadge } from '@/components/common/StatusBadge'
 import { LOT_STATUS } from '@/lib/enums'
 import { formatQuantity } from '@/lib/format'
@@ -5,6 +6,7 @@ import { LOT_STATUS_LABEL, STORAGE_LABEL } from '@/lib/labels'
 
 /** 재고 묶음 하나: 수량·보관 위치·상태·기한과 수정·폐기·이력 버튼 */
 export function LotCard({ lot, inactive = false, onEdit, onDispose, onHistory }) {
+  const { productInfo, memo } = readInventoryMemo(lot.memo)
   return (
     <li className={`min-w-0 rounded-xl border p-4 ${inactive ? 'border-gray-200 bg-gray-100/70' : 'border-gray-200 bg-white'}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -18,6 +20,7 @@ export function LotCard({ lot, inactive = false, onEdit, onDispose, onHistory })
           {LOT_STATUS_LABEL[lot.status]}
         </span>
       </div>
+      {productInfo && <p className="mt-2 break-words text-sm font-semibold">{inventoryProductLabel(lot)}</p>}
       <dl className="mt-3 grid gap-2 text-xs text-gray-500 sm:grid-cols-2">
         <div className="flex flex-wrap items-center gap-2">
           <dt>소비기한</dt>
@@ -33,10 +36,10 @@ export function LotCard({ lot, inactive = false, onEdit, onDispose, onHistory })
           <dt>묶음 번호</dt>
           <dd>#{lot.id}</dd>
         </div>
-        {lot.memo && (
+        {memo && (
           <div className="min-w-0 sm:col-span-2">
             <dt className="sr-only">메모</dt>
-            <dd className="whitespace-pre-wrap break-all text-gray-600">{lot.memo}</dd>
+            <dd className="whitespace-pre-wrap break-all text-gray-600">{memo}</dd>
           </div>
         )}
       </dl>

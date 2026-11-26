@@ -10,6 +10,7 @@ from mealfit_ai.services.meal_plan_service import generate_meals
 __all__ = ['create_app', 'generate_meals', 'get_port']
 
 
+# 환경변수 포트를 검증하고 미설정 시 8000을 반환함
 def get_port():
     try:
         port = int(os.getenv('PORT', '8000'))
@@ -20,7 +21,15 @@ def get_port():
         raise ValueError('PORT는 1~65535 사이의 정수로 설정해 주세요.') from None
 
 
+# Windows의 포트 재사용을 막아 구버전 서버로 요청이 섞이지 않게 함
+def configure_local_server():
+    if os.name == 'nt':
+        from werkzeug.serving import BaseWSGIServer
+        BaseWSGIServer.allow_reuse_address = False
+
+
 if __name__ == '__main__':
+    configure_local_server()
     app = create_app()
     # 로컬은 127.0.0.1, 운영 컨테이너는 HOST=0.0.0.0 (docker-compose.prod.yml)으로 backend가 접근한다
     app.run(host=os.getenv('HOST', '127.0.0.1'), port=get_port(), debug=False)
