@@ -149,6 +149,13 @@ public enum ErrorCode {
     WORKOUT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "WORKOUT_004", "운동 세션을 찾을 수 없습니다."),
     WORKOUT_CONCURRENT_REQUEST(HttpStatus.CONFLICT, "WORKOUT_005",
             "루틴을 동시에 여러 번 요청했습니다. 잠시 뒤 다시 시도해 주세요."),
+    // [운동기록] 완료 기록·주간 현황 (FR-WORK-03·04, BR-18)
+    WORKOUT_LOG_FUTURE_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "WORKOUT_006",
+            "미래 날짜의 운동 세션은 미리 기록할 수 없습니다."),
+    WORKOUT_LOG_BLOCKED_BY_EMERGENCY(HttpStatus.CONFLICT, "WORKOUT_007",
+            "위험 신호로 중단된 세션은 완료 또는 일부 완료로 기록할 수 없습니다."),
+    WORKOUT_LOG_INVALID_INPUT(HttpStatus.BAD_REQUEST, "WORKOUT_008",
+            "운동 기록 입력값이 올바르지 않습니다."),
 
     // 운동 자세 판별 (FR-WORK-05, AI-05). AI 서비스 오류 내용은 노출하지 않고 이 코드로 바꾼다
     WORKOUT_POSE_INVALID_INPUT(HttpStatus.BAD_REQUEST, "WORKOUT_POSE_001",
