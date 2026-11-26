@@ -38,4 +38,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
     Optional<WorkoutSession> findByRoutineIdAndUserIdAndSessionDateAndActiveKeyIsNotNull(
         Long routineId, Long userId, LocalDate sessionDate
     );
+
+    // [운동기록] 본인 소유 세션 단건 조회
+    Optional<WorkoutSession> findByIdAndUserId(Long id, Long userId);
 }
