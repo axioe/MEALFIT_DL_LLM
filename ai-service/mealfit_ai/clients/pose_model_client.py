@@ -21,6 +21,12 @@ def _unavailable():
     return ServiceError(503, *UNAVAILABLE)
 
 
+def inference_ready():
+    """추론 패키지(numpy·onnxruntime)가 설치돼 있는지 (불러오지는 않는다)"""
+    import importlib.util
+    return all(importlib.util.find_spec(p) is not None for p in ('numpy', 'onnxruntime'))
+
+
 class PoseModelClient:
     def __init__(self, model_dir):
         self.model_dir = os.path.abspath(model_dir) if model_dir else ''
@@ -40,6 +46,13 @@ class PoseModelClient:
                 raise _unavailable() from None
             self._manifest = {k: v for k, v in data.items() if not k.startswith('_')}
         return self._manifest
+
+    def exercises(self):
+        """지원 운동 목록 [(운동명, 조건 이름 목록)] (운동명 순). Spring 이 판정 전에 지원 여부를 확인하는 데 쓴다.
+        추론 패키지(numpy·onnxruntime)가 없으면 판정을 못 하므로 목록도 503 으로 알린다."""
+        if not inference_ready():
+            raise _unavailable()
+        return [(name, list(m['conditions'])) for name, m in sorted(self.manifest().items())]
 
     def spec(self, exercise):
         """운동 정보 (모델 종류, 조건 이름, 입력 종류, 조건별 정확도). 지원하지 않는 운동이면 None"""

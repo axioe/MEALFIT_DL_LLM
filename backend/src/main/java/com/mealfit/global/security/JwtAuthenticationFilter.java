@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,10 +24,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
 
     private final JwtTokenProvider jwtTokenProvider;
     private final SecurityErrorHandler securityErrorHandler;
     private final UserRepository userRepository;
+    private final WithdrawalWriteCoordinator withdrawalWrites = new WithdrawalWriteCoordinator();
 
     /**
      * 회원가입·로그인·재발급·로그아웃은 Access Token 없이 호출합니다.
@@ -90,6 +93,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        if (path.startsWith("/api/v1/") && !READ_METHODS.contains(request.getMethod())) {
+            boolean withdrawal = ("DELETE".equals(request.getMethod()) && "/api/v1/me".equals(path))
+                || ("POST".equals(request.getMethod()) && "/api/v1/me/withdrawal/confirm".equals(path));
+            // FK가 없는 기록도 남지 않도록 같은 회원의 다른 API 쓰기와 탈퇴를 조율합니다.
+            withdrawalWrites.run(userId, withdrawal, () -> authenticate(request, response, filterChain, userId));
+        } else {
+            authenticate(request, response, filterChain, userId);
+        }
+    }
+
+    private void authenticate(HttpServletRequest request, HttpServletResponse response,
+                              FilterChain filterChain, Long userId) throws IOException, ServletException {
         // 서명·만료 검증만으로는 탈퇴 전에 받은 토큰을 차단할 수 없습니다.
         // DB의 최신 회원 상태를 매 요청마다 확인하고, 없거나 탈퇴한 회원은 인증하지 않습니다.
         if (!userRepository.existsByIdAndDeletedAtIsNull(userId)) {

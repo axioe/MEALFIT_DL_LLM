@@ -1,10 +1,12 @@
 package com.mealfit.global.security;
 
+import com.mealfit.domain.user.service.WithdrawalReauthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -18,7 +20,9 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OAuth2FailureHandler implements AuthenticationFailureHandler {
+    private final WithdrawalReauthentication withdrawalReauthentication;
 
     @Value("${mealfit.auth.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -61,6 +65,15 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         String base = (frontendBaseUrl == null || frontendBaseUrl.isBlank())
             ? "http://localhost:5173"
             : frontendBaseUrl.trim().replaceAll("/+$", "");
+        if (WithdrawalOAuth2RequestResolver.isWithdrawalCallback(request)) {
+            if (WithdrawalOAuth2RequestResolver.matchesCookie(request)) {
+                withdrawalReauthentication.cancelPending(WithdrawalOAuth2RequestResolver.cookie(request));
+                response.addHeader(HttpHeaders.SET_COOKIE,
+                    WithdrawalOAuth2RequestResolver.responseCookie(null, cookieSecure).toString());
+            }
+            response.sendRedirect(base + "/mypage?withdrawal=failed");
+            return;
+        }
         response.sendRedirect(base + "/login?oauthError=oauth_failed");
     }
 }

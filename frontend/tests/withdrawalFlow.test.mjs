@@ -1,6 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { requestWithdrawal, clearWithdrawalSession } from '../src/models/withdrawalFlow.js'
+import { requestWithdrawal, requestSocialWithdrawal, clearWithdrawalSession } from '../src/models/withdrawalFlow.js'
+
+test('소셜 탈퇴는 최종 확인 후에만 인증 쿠키가 있는 요청을 보낸다', async () => {
+  const calls = []
+  const client = { post: async (...args) => { calls.push(args) } }
+  await assert.rejects(requestSocialWithdrawal(client, false))
+  assert.deepEqual(calls, [])
+  await requestSocialWithdrawal(client, true)
+  assert.deepEqual(calls, [['/me/withdrawal/confirm']])
+})
 
 function cleanupOptions(events) {
   return {

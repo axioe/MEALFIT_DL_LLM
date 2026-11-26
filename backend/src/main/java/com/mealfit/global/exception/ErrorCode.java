@@ -88,6 +88,12 @@ public enum ErrorCode {
     ),
 
     // 회원 탈퇴 본인 확인 오류는 400으로 응답해 토큰 만료와 구분합니다.
+    USER_WITHDRAWAL_REAUTH_REQUIRED(
+        HttpStatus.FORBIDDEN, "USER_002", "연결된 소셜 계정으로 다시 인증해 주세요."
+    ),
+    USER_WITHDRAWAL_REAUTH_BUSY(
+        HttpStatus.SERVICE_UNAVAILABLE, "USER_003", "잠시 뒤 탈퇴 인증을 다시 시도해 주세요."
+    ),
     USER_PASSWORD_MISMATCH(
         HttpStatus.BAD_REQUEST, "USER_001", "현재 비밀번호가 올바르지 않습니다."
     ),
@@ -132,6 +138,14 @@ public enum ErrorCode {
     COOKING_DUPLICATE_REQUEST(HttpStatus.CONFLICT, "COOKING_009",
             "같은 조리 요청을 이미 처리하고 있습니다. 조리 기록을 확인해 주세요."),
 
+    // [섭취기록] 섭취 기록 (FR-INT-01·02, BR-11)
+    INTAKE_MEAL_PLAN_NOT_CONFIRMED(HttpStatus.CONFLICT, "INTAKE_001",
+            "확정된 식단만 섭취 기록을 남길 수 있습니다."),
+    INTAKE_INVALID_STATUS(HttpStatus.BAD_REQUEST, "INTAKE_002",
+            "섭취 상태는 먹음(EATEN) 또는 건너뜀(SKIPPED)만 기록할 수 있습니다."),
+    INTAKE_FUTURE_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "INTAKE_003",
+            "미래 날짜의 식단은 미리 섭취 기록을 남길 수 없습니다."),
+
     // 운동 루틴 (WORKOUT_001–005: 루틴 생성·조회, WORKOUT_006~: 조정·기록용으로 비워 둠)
     WORKOUT_CONDITIONS_MISSING(HttpStatus.UNPROCESSABLE_ENTITY, "WORKOUT_001",
             "운동 조건이 없습니다. 프로필에서 운동 조건을 먼저 입력해 주세요."),
@@ -141,6 +155,22 @@ public enum ErrorCode {
     WORKOUT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "WORKOUT_004", "운동 세션을 찾을 수 없습니다."),
     WORKOUT_CONCURRENT_REQUEST(HttpStatus.CONFLICT, "WORKOUT_005",
             "루틴을 동시에 여러 번 요청했습니다. 잠시 뒤 다시 시도해 주세요."),
+    // [운동기록] 완료 기록·주간 현황 (FR-WORK-03·04, BR-18)
+    WORKOUT_LOG_FUTURE_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "WORKOUT_006",
+            "미래 날짜의 운동 세션은 미리 기록할 수 없습니다."),
+    WORKOUT_LOG_BLOCKED_BY_EMERGENCY(HttpStatus.CONFLICT, "WORKOUT_007",
+            "위험 신호로 중단된 세션은 완료 또는 일부 완료로 기록할 수 없습니다."),
+    WORKOUT_LOG_INVALID_INPUT(HttpStatus.BAD_REQUEST, "WORKOUT_008",
+            "운동 기록 입력값이 올바르지 않습니다."),
+
+    // 운동 자세 판별 (FR-WORK-05, AI-05). AI 서비스 오류 내용은 노출하지 않고 이 코드로 바꾼다
+    WORKOUT_POSE_INVALID_INPUT(HttpStatus.BAD_REQUEST, "WORKOUT_POSE_001",
+            "관절 좌표 형식을 확인해 주세요. (fps 5~30, 60초·900프레임 이하, 프레임마다 관절 33개)"),
+    WORKOUT_POSE_UNSUPPORTED_EXERCISE(HttpStatus.BAD_REQUEST, "WORKOUT_POSE_002", "자세 판별을 지원하지 않는 운동입니다."),
+    WORKOUT_POSE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "WORKOUT_POSE_003",
+            "자세 판별을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+    WORKOUT_POSE_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "WORKOUT_POSE_004", "자세 판별 응답 시간이 초과되었습니다. 다시 시도해 주세요."),
+    WORKOUT_POSE_BAD_RESPONSE(HttpStatus.BAD_GATEWAY, "WORKOUT_POSE_005", "자세 판별 결과를 확인하지 못했습니다. 다시 시도해 주세요."),
 
     // AI 서비스
     AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI_001", "AI 서비스에 연결할 수 없습니다.");

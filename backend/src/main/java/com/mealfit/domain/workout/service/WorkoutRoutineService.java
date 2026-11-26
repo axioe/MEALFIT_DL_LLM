@@ -23,6 +23,7 @@ import com.mealfit.domain.workout.model.Violation;
 import com.mealfit.domain.workout.model.WorkoutConditions;
 import com.mealfit.domain.workout.model.WorkoutTime;
 import com.mealfit.domain.workout.repository.ExerciseCatalogRepository;
+import com.mealfit.domain.workout.repository.WorkoutLogRepository;
 import com.mealfit.domain.workout.repository.WorkoutRoutineRepository;
 import com.mealfit.domain.workout.repository.WorkoutSessionRepository;
 import com.mealfit.global.exception.BusinessException;
@@ -33,9 +34,11 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +72,8 @@ public class WorkoutRoutineService {
     private final ExerciseCatalogRepository catalogRepository;
     private final WorkoutRoutineRepository routineRepository;
     private final WorkoutSessionRepository sessionRepository;
+    // [운동기록] 기록이 있는 세션은 루틴 재추천 시 보호하기 위해 주입한다
+    private final WorkoutLogRepository logRepository;
     private final WorkoutConditionsResolver conditionsResolver;
     private final RoutineTemplateGenerator generator;
     private final RoutineValidator validator;
@@ -110,10 +115,20 @@ public class WorkoutRoutineService {
             && sessionRepository.existsByUserIdAndSessionDateAndAdjustNoteStartingWith(
                 userId, today, SessionAdjustment.EMERGENCY_NOTE);
 
-        // 기존 루틴은 교체 상태로 바꾸고, 시작일 이후의 활성 세션만 비활성화한다. 지난 세션은 그대로 둔다.
-        // TODO(workout_logs 추가 후): 기록이 있는 세션은 비활성화하지 않고 새 루틴에서 그 날짜를 건너뛴다.
+        // [운동기록] 기존 루틴은 교체 상태로 바꾸고, 시작일 이후의 활성 세션 중 기록이 없는 것만 비활성화한다 (FR-WORK-04).
         routineRepository.findByUserIdAndStatus(userId, RoutineStatus.ACTIVE).forEach(WorkoutRoutine::replace);
-        sessionRepository.findActiveFrom(userId, startDate).forEach(WorkoutSession::deactivate);
+        List<WorkoutSession> existingActive = sessionRepository.findActiveFrom(userId, startDate);
+        Set<Long> loggedSessionIds = existingActive.isEmpty()
+            ? Set.of()
+            : logRepository.findLoggedSessionIds(userId, existingActive.stream().map(WorkoutSession::getId).toList());
+        Set<LocalDate> preservedDates = new HashSet<>();
+        for (WorkoutSession existing : existingActive) {
+            if (loggedSessionIds.contains(existing.getId())) {
+                preservedDates.add(existing.getSessionDate());
+            } else {
+                existing.deactivate();
+            }
+        }
         sessionRepository.flush();
 
         boolean allDefault = !plans.isEmpty()
@@ -135,6 +150,7 @@ public class WorkoutRoutineService {
             .build());
 
         List<WorkoutSession> sessions = plans.stream()
+            .filter(plan -> !preservedDates.contains(plan.date()))
             .map(plan -> WorkoutSession.builder()
                 .routineId(routine.getId())
                 .userId(userId)

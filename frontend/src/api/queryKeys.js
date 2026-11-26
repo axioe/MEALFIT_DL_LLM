@@ -30,9 +30,20 @@ export const queryKeys = {
   shopping: {
     all: ['shopping'],
   },
-  // [문장조정] 운동 루틴 쿼리 키
+  // [문장조정][운동기록] 운동 루틴·기록 쿼리 키
   workout: {
     all: ['workout'],
     current: (week) => ['workout', 'current', week ?? null],
+    logs: (from, to) => ['workout', 'logs', from ?? null, to ?? null],
+    summary: (week) => ['workout', 'summary', week ?? null],
+  },
+  // [섭취기록] 날짜별 섭취 기록 쿼리 키
+  intake: {
+    all: ['intake'],
+    byDate: (date) => ['intake', date ?? null],
+  },
+  // [자세판별] 자세 판별 지원 운동 목록
+  pose: {
+    exercises: ['pose', 'exercises'],
   },
 }

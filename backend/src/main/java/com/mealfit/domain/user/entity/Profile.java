@@ -66,6 +66,12 @@ public class Profile extends BaseTimeEntity {
         return Set.copyOf(excludedIngredients);
     }
 
+    /** 알레르기만 교체합니다 (알레르기 선택 화면, MEALFIT-139). 다른 추천 조건은 그대로 둡니다. */
+    public void replaceAllergies(Set<String> allergies) {
+        this.allergies.clear();
+        this.allergies.addAll(allergies);
+    }
+
     /**
      * 닉네임과 식단 추천 조건을 수정합니다.
      * 입력값은 요청 DTO와 Service에서 검증합니다.
