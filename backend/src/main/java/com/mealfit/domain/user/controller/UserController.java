@@ -31,7 +31,7 @@ public class UserController {
     private final WithdrawalService withdrawalService;
 
     /** 비밀번호를 확인한 뒤 본인 계정만 탈퇴하고 모든 세션을 폐기합니다. */
-    @Operation(summary = "회원 탈퇴", description = "비밀번호 확인 후 소프트 삭제 및 모든 Refresh Token 폐기")
+    @Operation(summary = "회원 탈퇴", description = "비밀번호 확인 후 본인 계정과 이용 데이터 삭제")
     @DeleteMapping
     public ResponseEntity<Void> withdraw(
         @CurrentUserId Long userId,

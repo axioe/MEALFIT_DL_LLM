@@ -88,6 +88,12 @@ public enum ErrorCode {
     ),
 
     // 회원 탈퇴 본인 확인 오류는 400으로 응답해 토큰 만료와 구분합니다.
+    USER_WITHDRAWAL_REAUTH_REQUIRED(
+        HttpStatus.FORBIDDEN, "USER_002", "연결된 소셜 계정으로 다시 인증해 주세요."
+    ),
+    USER_WITHDRAWAL_REAUTH_BUSY(
+        HttpStatus.SERVICE_UNAVAILABLE, "USER_003", "잠시 뒤 탈퇴 인증을 다시 시도해 주세요."
+    ),
     USER_PASSWORD_MISMATCH(
         HttpStatus.BAD_REQUEST, "USER_001", "현재 비밀번호가 올바르지 않습니다."
     ),

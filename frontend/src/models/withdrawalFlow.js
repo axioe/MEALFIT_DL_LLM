@@ -13,6 +13,11 @@ export async function requestWithdrawal(client, password, confirmed) {
   await client.delete('/me', { data: { password } })
 }
 
+export async function requestSocialWithdrawal(client, confirmed) {
+  if (!confirmed) throw new Error('탈퇴 안내를 확인하고 체크해 주세요.')
+  await client.post('/me/withdrawal/confirm')
+}
+
 /** 서버 성공 후에만 호출합니다. 다른 계정으로 바뀌었다면 그 로그인 정보는 유지합니다. */
 export async function clearWithdrawalSession({ isCurrentSession, navigate, cancelQueries, clearSession, clearCache }) {
   if (!isCurrentSession()) return

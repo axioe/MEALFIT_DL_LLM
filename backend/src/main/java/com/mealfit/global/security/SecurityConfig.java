@@ -1,6 +1,7 @@
 package com.mealfit.global.security;
 
 import com.mealfit.domain.user.repository.UserRepository;
+import com.mealfit.domain.user.service.WithdrawalReauthentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 
 /**
  * 공개 API와 인증이 필요한 API를 구분하고 JWT 필터를 연결합니다.
@@ -27,7 +30,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-        HttpSecurity http
+        HttpSecurity http, ClientRegistrationRepository registrations, WithdrawalReauthentication reauthentication
     ) throws Exception {
 
         JwtAuthenticationFilter jwtFilter =
@@ -97,6 +100,10 @@ public class SecurityConfig {
 
             // [소셜로그인] Google·Naver·Kakao OAuth2 로그인 및 계정 연동 핸들러 연결
             .oauth2Login(oauth2 -> oauth2
+                // 제공자 토큰도 기존 OAuth 성공·실패 핸들러가 파기하는 임시 세션에만 둡니다.
+                .authorizedClientRepository(new HttpSessionOAuth2AuthorizedClientRepository())
+                .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(
+                    new WithdrawalOAuth2RequestResolver(registrations, reauthentication)))
                 .successHandler(oAuth2SuccessHandler)
                 .failureHandler(oAuth2FailureHandler)
             )
