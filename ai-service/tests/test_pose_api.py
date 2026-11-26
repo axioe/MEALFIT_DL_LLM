@@ -56,8 +56,8 @@ class PoseApiTest(unittest.TestCase):
         self.assertEqual((second['accuracy'], second['accuracyBasis']), (0.771, 'EXTERNAL'))
         # 가짜 모델의 절편: 첫 조건은 올바름(0.4), 두 번째는 확인 필요(-0.4) 쪽
         self.assertEqual((first['correctReps'], first['totalReps']), (3, 3))
-        self.assertEqual(first['feedback'], '팔꿈치 고정: 잘 지켜졌어요.')
-        self.assertEqual(second['feedback'], '어깨 으쓱 없음: 모든 반복에서 확인이 필요해요.')
+        self.assertEqual(first['feedback'], '3회 모두 잘 지켜졌어요.')
+        self.assertEqual(second['feedback'], '3회 모두 어깨가 귀 쪽으로 올라간 것으로 보여요. 어깨를 아래로 내린 채 움직여 주세요.')
         self.assertIn('참고용', data['notice'])
         # 로그에는 운동·반복 수·시간·모델 버전만 (좌표 없음)
         self.assertTrue(any('reps=3' in line and 'pose-test' in line for line in logs.output))
@@ -77,7 +77,7 @@ class PoseApiTest(unittest.TestCase):
         data = self.client.post(URL, json=self.body(hold(), missing={3, 4, 40})).json
         self.assertEqual((data['status'], data['repCount']), ('OK', 1))
         self.assertEqual((data['reps'][0]['startFrame'], data['reps'][0]['endFrame']), (0, 74))
-        self.assertEqual(data['conditions'][1]['feedback'], '어깨 으쓱 없음: 확인이 필요해요.')
+        self.assertEqual(data['conditions'][1]['feedback'], '어깨가 귀 쪽으로 올라간 것으로 보여요. 어깨를 아래로 내린 채 움직여 주세요.')
 
     # 사람이 없거나 프레임이 부족하면 판정 대신 재촬영 안내
     def test_retake(self):
