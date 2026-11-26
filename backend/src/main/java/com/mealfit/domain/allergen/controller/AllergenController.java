@@ -4,6 +4,8 @@ import com.mealfit.domain.allergen.dto.AllergenCatalogResponse;
 import com.mealfit.domain.allergen.dto.AllergenSearchResult;
 import com.mealfit.domain.allergen.dto.MyAllergiesRequest;
 import com.mealfit.domain.allergen.dto.MyAllergiesResponse;
+import com.mealfit.domain.allergen.dto.RecipeAllergenCheckResponse;
+import org.springframework.web.bind.annotation.PathVariable;
 import com.mealfit.domain.allergen.service.AllergenService;
 import com.mealfit.global.web.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,5 +55,11 @@ public class AllergenController {
     public MyAllergiesResponse replaceMyAllergies(@CurrentUserId Long userId,
                                                   @Valid @RequestBody MyAllergiesRequest request) {
         return allergenService.replaceMyAllergies(userId, request);
+    }
+
+    @GetMapping("/recipes/{recipeId}/allergen-check")
+    @Operation(summary = "레시피가 내 알레르기에 걸리는지와 이유 (포함 / 확인 필요 / 이름 포함)")
+    public RecipeAllergenCheckResponse checkRecipe(@CurrentUserId Long userId, @PathVariable Long recipeId) {
+        return allergenService.checkRecipe(userId, recipeId);
     }
 }
