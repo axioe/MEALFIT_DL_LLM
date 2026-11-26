@@ -5,6 +5,13 @@ import com.mealfit.domain.allergen.dto.AllergenSearchResult;
 import com.mealfit.domain.allergen.dto.AllergenSearchResult.MatchType;
 import com.mealfit.domain.allergen.dto.MyAllergiesRequest;
 import com.mealfit.domain.allergen.dto.MyAllergiesResponse;
+import com.mealfit.domain.allergen.dto.RecipeAllergenCheckResponse;
+import com.mealfit.domain.allergen.entity.AllergenCertainty;
+import com.mealfit.domain.mealplan.model.AllergenFamilies;
+import com.mealfit.domain.mealplan.model.IngredientRestriction;
+import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.entity.RecipeIngredient;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
 import com.mealfit.domain.allergen.entity.Allergen;
 import com.mealfit.domain.allergen.entity.IngredientAllergen;
 import com.mealfit.domain.allergen.repository.AllergenRepository;
@@ -44,6 +51,44 @@ public class AllergenService {
     private final AllergenRepository allergenRepository;
     private final IngredientAllergenRepository ingredientAllergenRepository;
     private final ProfileRepository profileRepository;
+    private final RecipeRepository recipeRepository;
+    private final AllergenIngredientResolver resolver;
+
+    /**
+     * 레시피 재료가 내 알레르기에 걸리는지와 이유 (MEALFIT-140 제외 안내).
+     * 사전 연결(포함·확인 필요)을 먼저 보고, 그 밖에 이름 포함·가공품 확장(AllergenFamilies)으로 걸린 재료를 더한다.
+     */
+    public RecipeAllergenCheckResponse checkRecipe(Long userId, Long recipeId) {
+        Recipe recipe = recipeRepository.findAccessibleById(recipeId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RECIPE_NOT_FOUND));
+        Set<String> allergies = profile(userId, false).getAllergies();
+        List<String> ingredients = recipe.getIngredients().stream()
+                .map(RecipeIngredient::getIngredientName).distinct().toList();
+
+        List<RecipeAllergenCheckResponse.Warning> warnings = new java.util.ArrayList<>();
+        Set<String> warned = new java.util.HashSet<>();
+        for (IngredientAllergen link : resolver.linksFor(ingredients, allergies)) {
+            boolean contains = link.getCertainty() == AllergenCertainty.CONTAINS;
+            String allergen = link.getAllergen().getName();
+            warnings.add(new RecipeAllergenCheckResponse.Warning(link.getIngredientName(), allergen,
+                    contains ? RecipeAllergenCheckResponse.Reason.CONTAINS : RecipeAllergenCheckResponse.Reason.MAY_CONTAIN,
+                    contains ? link.getIngredientName() + "에 " + allergen + "이(가) 들어 있음."
+                            : link.getIngredientName() + "은(는) 제품에 따라 " + allergen + "이(가) 들어 있을 수 있어 확인 필요."));
+            warned.add(link.getIngredientName());
+        }
+        for (String ingredient : IngredientRestriction.violations(ingredients, AllergenFamilies.expand(allergies))) {
+            if (warned.add(ingredient)) {
+                String matched = allergies.stream()
+                        .filter(a -> !IngredientRestriction.violations(List.of(ingredient),
+                                AllergenFamilies.expand(Set.of(a))).isEmpty())
+                        .findFirst().orElse(null);
+                warnings.add(new RecipeAllergenCheckResponse.Warning(ingredient, matched,
+                        RecipeAllergenCheckResponse.Reason.NAME_MATCH,
+                        ingredient + "은(는) 등록한 알레르기(" + matched + ")와 이름이 겹치거나 같은 계열 재료."));
+            }
+        }
+        return new RecipeAllergenCheckResponse(recipe.getId(), recipe.getName(), warnings.isEmpty(), warnings);
+    }
 
     public AllergenCatalogResponse catalog() {
         return AllergenCatalogResponse.from(allergenRepository.findAllByOrderByDisplayOrderAsc());

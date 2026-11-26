@@ -31,7 +31,7 @@ class CuratedRecipeSeedTest {
 
     @Test
     void 검수_레시피_2481개가_끼니별로_들어간다() {
-        assertThat(count("select count(*) from recipes where source = 'SEED' and recipe_code is not null")).isEqualTo(2481);
+        assertThat(count("select count(*) from recipes where source = 'LOCAL_FALLBACK' and recipe_code is not null")).isEqualTo(2481);
         assertThat(count("select count(*) from recipes where recipe_code is not null and meal_slot = 'BREAKFAST'")).isEqualTo(551);
         assertThat(count("select count(*) from recipes where recipe_code is not null and meal_slot = 'LUNCH_DINNER'")).isEqualTo(1930);
         assertThat(count("select count(*) from recipes where recipe_code like 'Q%'")).isEqualTo(91);
@@ -67,8 +67,9 @@ class CuratedRecipeSeedTest {
 
     @Test
     void 기존_로컬_대체_레시피_9개는_그대로다() {
-        assertThat(count("select count(*) from recipes where source = 'LOCAL_FALLBACK'")).isEqualTo(9);
-        assertThat(count("select count(*) from recipes where source = 'LOCAL_FALLBACK' and meal_slot is not null")).isZero();
+        // V16: 검수 레시피도 LOCAL_FALLBACK이 되었지만, 기존 9개는 recipe_code·meal_slot 없이 그대로다
+        assertThat(count("select count(*) from recipes where source = 'LOCAL_FALLBACK' and recipe_code is null")).isEqualTo(9);
+        assertThat(count("select count(*) from recipes where recipe_code is null and meal_slot is not null")).isZero();
     }
 
     @Test

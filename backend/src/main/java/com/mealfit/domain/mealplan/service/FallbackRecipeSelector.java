@@ -11,9 +11,12 @@ import com.mealfit.domain.recipe.repository.RecipeRepository;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Component;
 /**
  * 검증된 로컬 대체 레시피 고르기.
  * 제한 재료가 든 레시피는 항상 제외하고, 나머지는 빼지 않고 다음 순서로 우선순위를 매긴다:
+ * 후보는 기존 대체 레시피 9개와 검수 레시피(V15, 아침 / 점심·저녁)이며, 같은 요리의 변형은 같은 메뉴로 본다.
  * 같은 날 다른 끼니와 겹치지 않는 것 → 직전 초안과 다른 것 → 최근에 안 먹은 것
  * → 기한 임박 재료를 많이 쓰는 것 → 보유 재료를 많이 쓰는 것 → 등록 순.
  * 선호 조리 시간을 넘는 레시피는 맞는 후보가 하나도 없을 때만 쓴다.
@@ -64,15 +68,29 @@ public class FallbackRecipeSelector {
                 .map(lot -> lot.getIngredientName().strip())
                 .collect(Collectors.toSet());
 
+        // 같은 요리의 변형(예: 소스만 다른 검수 레시피)은 같은 메뉴로 본다. 변형 묶음이 없으면 이름 자체가 기준이다.
+        Map<String, String> groupByName = new HashMap<>();
+        safe.forEach(recipe -> groupByName.put(recipe.getName(), dishKey(recipe)));
+        Function<Collection<String>, Set<String>> groupsOf = names -> names.stream()
+                .map(name -> groupByName.getOrDefault(name, name))
+                .collect(Collectors.toSet());
+        Set<String> sameDayGroups = groupsOf.apply(sameDayNames);
+        Set<String> previousGroups = groupsOf.apply(previousNames);
+        Set<String> recentGroups = groupsOf.apply(recentNames);
+
         Comparator<Recipe> order = Comparator
-                .comparing((Recipe recipe) -> sameDayNames.contains(recipe.getName()))
-                .thenComparing(recipe -> previousNames.contains(recipe.getName()))
-                .thenComparing(recipe -> recentNames.contains(recipe.getName()))
+                .comparing((Recipe recipe) -> sameDayGroups.contains(dishKey(recipe)))
+                .thenComparing(recipe -> previousGroups.contains(dishKey(recipe)))
+                .thenComparing(recipe -> recentGroups.contains(dishKey(recipe)))
                 .thenComparing(recipe -> -matches(recipe, imminent).size())
                 .thenComparing(recipe -> -matches(recipe, stocked).size())
                 .thenComparing(Recipe::getId);
         Recipe chosen = pool.stream().min(order).orElseThrow();
         return Optional.of(new Selection(chosen, reason(chosen, imminent, stocked)));
+    }
+
+    private static String dishKey(Recipe recipe) {
+        return recipe.getDishGroup() != null ? recipe.getDishGroup() : recipe.getName();
     }
 
     private static boolean isImminent(ExpirationStatus status) {

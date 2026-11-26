@@ -43,9 +43,15 @@ class PostgresSchemaIntegrationTest {
 
     @Test
     void 로컬_대체_레시피_시드가_들어가_있다() {
+        // V2 기본 레시피 9개 + V15 검수 레시피 2,481개(V16에서 로컬 대체로 사용)
         Integer seeded = jdbc.queryForObject(
-                "select count(*) from recipes where source = 'LOCAL_FALLBACK' and user_id is null", Integer.class);
+                "select count(*) from recipes where source = 'LOCAL_FALLBACK' and user_id is null and recipe_code is null",
+                Integer.class);
         assertThat(seeded).isEqualTo(9);
+        Integer curated = jdbc.queryForObject(
+                "select count(*) from recipes where source = 'LOCAL_FALLBACK' and user_id is null and recipe_code is not null",
+                Integer.class);
+        assertThat(curated).isEqualTo(2481);
     }
 
     @Test

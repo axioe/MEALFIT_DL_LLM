@@ -11,4 +11,7 @@ public interface IngredientAllergenRepository extends JpaRepository<IngredientAl
     /** 레시피 재료 이름들에 연결된 알레르기를 한 번에 조회한다. */
     @EntityGraph(attributePaths = "allergen")
     List<IngredientAllergen> findByIdIngredientNameIn(Collection<String> ingredientNames);
+
+    /** 알레르기들에 연결된 재료를 한 번에 조회한다. */
+    List<IngredientAllergen> findByIdAllergenIdIn(Collection<Long> allergenIds);
 }

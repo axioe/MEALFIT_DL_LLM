@@ -152,7 +152,9 @@ class MealPlanAiFallbackTest {
 
     @Test
     void 제약을_통과하는_후보가_없으면_422() throws Exception {
-        given(profileProvider.getProfile(any())).willReturn(restrict(Set.of("달걀"), Set.of("바나나")));
+        // 검수 레시피(V15)로 아침 후보가 늘어, 아침 베이스 재료를 모두 제외해야 후보가 0이 된다
+        given(profileProvider.getProfile(any())).willReturn(restrict(Set.of("달걀"),
+                Set.of("바나나", "밥", "오트밀", "식빵", "감자", "고구마", "그릭요거트")));
 
         recommend()
                 .andExpect(status().isUnprocessableEntity())
