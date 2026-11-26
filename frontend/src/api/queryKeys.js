@@ -35,4 +35,9 @@ export const queryKeys = {
     all: ['workout'],
     current: (week) => ['workout', 'current', week ?? null],
   },
+  // [섭취기록] 날짜별 섭취 기록 쿼리 키
+  intake: {
+    all: ['intake'],
+    byDate: (date) => ['intake', date ?? null],
+  },
 }
