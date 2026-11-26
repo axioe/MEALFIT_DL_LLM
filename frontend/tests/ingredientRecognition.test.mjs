@@ -158,3 +158,23 @@ test('OCR로 선택·수정한 이름만 기존 등록 요청에 전달하고 �
   assert.deepEqual(buildStockInBody(form), { ingredientName: '국내산 당근', quantity: 2, unit: '개', storageLocation: 'FRIDGE' })
 })
 
+
+test('승인된 OCR 세부명은 기존 사진 응답과 재고 등록 계약을 그대로 사용할 수 있다', () => {
+  const names = ['토마토', '방울토마토', '흰우유', '딸기우유', '초코우유', '바나나우유',
+    '닭가슴살', '닭다리살', '닭날개', '닭안심', '삼겹살', '목살', '앞다리살', '돼지등심',
+    '돼지갈비', '소등심', '소안심', '채끝살', '양지', '우둔살']
+  for (const name of names) {
+    const data = readRecognitionResponse({ ...result(), ocr: {
+      status: 'SUCCESS', candidates: [{ ingredientName: name, textConfidence: .9 }], elapsedMs: 100,
+    } })
+    assert.equal(data.ocr.candidates[0].ingredientName, name)
+    assert.deepEqual(data.candidates, result().candidates)
+    const body = buildStockInBody({ ...STOCK_IN_INITIAL_FORM,
+      ingredientName: confirmedRecognitionName(data.ocr.candidates[0].ingredientName), quantity: '1', unit: '개' })
+    assert.equal(body.ingredientName, name)
+    assert.equal(body.quantity, 1)
+    assert.equal(Object.hasOwn(body, 'ingredientId'), false)
+    assert.equal(Object.hasOwn(body, 'className'), false)
+  }
+})
+
