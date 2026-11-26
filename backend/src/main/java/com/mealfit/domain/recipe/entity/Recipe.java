@@ -85,6 +85,26 @@ public class Recipe extends BaseTimeEntity {
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RecipeIngredient> ingredients = new ArrayList<>();
 
+    /** 검수 레시피(V15 시드)의 원본 코드. 다른 레시피는 null */
+    @Column(name = "recipe_code", length = 20, unique = true)
+    private String recipeCode;
+
+    /** 검수 레시피의 끼니 구분 (아침 / 점심·저녁 공용). null이면 mealType 기준 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meal_slot", length = 20)
+    private RecipeMealSlot mealSlot;
+
+    /** 요리 형태 (예: 현미 덮밥, 간장 달걀밥) */
+    @Column(name = "dish_type", length = 50)
+    private String dishType;
+
+    /** 같은 요리의 변형 묶음 (예: 소스만 다른 레시피). 비슷한 메뉴 연속 추천을 막는 데 쓴다 */
+    @Column(name = "dish_group", length = 100)
+    private String dishGroup;
+
+    @Column(name = "recommendation_reason", length = 300)
+    private String recommendationReason;
+
     @Builder
     private Recipe(Long userId, String name, String description, int servingSize, int cookTimeMin,
                    BigDecimal calories, BigDecimal proteinG, BigDecimal carbsG, BigDecimal fatG,
