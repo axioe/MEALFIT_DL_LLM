@@ -1025,7 +1025,13 @@ def main():
     parser.add_argument('--validate-prepared', action='store_true', help='생성한 파생 데이터만 재검증함')
     parser.add_argument('--quarantine-crops', type=Path, help='사용자가 승인한 분류 크롭 경로 목록 JSON임')
     parser.add_argument('--revise-labels', type=Path, help='승인된 라벨 검토 정책으로 별도 버전을 생성함')
+    parser.add_argument('--prepare-finetune', action='store_true', help='승인된 56클래스 파생 데이터만 생성함')
+    parser.add_argument('--review-dir', type=Path, help='3차 선별 검토 폴더임')
     args = parser.parse_args()
+    if args.prepare_finetune:
+        if args.review_dir is None: parser.error('--review-dir가 필요함')
+        print(json.dumps(prepare_finetune_dataset(args.dataset,args.review_dir,args.output_dir),ensure_ascii=False))
+        return
     if args.revise_labels:
         print(json.dumps(create_training_revision(args.dataset, args.output_dir, args.revise_labels), ensure_ascii=False))
         return
@@ -1048,6 +1054,162 @@ def main():
     result = inspect_dataset(args.dataset, args.verify_images)
     write_report(result, args.output_dir)
     print(json.dumps({'splits': result['splits'], 'formats': result['formats'], 'issues': {key: len(value) for key, value in result['issues'].items()}, 'output': str(args.output_dir)}, ensure_ascii=False))
+
+
+# 모델 확장용 원본 보존 파생본과 출처·누수 검사 기록을 생성함.
+def prepare_finetune_dataset(source, review, output):
+    import numpy as np
+    from PIL import Image
+
+    source, review, output = Path(source).resolve(), Path(review).resolve(), Path(output).resolve()
+    public = review.parent / 'public_sources_v01'
+    previous = review.parent / 'public_sources_review_v02'
+    protected = (source, review, public, previous, Path(__file__).resolve().parents[2])
+    if output.exists() or any(output.is_relative_to(root) or root.is_relative_to(output) for root in protected):
+        raise ValueError('기존 입력·저장소와 분리된 새 출력 폴더가 필요함')
+    mapping = json.loads((source / 'class_indices.json').read_text(encoding='utf-8'))
+    old = mapping['efficientnet_imagefolder']
+    if len(old) != 51 or sorted(old.values()) != list(range(51)):
+        raise ValueError('기존 51클래스 매핑이 필요함')
+    expanded = dict(old, **dict(zip(('apple','pear','banana','strawberry','mandarin'), range(51,56))))
+    new_names = set(expanded) - set(old)
+    original_mapping = dict(old)
+    mapping['efficientnet_imagefolder'] = expanded
+    output.mkdir(parents=True)
+    provenance = output / 'provenance'
+    provenance.mkdir()
+    for split in SPLITS:
+        for name in expanded:
+            (output / 'efficientnet' / split / name).mkdir(parents=True)
+    source_notices = public / 'source_notices'
+    if source_notices.exists():
+        shutil.copytree(source_notices, provenance / 'public_source_notices')
+    shutil.copytree(source / 'source_metadata', provenance / 'roboflow_source_metadata')
+    for parent, name in ((review,'frame_selection_final.csv'), (review,'new_class_readiness.csv'),
+                         (previous,'asset_review_decisions.csv'), (public,'approval_scope.json'), (public,'download_records.jsonl')):
+        shutil.copy2(parent / name, provenance / name)
+    with (source/'crops.csv').open(encoding='utf-8-sig', newline='') as stream:
+        crops = list(csv.DictReader(stream))
+    records, fingerprints, reference_pixels = [], [], set()
+    copied_counts = Counter()
+    for number, row in enumerate(crops, 1):
+        relative = Path(row['crop'])
+        split, name = relative.parts[:2]
+        if split not in SPLITS or name not in old or relative.is_absolute() or '..' in relative.parts:
+            raise ValueError('기존 크롭 경로·클래스가 잘못됨')
+        original = source / 'efficientnet' / relative
+        target = output / 'efficientnet' / relative
+        with original.open('rb') as stream:
+            sha = hashlib.file_digest(stream, 'sha256').hexdigest()
+        shutil.copy2(original, target)
+        with target.open('rb') as stream:
+            if hashlib.file_digest(stream,'sha256').hexdigest() != sha:
+                raise ValueError('기존 이미지 복사 해시 불일치')
+        records.append(dict(path=str(target.relative_to(output)), source_path=str(original),
+                            original_path=str(source/'yolo'/row['source_image']), class_name=name,
+                            class_index=expanded[name], split=split, source='Roboflow_v11_stage3',
+                            source_group=row['source_image'], sha256=sha, pixel_sha256=row['pixel_sha256'],
+                            license='SEE_ROBOFLOW_SOURCE_METADATA'))
+        copied_counts[split, name] += 1
+        if split in ('valid','test'):
+            reference_pixels.add(row['pixel_sha256'])
+            fingerprints.append(image_similarity_signature(original))
+        if number % 4000 == 0:
+            print('preserved crops:',number,flush=True)
+    # 원본 전체와 신규 사진이 같을 가능성도 지문만으로 검사함.
+    reference_sha = set()
+    with (source/'images.csv').open(encoding='utf-8-sig',newline='') as stream:
+        for row in csv.DictReader(stream):
+            if row['split'] in ('valid','test'):
+                reference_sha.add(row['sha256'])
+                fingerprints.append(image_similarity_signature(source/'yolo'/row['image']))
+    with (review/'frame_selection_final.csv').open(encoding='utf-8-sig',newline='') as stream:
+        frames = {row['asset_id']: row for row in csv.DictReader(stream)}
+    with (previous/'asset_review_decisions.csv').open(encoding='utf-8-sig',newline='') as stream:
+        assets = list(csv.DictReader(stream))
+    decisions, similar = [], []
+    for row in assets:
+        name = row['target_class']
+        if name not in new_names:
+            continue
+        decision = 'EXCLUDED_REVIEW_POLICY'
+        selected = row['decision'] == 'CONDITIONAL_TRAIN_CANDIDATE'
+        if row['source'] == 'Fruits360':
+            selected = selected and frames[row['asset_id']]['decision'] == 'KEEP_PROPOSED'
+        original = Path(row['local_path'])
+        if selected and '/val/' in original.as_posix():
+            selected, decision = False, 'SOURCE_VALIDATION_RESERVED_NOT_INDEPENDENT'
+        if selected:
+            with original.open('rb') as stream:
+                sha = hashlib.file_digest(stream,'sha256').hexdigest()
+            if sha != row['sha256']:
+                raise ValueError('공개 이미지 원본 해시 불일치')
+            with Image.open(original) as image:
+                rgb = image.convert('RGB')
+                pixel = hashlib.sha256(str(rgb.size).encode()+rgb.tobytes()).hexdigest()
+            signature = image_similarity_signature(original)
+            if pixel in reference_pixels or sha in reference_sha:
+                selected, decision = False, 'EXACT_EVALUATION_DUPLICATE_RESERVED'
+            else:
+                decision = 'TRAIN_SELECTED'
+                for reference in fingerprints:
+                    distance = (signature['dhash'] ^ reference['dhash']).bit_count()
+                    if distance <= 4 and abs(signature['ratio']-reference['ratio']) <= .2:
+                        mae = float(np.abs(signature['gray'].astype(float)-reference['gray'].astype(float)).mean())
+                        if mae <= 8:
+                            similar.append(dict(asset_id=row['asset_id'], source_path=str(original),
+                                                reference=reference['path'], dhash_distance=distance, gray_mae=mae,
+                                                decision='REVIEW_REQUIRED_NOT_CONFIRMED_DUPLICATE'))
+            if selected:
+                target = output/'efficientnet/train'/name/(row['asset_id']+original.suffix.lower())
+                shutil.copy2(original,target)
+                with target.open('rb') as stream:
+                    if hashlib.file_digest(stream,'sha256').hexdigest() != sha:
+                        raise ValueError('신규 이미지 복사 해시 불일치')
+                records.append(dict(path=str(target.relative_to(output)),source_path=str(original),original_path=str(original),
+                                    class_name=name,class_index=expanded[name],split='train',source=row['source'],
+                                    source_group=row['conservative_block'],sha256=sha,pixel_sha256=pixel,
+                                    license='CC BY-SA 4.0' if row['source']=='Fruits360' else 'MIT'))
+                copied_counts['train',name] += 1
+        decisions.append(dict(asset_id=row['asset_id'],class_name=name,source_path=str(original),
+                              original_sha256=row['sha256'],decision=decision))
+    write_csv(output/'manifest.csv', records, list(records[0]))
+    write_csv(output/'public_selection.csv', decisions, list(decisions[0]))
+    write_csv(output/'similarity_review.csv', similar, ['asset_id','source_path','reference','dhash_distance','gray_mae','decision'])
+    counts = [dict(class_name=name,class_index=index,**{split:copied_counts[split,name] for split in SPLITS})
+              for name,index in sorted(expanded.items(),key=lambda item:item[1])]
+    write_csv(output/'class_counts.csv', counts, ['class_name','class_index','train','valid','test'])
+    (output/'class_indices.json').write_text(json.dumps(mapping,indent=2),encoding='utf-8')
+    per_hash, per_pixel, per_group = defaultdict(set), defaultdict(set), defaultdict(set)
+    for row in records:
+        per_hash[row['sha256']].add(row['split'])
+        per_pixel[row['pixel_sha256']].add(row['split'])
+        per_group[row['source_group']].add(row['split'])
+    report = dict(class_count=56,efficientnet_crops=dict(Counter(row['split'] for row in records)),
+                  cross_split_image_hash_groups=sum(len(v)>1 for v in per_hash.values()),
+                  cross_split_crop_hash_groups=sum(len(v)>1 for v in per_pixel.values()),
+                  cross_split_source_groups=sum(len(v)>1 for v in per_group.values()),
+                  similarity_candidates=len(similar),source_unchanged=True,old_indices_preserved=all(expanded[k]==v for k,v in original_mapping.items()),
+                  new_independent_validation=0,new_independent_holdout=0,training_ready=False,
+                  missing_new_validation=sorted(new_names),test_inference_executed=False,
+                  test_usage='Fingerprint leakage checks and split-preserving copy only; no model evaluation',
+                  sampling_policy='shuffle all old and selected new training images; inverse-square-root class loss weights',
+                  reason='Independent new-class validation and similarity review approval required before training')
+    (output/'validation_report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+    return report
+
+
+# 누수 검사 전용 지문만 생성하며 모델 추론이나 평가에는 사용하지 않음.
+def image_similarity_signature(path):
+    import numpy as np
+    from PIL import Image
+    with Image.open(path) as image:
+        gray = image.convert('L')
+        tiny = np.asarray(gray.resize((9,8)),dtype=np.int16)
+        bits = (tiny[:,1:] > tiny[:,:-1]).flatten()
+        dhash = sum(int(value) << index for index,value in enumerate(bits))
+        return dict(path=str(path),dhash=dhash,ratio=image.width/image.height,
+                    gray=np.asarray(gray.resize((32,32)),dtype=np.int16))
 
 
 if __name__ == '__main__':
