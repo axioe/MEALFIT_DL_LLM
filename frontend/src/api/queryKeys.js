@@ -27,6 +27,13 @@ export const queryKeys = {
   recipes: {
     detail: (id, servings) => ['recipes', id, servings],
   },
+  allergens: {
+    catalog: ['allergens', 'catalog'],
+    search: (q) => ['allergens', 'search', q],
+    mine: (userId) => ['allergies', userId],
+    checks: (userId) => ['recipeAllergenCheck', userId],
+    recipe: (userId, id) => ['recipeAllergenCheck', userId, String(id)],
+  },
   shopping: {
     all: ['shopping'],
   },

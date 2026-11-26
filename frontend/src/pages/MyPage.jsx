@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Shield } from "lucide-react";
 import { BodyProfileForm } from "@/components/mypage/BodyProfileForm";
+import { AllergySettings } from "@/components/mypage/AllergySettings";
 import { DietProfileForm } from "@/components/mypage/DietProfileForm";
 import { FitnessProfileForm } from "@/components/mypage/FitnessProfileForm";
 import { FitnessTestForm } from "@/components/mypage/FitnessTestForm";
@@ -44,18 +45,21 @@ function MyPageContent({ details, activeTab, setActiveTab }) {
   const { form, updateField, changeTab, handleSave, isSaving, message, error, setDirty, setIsProfileSaving } =
     useMyPageForm({ details, activeTab, setActiveTab });
   const TabForm = TAB_FORMS[activeTab];
+  const openAllergies = () => changeTab("allergies");
 
   return (
     <>
       <MyPageHeader user={user} onLogout={logout.handleLogout} logoutPending={logout.isPending} disabled={isSaving} />
       <MyPageTabs activeTab={activeTab} onChange={changeTab} disabled={isSaving} />
 
-      {activeTab === "profile" && <ProfileSettings onDirtyChange={setDirty} onSavingChange={setIsProfileSaving} />}
+      {activeTab === "profile" && <ProfileSettings onDirtyChange={setDirty} onSavingChange={setIsProfileSaving} onEditAllergies={openAllergies} />}
+      {activeTab === "allergies" && <AllergySettings onDirtyChange={setDirty} onSavingChange={setIsProfileSaving} />}
       {message && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
       {error && <p role="alert" className="mb-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       {/* 저장 중에는 입력을 잠가 응답과 작성 내용이 엇갈리지 않도록 합니다. */}
       <fieldset disabled={isSaving} className="min-w-0">
-        {TabForm && <TabForm form={form} updateField={updateField} onSubmit={handleSave} isSaving={isSaving} />}
+        {TabForm && <TabForm form={form} updateField={updateField} onSubmit={handleSave} isSaving={isSaving}
+          allergies={details[activeTab]?.allergies} onEditAllergies={openAllergies} />}
       </fieldset>
 
       {/* [소셜로그인] Google·Naver·Kakao 이메일 가입자 및 소셜 연동 회원에게만 표시됩니다. */}

@@ -1,4 +1,5 @@
 import { CookingPanel } from "@/components/recommend/CookingPanel";
+import { RecipeAllergenCheck } from "@/components/recommend/RecipeAllergenCheck";
 import { useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, RefreshCw } from "lucide-react";
@@ -89,6 +90,7 @@ function RecipeContent({
                 {data.description}
               </p>
             )}
+            <RecipeAllergenCheck recipeId={recipeId} />
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1.5">
                 <Clock aria-hidden="true" className="h-4 w-4" />

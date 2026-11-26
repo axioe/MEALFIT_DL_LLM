@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
+import { AllergySummary } from '@/components/mypage/AllergySettings'
 import { useMyProfile, useUpdateMyProfile } from '@/hooks/useProfile'
 import { useAuthStore } from '@/stores/authStore'
 import { parseProfileItems as parseIngredients } from '@/models/profileForm'
 
 /** 조회가 끝난 뒤 폼을 생성해 서버 값을 최초 입력값으로 사용합니다. */
-export function ProfileSettings({ onDirtyChange, onSavingChange }) {
+export function ProfileSettings({ onDirtyChange, onSavingChange, onEditAllergies }) {
   const query = useMyProfile()
   const userId = useAuthStore((state) => state.user?.id)
 
@@ -17,17 +18,16 @@ export function ProfileSettings({ onDirtyChange, onSavingChange }) {
   )
 
   // 계정 변경 시 입력 폼도 새로 생성합니다. 백그라운드 조회로 작성 중인 값을 덮지 않습니다.
-  return <ProfileForm key={userId} profile={query.data} onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} />
+  return <ProfileForm key={userId} profile={query.data} onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} onEditAllergies={onEditAllergies} />
 }
 
-function ProfileForm({ profile, onDirtyChange, onSavingChange }) {
+function ProfileForm({ profile, onDirtyChange, onSavingChange, onEditAllergies }) {
   const save = useUpdateMyProfile()
   const submitLock = useRef(false)
   const [nickname, setNickname] = useState(profile.nickname)
   const [goal, setGoal] = useState(profile.goal ?? '')
   const [cookTime, setCookTime] = useState(profile.cookTimeMin ?? '')
   const [budget, setBudget] = useState(profile.mealBudget ?? '')
-  const [allergies, setAllergies] = useState(profile.allergies.join(', '))
   const [excluded, setExcluded] = useState(profile.excludedIngredients.join(', '))
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -43,7 +43,7 @@ function ProfileForm({ profile, onDirtyChange, onSavingChange }) {
       goal: goal || null,
       cookTimeMin: cookTime === '' ? null : Number(cookTime),
       mealBudget: budget === '' ? null : Number(budget),
-      allergies: parseIngredients(allergies),
+      allergies: profile.allergies,
       excludedIngredients: parseIngredients(excluded),
     }
     // 서버의 길이·개수 제한과 같은 기준으로 저장 전에 확인합니다.
@@ -64,7 +64,6 @@ function ProfileForm({ profile, onDirtyChange, onSavingChange }) {
     try {
       const saved = await save.mutateAsync(body)
       setNickname(saved.nickname)
-      setAllergies(saved.allergies.join(', '))
       setExcluded(saved.excludedIngredients.join(', '))
       setMessage('프로필을 저장했습니다.')
       onDirtyChange?.(false)
@@ -107,10 +106,7 @@ function ProfileForm({ profile, onDirtyChange, onSavingChange }) {
           <label htmlFor="profile-budget" className="text-xs font-bold">한 끼 예산 (원, 선택)</label>
           <input id="profile-budget" type="number" min="1" max="2147483647" step="1" value={budget} onChange={(event) => { setBudget(event.target.value); setMessage('') }} className={inputClass} />
         </div>
-        <div>
-          <label htmlFor="profile-allergies" className="text-xs font-bold text-rose-700">알레르기 재료 (쉼표로 구분)</label>
-          <input id="profile-allergies" value={allergies} placeholder="예: 땅콩, 우유" onChange={(event) => { setAllergies(event.target.value); setMessage('') }} className={inputClass} />
-        </div>
+        <AllergySummary allergies={profile.allergies} onEdit={onEditAllergies} />
         <div>
           <label htmlFor="profile-excluded" className="text-xs font-bold">제외할 재료 (쉼표로 구분)</label>
           <input id="profile-excluded" value={excluded} placeholder="예: 오이, 고수" onChange={(event) => { setExcluded(event.target.value); setMessage('') }} className={inputClass} />

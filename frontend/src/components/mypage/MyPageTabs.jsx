@@ -1,10 +1,11 @@
-import { Dumbbell, Scale, User, Utensils, Zap } from 'lucide-react'
+import { Dumbbell, Scale, Shield, User, Utensils, Zap } from 'lucide-react'
 
 const TABS = [
   { key: "profile", label: "내 프로필 · 식단 설정", icon: User },
+  { key: "allergies", label: "내 알레르기", icon: Shield },
   { key: "trainer", label: "AI 트레이너 프로필 (필수 & 선택)", icon: Zap },
   { key: "common", label: "신체 기본 정보", icon: User },
-  { key: "diet", label: "식단 기호 & 알레르기", icon: Utensils },
+  { key: "diet", label: "식단 기호", icon: Utensils },
   { key: "fitness", label: "운동 목표 & 장비", icon: Dumbbell },
   { key: "tests", label: "체력 테스트 측정", icon: Scale },
 ]
