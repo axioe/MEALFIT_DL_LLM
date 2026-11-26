@@ -42,6 +42,27 @@ class AllergenFamiliesTest {
     }
 
     @Test
+    void 굴_전복_홍합으로_등록해도_조개류_전체를_막는다() {
+        assertThat(violations(Set.of("굴"), Set.of(), "바지락", "전복", "연어"))
+                .containsExactly("바지락", "전복");
+    }
+
+    @Test
+    void 참깨와_들깨는_추출한_기름까지_막는다() {
+        assertThat(violations(Set.of("참깨"), Set.of(), "참기름", "깨소금", "들기름", "두부"))
+                .containsExactly("참기름", "깨소금");
+        assertThat(violations(Set.of("들깨"), Set.of(), "들기름", "들깨가루", "참기름"))
+                .containsExactly("들기름", "들깨가루");
+    }
+
+    @Test
+    void 캐슈넛과_아몬드_아황산류도_막는다() {
+        assertThat(violations(Set.of("캐슈넛"), Set.of(), "구운 캐슈너트", "아몬드")).containsExactly("구운 캐슈너트");
+        assertThat(violations(Set.of("아몬드"), Set.of(), "아몬드 슬라이스", "땅콩")).containsExactly("아몬드 슬라이스");
+        assertThat(violations(Set.of("이산화황"), Set.of(), "아황산나트륨", "소금")).containsExactly("아황산나트륨");
+    }
+
+    @Test
     void 표에_없는_재료는_기존처럼_이름_포함으로만_막는다() {
         assertThat(violations(Set.of("키위"), Set.of(), "골드키위", "사과")).containsExactly("골드키위");
         assertThat(violations(Set.of("땅콩"), Set.of(), "땅콩버터", "피넛소스")).containsExactly("땅콩버터", "피넛소스");
