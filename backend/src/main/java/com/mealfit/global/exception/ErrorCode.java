@@ -24,6 +24,11 @@ public enum ErrorCode {
 
     // 사진 업로드 및 식재료 인식 오류를 구분함.
     PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "COMMON_413", "업로드 가능한 파일 크기를 초과했습니다."),
+    INVENTORY_RECEIPT_INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVENTORY_RECEIPT_001", "정상적인 JPEG·PNG 영수증 한 장을 선택해 주세요."),
+    INVENTORY_RECEIPT_UNSUPPORTED_IMAGE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "INVENTORY_RECEIPT_002", "영수증은 JPEG·PNG 이미지만 지원합니다."),
+    INVENTORY_RECEIPT_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "INVENTORY_RECEIPT_003", "영수증 인식 서비스가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요."),
+    INVENTORY_RECEIPT_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "INVENTORY_RECEIPT_004", "영수증 인식 시간이 초과되었습니다. 다시 시도해 주세요."),
+    INVENTORY_RECEIPT_BAD_RESPONSE(HttpStatus.BAD_GATEWAY, "INVENTORY_RECEIPT_005", "영수증 분석 결과를 확인하지 못했습니다. 직접 입력하거나 다시 시도해 주세요."),
     INVENTORY_VISION_INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVENTORY_VISION_001", "정상적인 JPEG·PNG 이미지 한 장을 입력해 주세요."),
     INVENTORY_VISION_UNSUPPORTED_IMAGE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "INVENTORY_VISION_002", "JPEG·PNG 이미지만 지원합니다."),
     INVENTORY_VISION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "INVENTORY_VISION_003", "사진 인식 서비스를 사용할 수 없습니다. 직접 입력하거나 잠시 후 다시 시도해 주세요."),

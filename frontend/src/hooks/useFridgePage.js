@@ -8,6 +8,7 @@ import { ALL_STORAGE, buildFridgeView, lotSavedMessage, stockInMessage } from '@
  */
 export function useFridgePage() {
   const inventory = useInventory()
+  const [showReceiptRecognition, setShowReceiptRecognition] = useState(false)
   const [showStockIn, setShowStockIn] = useState(false)
   const [showPhotoRecognition, setShowPhotoRecognition] = useState(false)
   const [initialIngredientName, setInitialIngredientName] = useState('')
@@ -72,6 +73,8 @@ export function useFridgePage() {
 
   return {
     inventory, groups, view, successMessage,
+    showReceiptRecognition, openReceiptRecognition: () => setShowReceiptRecognition(true),
+    closeReceiptRecognition: () => setShowReceiptRecognition(false),
     searchQuery, setSearchQuery, storageFilter, setStorageFilter, resetFilters,
     initialIngredientName, showPhotoRecognition, openPhotoRecognition, openStockInFromPhoto,
     closePhotoRecognition: () => setShowPhotoRecognition(false),

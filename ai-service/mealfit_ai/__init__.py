@@ -19,6 +19,8 @@ from mealfit_ai.clients.gemini_client import generate
 from mealfit_ai.controllers.error_handlers import register_error_handlers
 from mealfit_ai.controllers.health_controller import health_bp
 from mealfit_ai.controllers.vision_controller import vision_bp
+from mealfit_ai.controllers.receipt_controller import receipt_bp
+from mealfit_ai.services.receipt_ocr_service import ReceiptOcrService
 from mealfit_ai.services.label_ocr_service import LabelOcrService
 from mealfit_ai.controllers.meal_plan_controller import meal_plan_bp
 from mealfit_ai.controllers.pose_controller import pose_bp
@@ -55,6 +57,10 @@ def create_app(config=None):
     if 'OCR_PREDICTOR' not in app.config:
         app.extensions['label_ocr'] = LabelOcrService(app.config)
         app.extensions['label_ocr'].warmup()
+    if 'RECEIPT_PREDICTOR' not in app.config:
+        app.extensions['receipt_ocr'] = ReceiptOcrService(app.config, worker=app.extensions.get('label_ocr'))
+        app.extensions['receipt_ocr'].warmup()
+    app.register_blueprint(receipt_bp)
     app.register_blueprint(vision_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(quick_recipe_bp)

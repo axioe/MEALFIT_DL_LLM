@@ -23,11 +23,11 @@ def load_engine():
         text_recognition_model_dir=os.environ['MEALFIT_OCR_REC_DIR'],
         use_doc_orientation_classify=False, use_doc_unwarping=False,
         use_textline_orientation=False, device='cpu', cpu_threads=2,
-        enable_mkldnn=False, text_det_limit_side_len=960, text_det_limit_type='max')
+        enable_mkldnn=True, text_det_limit_side_len=960, text_det_limit_type='max')
 
 
 # OCR 결과에서 제한된 텍스트와 문자 신뢰도만 추출함.
-def read_lines(engine, encoded):
+def read_lines(engine, encoded, include_boxes=False):
     import numpy as np
     from PIL import Image
 
@@ -37,14 +37,18 @@ def read_lines(engine, encoded):
     text_length = 0
     for result in engine.predict(input=pixels):
         texts, scores = result.get('rec_texts', []), result.get('rec_scores', [])
-        for text, score in zip(texts, scores):
+        boxes = result.get('rec_polys', [])
+        for index, (text, score) in enumerate(zip(texts, scores)):
             if not isinstance(text, str) or not text.strip():
                 continue
             text = text[:256]
             if len(lines) >= 128 or text_length + len(text) > 8192:
                 return lines
             text_length += len(text)
-            lines.append({'text': text, 'confidence': float(score)})
+            line = {'text': text, 'confidence': float(score)}
+            if include_boxes and index < len(boxes):
+                line['box'] = [[float(v) for v in point] for point in boxes[index]]
+            lines.append(line)
     return lines
 
 
@@ -65,7 +69,7 @@ def main():
         try:
             payload = json.loads(raw)
             with contextlib.redirect_stdout(sys.stderr):
-                lines = read_lines(engine, payload['image'])
+                lines = read_lines(engine, payload['image'], payload.get('mode') == 'receipt')
             response = {'status': 'SUCCESS', 'lines': lines}
         except (ImportError, ModuleNotFoundError, FileNotFoundError):
             response = {'status': 'UNAVAILABLE'}

@@ -1,3 +1,4 @@
+import { writeInventoryMemo } from './inventoryMemo.js'
 import { STORAGE_LOCATION } from '../lib/enums.js'
 
 // ---------- 새 묶음 입고 (StockInDialog) ----------
@@ -66,6 +67,7 @@ export function buildLotAdjustBody(form, lot) {
     else body.clearExpiryDate = true
   }
   if (Number(form.minStockQty) !== Number(lot.minStockQty)) body.minStockQty = Number(form.minStockQty)
-  if (form.memo !== (lot.memo ?? '')) body.memo = form.memo
+  const memo = Object.hasOwn(form, 'productInfo') ? writeInventoryMemo(form.productInfo, form.memo) : form.memo
+  if (memo !== (lot.memo ?? '')) body.memo = memo
   return body
 }
