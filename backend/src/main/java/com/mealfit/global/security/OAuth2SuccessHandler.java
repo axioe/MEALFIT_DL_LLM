@@ -2,6 +2,7 @@ package com.mealfit.global.security;
 
 import com.mealfit.domain.auth.model.OAuth2UserInfo;
 import com.mealfit.domain.auth.service.SocialAuthService;
+import com.mealfit.domain.user.service.WithdrawalReauthentication;
 
 import com.mealfit.global.exception.BusinessException;
 import com.mealfit.global.exception.ErrorCode;
@@ -39,6 +40,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private static final long REFRESH_COOKIE_MAX_AGE = 14L * 24 * 60 * 60;
 
     private final SocialAuthService socialAuthService;
+    private final WithdrawalReauthentication withdrawalReauthentication;
 
     @Value("${mealfit.auth.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -55,6 +57,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauthUser = oauthToken.getPrincipal();
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+        if (WithdrawalOAuth2RequestResolver.isWithdrawalCallback(request)) {
+            clearOAuthSession(request, response);
+            handleWithdrawalCallback(request, response, registrationId, oauthUser);
+            return;
+        }
 
         String rawLinkIntent = extractCookie(request, LINK_INTENT_COOKIE_NAME);
         // [소셜로그인] 1회용 연동 쿠키는 성공/실패 여부와 무관하게 즉시 삭제합니다.
@@ -99,6 +107,26 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         } catch (BusinessException ex) {
             redirect(response, "/login?oauthError=" + encode(mapErrorCode(ex.getErrorCode())));
         }
+    }
+
+    private void handleWithdrawalCallback(HttpServletRequest request, HttpServletResponse response,
+                                          String registrationId, OAuth2User oauthUser) throws IOException {
+        if (!WithdrawalOAuth2RequestResolver.matchesCookie(request)) {
+            redirect(response, "/mypage?withdrawal=failed");
+            return;
+        }
+        String token = WithdrawalOAuth2RequestResolver.cookie(request);
+        Optional<String> verified;
+        try {
+            verified = withdrawalReauthentication.verify(token,
+                OAuth2UserInfo.of(registrationId, oauthUser.getAttributes()));
+        } catch (BusinessException exception) {
+            withdrawalReauthentication.cancelPending(token);
+            verified = Optional.empty();
+        }
+        response.addHeader(HttpHeaders.SET_COOKIE,
+            WithdrawalOAuth2RequestResolver.responseCookie(verified.orElse(null), cookieSecure).toString());
+        redirect(response, verified.isPresent() ? "/mypage?withdrawal=verified" : "/mypage?withdrawal=failed");
     }
 
     private String extractCookie(HttpServletRequest request, String name) {
