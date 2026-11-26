@@ -10,7 +10,6 @@ export function createProfileForm({ body, trainer, diet, fitness, tests }) {
     trainerEquipment: trainer.equipment,
     trainerAvailableTime: trainer.workoutMinutes ?? "",
     trainerInjuries: trainer.injuries,
-    trainerAllergiesText: trainer.allergies.join(", "),
     trainerDislikedFoodsText: trainer.excludedIngredients.join(", "),
     trainerDietType: trainer.dietType ?? "",
     trainerBudget: trainer.mealBudget ?? "",
@@ -22,7 +21,6 @@ export function createProfileForm({ body, trainer, diet, fitness, tests }) {
     gender: body.gender ?? "",
     activityLevel: body.activityLevel ?? "",
     dietGoal: ({ LOSE: "loss", MAINTAIN: "maintain", GAIN: "gain" })[diet.goal] ?? "",
-    allergiesText: diet.allergies.join(", "),
     dislikedFoodsText: diet.excludedIngredients.join(", "),
     preferredFoodsText: diet.preferredFoods.join(", "),
     cookTime: diet.cookTimeMin ?? "",
@@ -51,7 +49,7 @@ export function parseProfileItems(text) {
 }
 
 /** 선택한 탭의 값만 전송해 다른 탭의 설정을 지우지 않습니다. */
-export function buildProfileSectionBody(section, form) {
+export function buildProfileSectionBody(section, form, savedAllergies) {
   const n = numberOrNull
   const items = parseProfileItems
   if (section === 'common') return {
@@ -67,13 +65,13 @@ export function buildProfileSectionBody(section, form) {
       environment: optional(form.trainerEnvironment), equipment: form.trainerEquipment,
       workoutMinutes: n(form.trainerAvailableTime), injuries: form.trainerInjuries,
       dietType: optional(form.trainerDietType), mealBudget: n(form.trainerBudget),
-      allergies: items(form.trainerAllergiesText), excludedIngredients: items(form.trainerDislikedFoodsText),
+      allergies: savedAllergies, excludedIngredients: items(form.trainerDislikedFoodsText),
     }
   }
   if (section === 'diet') return {
     goal: ({ loss: 'LOSE', maintain: 'MAINTAIN', gain: 'GAIN' })[form.dietGoal] ?? null,
     cookTimeMin: n(form.cookTime), mealBudget: n(form.budgetPerMeal),
-    allergies: items(form.allergiesText), excludedIngredients: items(form.dislikedFoodsText),
+    allergies: savedAllergies, excludedIngredients: items(form.dislikedFoodsText),
     preferredFoods: items(form.preferredFoodsText), defaultServings: n(form.defaultServings),
     prioritizeFridge: form.prioritizeFridge,
   }

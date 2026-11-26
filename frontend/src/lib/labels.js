@@ -1,5 +1,13 @@
 // 백엔드 enum 값 → 화면에 보여줄 한글
 
+export const ALLERGEN_MATCH_LABEL = {
+  NAME: '이름', ALIAS: '별칭', INGREDIENT: '재료',
+}
+
+export const ALLERGEN_REASON_LABEL = {
+  CONTAINS: '포함', MAY_CONTAIN: '확인 필요', NAME_MATCH: '이름 겹침',
+}
+
 export const MEAL_TYPE_LABEL = {
   BREAKFAST: '아침',
   LUNCH: '점심',

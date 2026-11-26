@@ -35,6 +35,8 @@ export const RECIPE_SOURCE = Object.freeze({
 /** 운동 자세 판별 응답 상태 (PoseAnalysisResponse.status): 판정 / 재촬영 안내 */
 export const POSE_ANALYSIS_STATUS = Object.freeze({ OK: 'OK', RETAKE: 'RETAKE' })
 
+export const ALLERGEN_LEGAL_STATUS = Object.freeze({ CURRENT: 'CURRENT', PROPOSED: 'PROPOSED' })
+
 /** [소셜로그인] 백엔드 SocialProvider registrationId와 일치하는 상수 */
 export const SOCIAL_PROVIDER = Object.freeze({
   GOOGLE: 'google',

@@ -39,7 +39,7 @@ export function useMyPageForm({ details, activeTab, setActiveTab }) {
     setError('')
     submitLock.current = true
     try {
-      const body = buildProfileSectionBody(activeTab, form)
+      const body = buildProfileSectionBody(activeTab, form, details[activeTab]?.allergies)
       const saved = await save.mutateAsync({ section: activeTab, body })
       setForm(createProfileForm(saved))
       setDirty(false)

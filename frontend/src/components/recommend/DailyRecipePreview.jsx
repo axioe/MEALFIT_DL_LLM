@@ -1,4 +1,5 @@
 import { useRecipe } from '@/hooks/useRecipes'
+import { RecipeAllergenCheck } from '@/components/recommend/RecipeAllergenCheck'
 import { formatQuantity } from '@/lib/format'
 import { validRecipeId, validRecipeServings } from '@/models/recipeInventory'
 
@@ -9,7 +10,7 @@ export function DailyRecipePreview({ plan }) {
     {query.isFetching && <p role="status" className="text-gray-500">재료·조리법 확인 중…</p>}
     {query.isError && <div className="text-rose-700"><p>레시피 미리보기를 불러오지 못했습니다.</p><button type="button" disabled={query.isFetching} onClick={() => query.refetch()} className="mt-1 min-h-11 font-bold underline">미리보기 다시 조회</button></div>}
     {recipe && !query.isError && <>
-
+      <RecipeAllergenCheck recipeId={plan.recipe.id} />
       <div><h5 className="mb-2 font-bold text-gray-700">필요 재료 ({recipe.servings}인분 기준)</h5><ul className="space-y-1.5">{(recipe.ingredients ?? []).map((item, index) => <li key={`${item.ingredientName}-${index}`} className="flex flex-wrap justify-between gap-x-2 rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5"><span className="min-w-0 break-all font-medium text-gray-800">{item.ingredientName}</span><span className="break-all font-semibold text-gray-600">{formatQuantity(item.quantity, item.unit)}</span></li>)}</ul></div>
       <div><h5 className="mb-2 font-bold text-gray-700">조리 순서 미리보기</h5>{recipe.steps?.length ? <ol className="list-decimal space-y-1.5 pl-4 text-gray-600">{recipe.steps.slice(0, 2).map((step, index) => <li key={index} className="break-words">{step}</li>)}</ol> : <p className="text-gray-500">등록된 조리 순서가 없습니다.</p>}{recipe.steps?.length > 2 && <p className="mt-2 text-gray-500">전체 {recipe.steps.length}단계 · 상세 화면에서 이어서 확인하세요.</p>}</div>
 
