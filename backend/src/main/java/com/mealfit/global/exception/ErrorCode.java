@@ -132,6 +132,14 @@ public enum ErrorCode {
     COOKING_DUPLICATE_REQUEST(HttpStatus.CONFLICT, "COOKING_009",
             "같은 조리 요청을 이미 처리하고 있습니다. 조리 기록을 확인해 주세요."),
 
+    // [섭취기록] 섭취 기록 (FR-INT-01·02, BR-11)
+    INTAKE_MEAL_PLAN_NOT_CONFIRMED(HttpStatus.CONFLICT, "INTAKE_001",
+            "확정된 식단만 섭취 기록을 남길 수 있습니다."),
+    INTAKE_INVALID_STATUS(HttpStatus.BAD_REQUEST, "INTAKE_002",
+            "섭취 상태는 먹음(EATEN) 또는 건너뜀(SKIPPED)만 기록할 수 있습니다."),
+    INTAKE_FUTURE_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "INTAKE_003",
+            "미래 날짜의 식단은 미리 섭취 기록을 남길 수 없습니다."),
+
     // 운동 루틴 (WORKOUT_001–005: 루틴 생성·조회, WORKOUT_006~: 조정·기록용으로 비워 둠)
     WORKOUT_CONDITIONS_MISSING(HttpStatus.UNPROCESSABLE_ENTITY, "WORKOUT_001",
             "운동 조건이 없습니다. 프로필에서 운동 조건을 먼저 입력해 주세요."),
