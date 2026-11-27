@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mealfit.domain.workout.pose.client.PoseAiClient;
 import com.mealfit.domain.workout.pose.service.PoseAnalysisService;
 import com.mealfit.support.TestJwt;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,17 +22,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClient;
 
-/** 인증·MVC·오류 응답은 실제 구성을 쓰고 AI 서비스 HTTP 응답만 대체한다. 기본 설정은 기능 플래그 꺼짐. */
+/**
+ * 인증·MVC·오류 응답은 실제 구성을 쓰고 AI 서비스 HTTP 응답만 대체한다. 기본 설정은 기능 플래그 꺼짐.
+ * 개발자 PC의 루트 .env에 AI_POSE_ENABLED=true가 있어도 결과가 같도록, 테스트에서는 이 값을 꺼진 상태로 고정한다
+ * (테스트 속성이 .env보다 우선한다).
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = "AI_POSE_ENABLED=false")
 class PoseAnalysisApiTest {
     static final String URL = "/api/v1/workout/pose-analyses";
     static final String EXERCISES = """
@@ -115,6 +123,9 @@ class PoseAnalysisApiTest {
     // 설정 기본값은 꺼짐이고, 꺼진 서비스는 AI 서비스를 부르지 않고 503
     @Test
     void flagIsOffByDefault() throws Exception {
+        // 운영 기본값: 환경 변수가 없으면 꺼짐 (application.yml의 기본값을 직접 확인한다)
+        String config = new ClassPathResource("application.yml").getContentAsString(StandardCharsets.UTF_8);
+        org.assertj.core.api.Assertions.assertThat(config).contains("enabled: ${AI_POSE_ENABLED:false}");
         org.assertj.core.api.Assertions.assertThat(poseEnabled).isFalse();
         var off = new PoseAnalysisService(new PoseAiClient(RestClient.builder().baseUrl("http://flask.test").build()), poseEnabled);
         org.mockito.Mockito.doAnswer(call -> off.analyze(call.getArgument(0))).when(service).analyze(any());
