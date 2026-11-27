@@ -28,7 +28,7 @@ export function CalendarPage() {
     return (<>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Calendar Grid (2 Cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 md:p-6 border border-gray-200 shadow-xs">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-3 sm:p-5 md:p-6 border border-gray-200 shadow-xs">
           {/* Month Header */}
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-extrabold text-lg text-gray-900 tracking-tight">
@@ -64,13 +64,13 @@ export function CalendarPage() {
           </div>
 
           {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5">
             {calendarDays.map((item, idx) => {
             const isSelected = item.dateStr === selectedDate;
             const isToday = item.dateStr === todayStr;
             const dayPlansCount = plans.filter(p => p.date === item.dateStr).length;
             const hasWorkout = workoutLogs.some(l => l.date === item.dateStr && l.completed);
-            return (<button key={idx} onClick={() => setSelectedDate(item.dateStr)} className={`min-h-[72px] md:min-h-[84px] p-1.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${isSelected
+            return (<button key={idx} aria-label={item.dateStr} aria-pressed={isSelected} onClick={() => setSelectedDate(item.dateStr)} className={`min-h-12 min-w-0 sm:min-h-[72px] md:min-h-[84px] p-1 sm:p-1.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${isSelected
                     ? 'border-emerald-600 bg-emerald-50/70 shadow-xs'
                     : isToday
                         ? 'border-emerald-300 bg-white'

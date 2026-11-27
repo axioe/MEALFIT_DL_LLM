@@ -96,7 +96,7 @@ function MyPageContent({ details, activeTab, onChangeTab }) {
         logoutPending={logout.isPending}
         disabled={isSaving}
       />
-      <nav aria-label="내 기록" className="mb-4 flex gap-2 md:hidden">
+      <nav aria-label="내 기록" className="mb-4 flex flex-wrap gap-2 lg:hidden">
         <Link to="/calendar" className="btn-secondary">캘린더</Link>
         <Link to="/weight" className="btn-secondary">체중 관리</Link>
       </nav>

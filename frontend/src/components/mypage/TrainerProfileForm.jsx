@@ -48,7 +48,7 @@ export function TrainerProfileForm({ form, updateField, onSubmit, isSaving, alle
           1. 필수 항목 (첫 실행 시 수집)
         </h5>
 
-        <div className="grid grid-cols-3 gap-3 p-3.5 rounded-2xl bg-emerald-50/40 border border-emerald-100">
+        <div className="grid gap-3 p-3.5 rounded-2xl bg-emerald-50/40 border border-emerald-100 sm:grid-cols-3">
           <div>
             <label className="font-bold text-gray-700 block mb-1">
               나이 (만) *

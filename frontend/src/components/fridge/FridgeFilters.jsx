@@ -24,7 +24,7 @@ export function FridgeFilters({ searchQuery, onSearchChange, storageFilter, onSt
           </button>
         )}
       </div>
-      <div role="group" aria-label="보관 위치" className="grid grid-cols-4 gap-2 sm:flex">
+      <div role="group" aria-label="보관 위치" className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-4 sm:flex sm:flex-wrap">
         {STORAGE_FILTERS.map(({ value, label, icon: Icon }) => (
           <button key={value} type="button" aria-pressed={storageFilter === value} onClick={() => onStorageChange(value)} className={`flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:px-5 ${storageFilter === value ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-300 hover:bg-emerald-50'}`}>
             <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{label}

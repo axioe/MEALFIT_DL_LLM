@@ -17,7 +17,7 @@ export function LoginPromptDialog({ feature, returnTo, onClose }) {
 
   return <dialog ref={ref} aria-labelledby="login-prompt-title" aria-describedby="login-prompt-description"
     onCancel={event => { event.preventDefault(); dismiss() }}
-    className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-xl backdrop:bg-black/40">
+    className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-6 text-gray-900 shadow-xl backdrop:bg-black/40">
     <span className="mb-4 inline-flex size-11 items-center justify-center rounded-full bg-emerald-50 text-[#195940]">
       <LockKeyhole size={22} aria-hidden="true" />
     </span>
