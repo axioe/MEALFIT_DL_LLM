@@ -11,6 +11,7 @@ import com.mealfit.domain.workout.model.Level;
 import com.mealfit.domain.workout.model.WorkoutConditions;
 import com.mealfit.global.exception.BusinessException;
 import com.mealfit.global.exception.ErrorCode;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -35,10 +36,15 @@ public class WorkoutConditionsResolver {
         Optional<ProfileDetails> details = profileRepository.findByUserId(userId)
             .flatMap(profile -> profileDetailsRepository.findById(profile.getId()));
 
+        // 빠진 필수 조건은 모두 모아 한 번에 알려 준다 (어느 항목을 어디서 입력할지 사용자가 알 수 있게)
+        List<String> missing = new ArrayList<>();
+
         Goal goal = request.goal() != null
             ? Goal.fromProfileValue(request.goal()).orElseThrow(() -> invalid("목표"))
-            : details.map(ProfileDetails::getWorkoutGoal).flatMap(Goal::fromProfileValue)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WORKOUT_CONDITIONS_MISSING));
+            : details.map(ProfileDetails::getWorkoutGoal).flatMap(Goal::fromProfileValue).orElse(null);
+        if (goal == null) {
+            missing.add("운동 목표");
+        }
 
         Level level = Level.fromProfileValue(request.level() != null
             ? request.level() : details.map(ProfileDetails::getWorkoutLevel).orElse(null));
@@ -46,13 +52,12 @@ public class WorkoutConditionsResolver {
         Integer days = request.daysPerWeek() != null
             ? request.daysPerWeek() : details.map(ProfileDetails::getDaysPerWeek).orElse(null);
         if (days == null) {
-            throw new BusinessException(ErrorCode.WORKOUT_CONDITIONS_MISSING);
-        }
-        if (days < 2 || days > 6) {
+            missing.add("주당 운동 일수");
+        } else if (days < 2 || days > 6) {
             throw invalid("주당 일수");
         }
 
-        int minutes;
+        Integer minutes;
         if (request.sessionMinutes() != null) {
             if (!WorkoutConditions.ALLOWED_MINUTES.contains(request.sessionMinutes())) {
                 throw invalid("회당 시간(15·30·45·60분)");
@@ -60,7 +65,14 @@ public class WorkoutConditionsResolver {
             minutes = request.sessionMinutes();
         } else {
             minutes = details.map(ProfileDetails::getWorkoutMinutes).map(WorkoutConditionsResolver::floorMinutes)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WORKOUT_CONDITIONS_MISSING));
+                .orElse(null);
+            if (minutes == null) {
+                missing.add("회당 운동 시간");
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            throw new BusinessException(ErrorCode.WORKOUT_CONDITIONS_MISSING, missingMessage(missing));
         }
 
         Set<Equipment> equipment = request.equipment() != null
@@ -86,6 +98,18 @@ public class WorkoutConditionsResolver {
 
         return new WorkoutConditions(goal, level, days, minutes, equipment, injuries, unknownInjury,
             recent.skipRatio(), recent.logCount());
+    }
+
+    /**
+     * 빠진 조건 안내 문구. 예) "운동 조건 중 주당 운동 일수가 비어 있어요. 내 설정 > 운동 목표 & 장비에서 입력해 주세요."
+     * 조사(이/가)는 마지막 글자의 받침으로 고른다.
+     */
+    static String missingMessage(List<String> missing) {
+        String items = String.join(", ", missing);
+        char last = items.charAt(items.length() - 1);
+        boolean batchim = last >= '가' && last <= '힣' && (last - '가') % 28 != 0;
+        return "운동 조건 중 " + items + (batchim ? "이" : "가")
+            + " 비어 있어요. 내 설정 > 운동 목표 & 장비에서 입력해 주세요.";
     }
 
     /** 프로필의 회당 시간(10–90분)을 허용 값 중 가까운 아래 값으로 내린다 (최소 15분, 설계 결정 D1). */
