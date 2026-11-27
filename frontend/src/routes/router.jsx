@@ -4,15 +4,15 @@ import { AppLayout } from '@/components/layout/AppLayout';
 const page = (load, name) => async () => ({ Component: (await load())[name] });
 export const router = createBrowserRouter([
     { children: [
+            { path: '/', element: <Navigate to="/dashboard" replace/> },
             { path: '/login', lazy: page(() => import('@/pages/LoginPage'), 'LoginPage') },
             { path: '/signup', lazy: page(() => import('@/pages/SignupPage'), 'SignupPage') },
             // [이메일인증] 메일 링크 검증용 공개 라우트
             { path: '/verify-email', lazy: page(() => import('@/pages/VerifyEmailPage'), 'VerifyEmailPage') },
         ] },
-    // 공개 로그인 화면을 제외한 모든 업무 화면은 서버 인증 후 표시합니다.
+    // 공개 화면은 세션 복구 중에도 열고, 회원 데이터는 인증 확인 후 표시합니다.
     { element: <RequireAuth />, children: [
         { element: <AppLayout />, children: [
-            { path: '/', element: <Navigate to="/dashboard" replace/> },
             { path: '/dashboard', lazy: page(() => import('@/pages/DashboardPage'), 'DashboardPage') },
             { path: '/recommend', lazy: page(() => import('@/pages/RecommendPage'), 'RecommendPage') },
             { path: '/recipes/:id', lazy: page(() => import('@/pages/RecipeDetailPage'), 'RecipeDetailPage') },

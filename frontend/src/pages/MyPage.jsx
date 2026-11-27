@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Link, useSearchParams } from 'react-router-dom'
 import { Shield } from "lucide-react";
 import { BodyProfileForm } from "@/components/mypage/BodyProfileForm";
 import { AllergySettings } from "@/components/mypage/AllergySettings";
@@ -27,7 +27,14 @@ const TAB_FORMS = {
 export function MyPage() {
   const query = useProfileDetails();
   const userId = useAuthStore((state) => state.user?.id);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [params, setParams] = useSearchParams();
+  const selected = params.get('tab');
+  const activeTab = ['profile','allergies',...Object.keys(TAB_FORMS)].includes(selected) ? selected : 'profile';
+  function setActiveTab(tab) {
+    const next = new URLSearchParams(params);
+    next.set('tab', tab);
+    setParams(next, { replace: true });
+  }
   if (query.isPending) return <p role="status">마이페이지를 불러오는 중입니다.</p>;
   if (query.isError && !query.data) return (
     <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm">
@@ -50,6 +57,7 @@ function MyPageContent({ details, activeTab, setActiveTab }) {
   return (
     <>
       <MyPageHeader user={user} onLogout={logout.handleLogout} logoutPending={logout.isPending} disabled={isSaving} />
+      <nav aria-label="내 기록" className="mb-4 flex gap-2 md:hidden"><Link to="/calendar" className="btn-secondary">캘린더</Link><Link to="/weight" className="btn-secondary">체중 관리</Link></nav>
       <MyPageTabs activeTab={activeTab} onChange={changeTab} disabled={isSaving} />
 
       {activeTab === "profile" && <ProfileSettings onDirtyChange={setDirty} onSavingChange={setIsProfileSaving} onEditAllergies={openAllergies} />}

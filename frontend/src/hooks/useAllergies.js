@@ -60,7 +60,7 @@ function useReplaceAllergies() {
       client.setQueryData(details, (prev) => prev && {
         ...prev, trainer: { ...prev.trainer, allergies }, diet: { ...prev.diet, allergies },
       })
-      await Promise.all([keys.checks(userId), queryKeys.dashboard.profile].map((queryKey) =>
+      await Promise.all([keys.checks(userId), queryKeys.quickMenu(userId), queryKeys.dashboard.profile].map((queryKey) =>
         client.invalidateQueries({ queryKey })))
     },
   })

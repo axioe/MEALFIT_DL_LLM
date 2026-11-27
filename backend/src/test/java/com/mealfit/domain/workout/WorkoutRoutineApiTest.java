@@ -254,7 +254,9 @@ class WorkoutRoutineApiTest {
     void 운동조건이_없거나_잘못되면_거부한다() throws Exception {
         recommend(USER, Map.of("startDate", NEXT_MONDAY.toString()))
             .andExpect(status().isUnprocessableEntity())
-            .andExpect(jsonPath("$.code").value("WORKOUT_001"));
+            .andExpect(jsonPath("$.code").value("WORKOUT_001"))
+            .andExpect(jsonPath("$.message").value(
+                "운동 조건 중 운동 목표, 주당 운동 일수, 회당 운동 시간이 비어 있어요. 내 설정 > 운동 목표 & 장비에서 입력해 주세요."));
 
         recommend(USER, body("hypertrophy", 3, 20, List.of("none"), List.of()))
             .andExpect(status().isBadRequest())
@@ -272,6 +274,36 @@ class WorkoutRoutineApiTest {
 
         recommend(USER, body("hypertrophy", 7, 30, List.of("none"), List.of()))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void AI트레이너_탭만_저장해_주당일수가_비면_그_항목만_알려준다() throws Exception {
+        // AI 트레이너 프로필 탭은 목표·수준·시간은 저장하지만 주당 운동 일수 입력이 없다
+        Map<String, Object> trainer = new HashMap<>();
+        trainer.put("age", 25);
+        trainer.put("height", 175);
+        trainer.put("currentWeight", 70);
+        trainer.put("workoutGoal", "hypertrophy");
+        trainer.put("workoutLevel", "intermediate");
+        trainer.put("workoutMinutes", 60);
+        trainer.put("equipment", List.of("dumbbell"));
+        trainer.put("injuries", List.of());
+        trainer.put("allergies", List.of());
+        trainer.put("excludedIngredients", List.of());
+        mvc.perform(put("/api/v1/me/profile/details/trainer").with(user(USER))
+                .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(trainer)))
+            .andExpect(status().isOk());
+
+        recommend(USER, Map.of("startDate", NEXT_MONDAY.toString()))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.code").value("WORKOUT_001"))
+            .andExpect(jsonPath("$.message").value(
+                "운동 조건 중 주당 운동 일수가 비어 있어요. 내 설정 > 운동 목표 & 장비에서 입력해 주세요."));
+
+        // 요청에 주당 일수를 넣으면 나머지는 프로필 값으로 루틴을 만든다
+        JsonNode routine = recommendOk(USER, Map.of("startDate", NEXT_MONDAY.toString(), "daysPerWeek", 3));
+        assertThat(routine.get("daysPerWeek").asInt()).isEqualTo(3);
+        assertThat(routine.get("sessionMinutes").asInt()).isEqualTo(60);
     }
 
     @Test

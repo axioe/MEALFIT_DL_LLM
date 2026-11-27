@@ -1,15 +1,28 @@
+import { useInventory } from '@/hooks/useInventory'
+import { useShopping } from '@/hooks/useShopping'
+import { useMealPlans } from '@/hooks/useMealPlans'
+import { intakeApi } from '@/api/intake'
+import { pickExpiringLots } from '@/models/dashboard'
+import { SHOPPING_ITEM_STATUS } from '@/lib/enums'
 import { useSessionMutation } from '@/hooks/useSessionMutation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { dashboardApi } from '@/api/dashboard'
 import { queryKeys } from '@/api/queryKeys'
 
 export function useDashboard(date) {
-  return useQuery({
-    queryKey: queryKeys.dashboard.byDate(date),
-    queryFn: () => dashboardApi.getDashboard(date),
-    // 냉장고·장보기 화면에서 바꾼 내용이 돌아왔을 때 바로 보이도록 매번 새로 받는다
-    staleTime: 0,
-  })
+  const plans = useMealPlans(date)
+  const fridge = useInventory()
+  const shopping = useShopping()
+  const logs = useQuery({ queryKey: queryKeys.intake.byDate(date), queryFn: ({ signal }) => intakeApi.getByDate(date, signal), staleTime: 0, retry: false })
+  const intake = new Map((logs.data ?? []).map(log => [log.mealPlanId, log.intakeStatus]))
+  const meals = (plans.data?.mealPlans ?? []).map(plan => ({ ...plan, intakeStatus: intake.get(plan.id) ?? null }))
+  return {
+    plans, fridge,
+    meals: { data: { meals }, isPending: plans.isPending || logs.isPending, isError: plans.isError || logs.isError,
+      error: plans.error ?? logs.error, refetch: () => Promise.all([plans.refetch(), logs.refetch()]) },
+    inventory: { ...fridge, data: fridge.data && { expiringLots: pickExpiringLots(fridge.data) } },
+    shopping: { ...shopping, data: shopping.data && { shortages: shopping.data.filter(item => item.status !== SHOPPING_ITEM_STATUS.PURCHASED) } },
+  }
 }
 
 export function useRecordIntake() {
@@ -17,7 +30,7 @@ export function useRecordIntake() {
   return useSessionMutation({
     mutationFn: dashboardApi.recordIntake,
     retry: false,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }), queryClient.invalidateQueries({ queryKey: queryKeys.intake.all })]),
   })
 }
 

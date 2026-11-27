@@ -18,7 +18,7 @@ export function CookingPanel({ recipeId, mealPlanId, date, servings, recipeReady
   const session = syncUsageSession(usageSession, scope, { ingredients: ingredients.map((item) => ({ ...item, requiredQty: item.quantity })) })
   if (session !== usageSession) setUsageSession(session)
   const [locked, setLocked] = useState(false)
-  const [openScope, setOpenScope] = useState(null)
+  const [openScope, setOpenScope] = useState(focusCooking ? scope : null)
   const ready = Boolean(inventory.data) && !inventory.isFetching && !inventory.isError
   const analysis = analyzeUsage(session.rows, session.baseline ?? [], inventory.data, ready)
   const draft = prepareActualUsageDraft({ mealPlanId, recipeId, date, servings }, session.rows, analysis)
@@ -28,7 +28,7 @@ export function CookingPanel({ recipeId, mealPlanId, date, servings, recipeReady
     if (!focusCooking || plans.isFetching || !recipeReady) return
     panel.current?.scrollIntoView({ block: 'start' }); panel.current?.focus({ preventScroll: true })
   }, [focusCooking, recipeId, mealPlanId, date, plans.isFetching, recipeReady])
-  const open = openScope === scope
+  const open = openScope === scope && Boolean(session.baseline?.length)
   return <section ref={panel} id="cook" tabIndex={-1} aria-label="요리하기" className="card scroll-mt-24 space-y-4">
     <h3 className="flex items-center gap-2 text-lg font-extrabold"><ChefHat aria-hidden="true" className="h-5 w-5 text-emerald-600" />요리하기</h3>
     {target.plan && <p className="text-sm text-gray-600">{date} · {MEAL_TYPE_LABEL[target.plan.mealType]} · {servings}인분 · {target.plan.cooked ? '요리 완료' : '요리 전'}</p>}
@@ -37,8 +37,9 @@ export function CookingPanel({ recipeId, mealPlanId, date, servings, recipeReady
     {!open && !target.plan?.cooked && <button type="button" disabled={Boolean(target.reason) || !target.plan} onClick={() => setOpenScope(scope)} className="btn-primary min-h-11">요리 전 재료 확인</button>}
     <button type="button" disabled={plans.isFetching} onClick={() => plans.refetch({ cancelRefetch: false })} className="btn-secondary min-h-11">최신 상태 확인</button>
     {open && <>
-      <p className="text-xs leading-6 text-gray-500">식단 요리에서는 기존 레시피 재료의 수량을 변경하거나 제외할 수 있어요. 새로운 재료를 추가한 경우에는 재고 자동 반영이 아직 지원되지 않아요.</p>
+      <details className="mf-options"><summary>실제 사용할 재료와 수량 수정</summary>
       <ActualIngredientsEditor key={scope} session={session} analysis={analysis} inventoryReady={ready} disabled={locked || inventory.isFetching} preparedDraft={draft} actualUsageSupported={!inputError} onRowsChange={(rows) => setUsageSession({ ...session, rows })} onReset={() => setUsageSession({ ...session, rows: session.baseline.map((row) => ({ ...row })), notice: '레시피 기준으로 되돌렸어요.' })} />
+      </details>
       <ServerCookingActions key={scope} mode="meal" body={body} inputError={inputError || (Object.keys(analysis.errors).length ? '입력값과 사용 가능한 재고를 확인해 주세요.' : '')} inventory={inventory} blockedReason={target.reason || (!target.plan ? '식단 정보를 다시 확인해 주세요.' : target.plan.cooked ? '이미 조리 완료한 식단이에요.' : '')} date={date} onLockChange={setLocked} onBusyChange={onBusyChange} />
     </>}
   </section>

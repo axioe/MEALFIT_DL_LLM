@@ -34,5 +34,5 @@ export function adaptAiQuickResponse(response) {
 }
 
 export function createQuickRecipesApi(client) {
-  return { recommend: (body) => client.post('/quick-recipes/recommend', body).then((response) => adaptAiQuickResponse(response.data)) }
+  return { recommend: (body, signal) => (signal ? client.post('/quick-recipes/recommend', body, { signal }) : client.post('/quick-recipes/recommend', body)).then((response) => adaptAiQuickResponse(response.data)) }
 }

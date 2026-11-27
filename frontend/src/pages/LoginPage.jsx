@@ -239,6 +239,7 @@ export function LoginPage() {
           >
             회원가입하기
           </Link>
+          <div className="mt-3"><Link to="/dashboard" className="font-semibold text-gray-600 hover:underline">로그인 없이 둘러보기</Link></div>
         </div>
       </div>
     </div>

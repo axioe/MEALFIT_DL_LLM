@@ -107,6 +107,8 @@ class CuratedFallbackAllergenTest {
         Recipe dinner = recipes.get(2);
         assertThat(lunch.getDishGroup()).isNotNull();
         assertThat(dinner.getDishGroup()).isNotEqualTo(lunch.getDishGroup());
+        // V18부터 이름이 '맛 주재료 요리'로 겹칠 수 있어도 같은 날 같은 이름은 다시 고르지 않는다
+        assertThat(dinner.getName()).isNotEqualTo(lunch.getName());
     }
 
     @Test

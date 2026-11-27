@@ -5,9 +5,11 @@ import { POSE_PHASE, usePoseAnalysis } from '@/hooks/usePoseAnalysis'
 import { POSE_MAX_SECONDS, POSE_MIN_SECONDS } from '@/models/poseFrames'
 import { POSE_CAMERA_TIPS, cameraGuide } from '@/lib/poseCameraGuide'
 import { PoseResult } from '@/components/workout/pose/PoseResult'
+import { PoseFrameGallery } from '@/components/workout/pose/PoseFrameGallery'
 
 const PHASE_LABEL = {
   [POSE_PHASE.PREPARING]: '자세 인식 모델 준비 중...',
+  [POSE_PHASE.CONVERTING]: '이 기기에서 바로 열리지 않는 영상이라 변환 도구를 준비하는 중...',
   [POSE_PHASE.EXTRACTING]: '영상에서 관절 위치 찾는 중',
   [POSE_PHASE.ANALYZING]: '자세 판정 중...',
 }
@@ -68,16 +70,35 @@ export function PoseAnalysisPanel() {
             영상은 이 기기 안에서만 관절 위치를 찾는 데 쓰고, 서버로 보내거나 저장하지 않아요. 서버에는 관절 좌표만 보내요.
           </p>
 
-          {pose.video && (
-            <video src={pose.video.url} controls muted playsInline aria-label="선택한 운동 영상 미리보기"
+          {pose.video && pose.preview.status !== 'converting' && (
+            <video key={pose.preview.url ?? pose.video.url} src={pose.preview.url ?? pose.video.url} controls muted playsInline
+              aria-label="선택한 운동 영상 미리보기" onLoadedMetadata={pose.checkPreview} onError={pose.checkPreview}
               className="mt-3 max-h-64 w-full rounded-xl bg-gray-900 object-contain" />
+          )}
+          {pose.video && pose.preview.status === 'converting' && (
+            <div role="status" className="mt-3 flex h-40 flex-col items-center justify-center gap-3 rounded-xl bg-gray-900 px-4 text-center text-sm text-gray-100">
+              <span className="flex items-center gap-2"><Spinner />미리보기 준비 중 {pose.preview.progress}%</span>
+              <span className="text-xs leading-5 text-gray-300">이 브라우저에서 바로 재생되지 않는 영상 형식(HEVC 등)이라 기기 안에서 변환하고 있어요.</span>
+              <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-gray-700">
+                <div className="h-full bg-emerald-400 transition-[width]" style={{ width: `${pose.preview.progress}%` }} />
+              </div>
+            </div>
+          )}
+          {pose.video && pose.preview.status === 'converted' && (
+            <p className="mt-2 text-xs leading-5 text-gray-500">미리보기는 화질을 낮춰 변환한 영상이에요. 분석은 원본 영상으로 해요.</p>
+          )}
+          {pose.video && pose.preview.status === 'failed' && (
+            <p role="status" className="mt-2 text-xs leading-5 text-gray-600">
+              이 기기에서는 미리보기를 보여 드릴 수 없는 영상이에요. 분석할 때 기기 안에서 변환해 읽어요.
+            </p>
           )}
 
           <div className="mt-4" aria-live="polite" aria-busy={pose.busy}>
             {pose.busy ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 text-sm text-gray-700">
-                  <span className="flex items-center gap-2"><Spinner />{PHASE_LABEL[pose.phase]}
+                  <span className="flex items-center gap-2"><Spinner />
+                    {pose.phase === POSE_PHASE.EXTRACTING && pose.converted ? '영상을 변환하며 관절 위치 찾는 중' : PHASE_LABEL[pose.phase]}
                     {pose.phase === POSE_PHASE.EXTRACTING && ` ${pose.progress}%`}</span>
                   <button type="button" onClick={pose.cancel} className="btn-secondary flex min-h-11 items-center gap-1">
                     <X aria-hidden="true" className="h-4 w-4" />취소
@@ -101,6 +122,11 @@ export function PoseAnalysisPanel() {
 
           {pose.result && <PoseResult result={pose.result} />}
 
+          {pose.gallery && !pose.busy && (
+            <PoseFrameGallery key={pose.gallery.thumbs.find(Boolean) ?? 'empty'} gallery={pose.gallery}
+              reps={pose.result && !pose.result.retake ? pose.result.reps : null} />
+          )}
+
           {pose.result && (
             <div className="mt-4 space-y-1 rounded-xl bg-gray-50 p-3 text-[11px] leading-5 text-gray-500">
               <p className="flex items-start gap-1.5"><Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -112,7 +138,7 @@ export function PoseAnalysisPanel() {
 
           {pose.speed && (
             <p className="mt-2 text-[11px] text-gray-400">
-              처리({pose.speed.delegate}): 프레임 {pose.speed.frames}개 · 프레임당 평균 {pose.speed.avgMs}ms (p95 {pose.speed.p95Ms}ms) · 전체 {pose.speed.totalSeconds}초
+              처리({pose.speed.delegate}{pose.speed.converted ? '·변환' : ''}): 프레임 {pose.speed.frames}개 · 프레임당 평균 {pose.speed.avgMs}ms (p95 {pose.speed.p95Ms}ms) · 전체 {pose.speed.totalSeconds}초
             </p>
           )}
         </>

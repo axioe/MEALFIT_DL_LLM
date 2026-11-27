@@ -4,6 +4,10 @@
  * 예) 조리 완료 → inventory, mealPlans, dashboard 무효화
  */
 export const queryKeys = {
+  search: {
+    all: (userId, q) => ['search', userId, q, 'all'],
+    more: (userId, q, type) => ['search', userId, q, type],
+  },
   auth: {
     // 회원 간 인증 조회 캐시를 분리합니다.
     me: (userId) => ['auth', 'me', userId ?? null],
@@ -38,6 +42,7 @@ export const queryKeys = {
     all: ['shopping'],
   },
   // [문장조정][운동기록] 운동 루틴·기록 쿼리 키
+  quickMenu: (userId) => ['quick-menu', userId],
   workout: {
     all: ['workout'],
     current: (week) => ['workout', 'current', week ?? null],

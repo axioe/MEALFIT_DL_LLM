@@ -133,10 +133,18 @@ export function poseResultView(response) {
       feedback: item.feedback,
     }
   })
+  // 반복별 구간과 기준과 달라 보인 조건 (관절 추출 사진에서 반복마다 표시)
+  const reps = (response.reps ?? []).map(rep => ({
+    index: rep.index,
+    startFrame: rep.startFrame,
+    endFrame: rep.endFrame,
+    issues: (rep.conditions ?? []).filter(item => item.correct === false).map(item => item.name),
+  }))
   return {
     retake: false,
     exercise: response.exercise,
     repCount: response.repCount,
+    reps,
     conditions,
     notice: response.notice,
     modelVersion: response.modelVersion,
