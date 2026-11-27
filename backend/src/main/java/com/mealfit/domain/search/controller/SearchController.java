@@ -22,6 +22,17 @@ public class SearchController {
 
     private final SearchService searchService;
 
+    @GetMapping("/public")
+    @Operation(summary = "비로그인 통합 검색", description = "공용 레시피와 운동 사전의 미리보기를 검색합니다. 개인 기록과 개인별 식단 조건은 조회하지 않습니다.")
+    public SearchResponse searchPublic(
+            @Parameter(description = "검색어 (1–50자)", example = "달걀") @RequestParam("q") String query,
+            @Parameter(description = "RECIPE, EXERCISE 중 선택. 생략하면 두 대상 모두 검색")
+            @RequestParam(required = false) Set<SearchType> types,
+            @Parameter(description = "대상별 최대 건수 (1–20, 기본 5)") @RequestParam(required = false) Integer limit,
+            @Parameter(description = "대상별 건너뛸 건수 (기본 0)") @RequestParam(required = false) Integer offset) {
+        return searchService.searchPublic(query, types, limit, offset);
+    }
+
     @Operation(summary = "통합 검색",
             description = """
                     공백·대소문자를 무시하고 포함 여부로 찾습니다. 재료 기준표의 이름·별칭은 함께 찾습니다 (계란 → 달걀).

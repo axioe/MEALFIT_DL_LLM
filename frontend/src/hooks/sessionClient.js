@@ -1,20 +1,24 @@
 import { assertCurrentSession, captureSession } from '../models/sessionScope.js'
 
-const AUTH_PATHS = new Set([
+const SESSION_INDEPENDENT_PATHS = new Set([
   '/auth/signup', '/auth/login', '/auth/refresh', '/auth/logout',
   '/auth/email-verification/confirm', '/auth/email-verification/resend',
+  '/search/public', '/recipes/public',
 ])
-const isAuthRequest = (config) => AUTH_PATHS.has(config.url?.split('?')[0])
+function isSessionIndependent(config) {
+  const path = config.url?.split('?')[0]
+  return SESSION_INDEPENDENT_PATHS.has(path) || /^\/recipes\/public\/\d+$/.test(path)
+}
 
 /** 실제 요청과 응답을 검사해 오래된 조회·저장 결과를 호출자에게 전달하지 않습니다. */
 export function installSessionInterceptors(api, store, recovery) {
   api.interceptors.request.use((config) => {
     const state = store.getState()
-    if (!isAuthRequest(config)) {
+    if (!isSessionIndependent(config)) {
       config._authSession ??= captureSession(state)
       assertCurrentSession(config._authSession, state)
     }
-    if (!isAuthRequest(config) && state.accessToken) {
+    if (!isSessionIndependent(config) && state.accessToken) {
       config.headers.set('Authorization', `Bearer ${state.accessToken}`)
       config._authAccessToken = state.accessToken
     } else {
@@ -32,7 +36,7 @@ export function installSessionInterceptors(api, store, recovery) {
     async (error) => {
       const config = error.config
       if (config?._authSession) assertCurrentSession(config._authSession, store.getState())
-      if (!config || error.response?.status !== 401 || isAuthRequest(config)) throw error
+      if (!config || error.response?.status !== 401 || isSessionIndependent(config)) throw error
 
       const current = store.getState()
       if (config._authRetried) {

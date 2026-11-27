@@ -4,8 +4,9 @@ import { inventoryApi } from '@/api/inventory'
 import { queryKeys } from '@/api/queryKeys'
 import { countImminentLots } from '@/models/fridge'
 
-export function useInventory() {
+export function useInventory(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: queryKeys.inventory.all,
     queryFn: inventoryApi.getLots,
     refetchOnMount: 'always',

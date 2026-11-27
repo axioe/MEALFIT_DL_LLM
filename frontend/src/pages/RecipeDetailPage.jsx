@@ -3,12 +3,13 @@ import { nutritionForServings } from '@/models/menuDiscovery'
 import { CookingPanel } from "@/components/recommend/CookingPanel";
 import { RecipeAllergenCheck } from "@/components/recommend/RecipeAllergenCheck";
 import { useState } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, RefreshCw } from "lucide-react";
+import { Link, useLocation, useMatch, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Clock, LockKeyhole, RefreshCw } from "lucide-react";
+import { MemberLink } from '@/components/common/MemberLink'
 import { getErrorMessage } from "@/api/client";
 import { useInventory } from "@/hooks/useInventory";
 import { useRecipeServings } from "@/hooks/useRecipeServings";
-import { compareRecipeIngredient, RECIPE_STOCK_LABEL, RECIPE_STOCK_STATUS, validRecipeDate, validRecipeId, validRecipeServings } from "@/models/recipeInventory";
+import { compareRecipeIngredient, recipeCatalogPage, RECIPE_STOCK_LABEL, RECIPE_STOCK_STATUS, validRecipeDate, validRecipeId, validRecipeServings } from "@/models/recipeInventory";
 import { Spinner } from "@/components/common/Spinner";
 import { RecipeSourceBadge } from "@/components/common/StatusBadge";
 import { RECIPE_SOURCE } from "@/lib/enums";
@@ -18,6 +19,8 @@ function RecipeContent({
   recipeId,
   initialServings,
   backTo,
+  backLabel,
+  publicOnly,
   onServingsChange,
   mealPlanId,
   date,
@@ -25,13 +28,13 @@ function RecipeContent({
 }) {
   const [cookingBusy, setCookingBusy] = useState(false);
   const { recipe, data, requestedServings, servingInput, changeServingInput, formError, applyServings, retryRecipe } =
-    useRecipeServings({ recipeId, initialServings, onServingsChange, cookingBusy });
-  const inventory = useInventory();
+    useRecipeServings({ recipeId, initialServings, onServingsChange, cookingBusy, publicOnly });
+  const inventory = useInventory(!publicOnly);
   return (
     <div className="space-y-6">
       <Link to={backTo} aria-disabled={cookingBusy} onClick={(event) => { if (cookingBusy) event.preventDefault(); }} className="btn-secondary min-h-11">
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-        식단 추천으로 돌아가기
+        {backLabel}
       </Link>
       {recipe.isFetching && (
         <div
@@ -92,7 +95,7 @@ function RecipeContent({
                 {data.description}
               </p>
             )}
-            <RecipeAllergenCheck recipeId={recipeId} />
+            {!publicOnly && <RecipeAllergenCheck recipeId={recipeId} />}
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1.5">
                 <Clock aria-hidden="true" className="h-4 w-4" />
@@ -154,7 +157,12 @@ function RecipeContent({
           </section>
 
           <div className="mf-two"><div className="mf-stack">
-          <section
+          {publicOnly ? <section className="card space-y-3" aria-labelledby="recipe-ingredients-title">
+            <h2 id="recipe-ingredients-title" className="mf-section-title">사용할 재료 · {data.servings}인분</h2>
+            <ul className="mf-list">{data.ingredients.map((item, index) => <li key={index}>
+              <span>{item.ingredientName}</span><span>{formatQuantity(item.quantity, item.unit)}</span>
+            </li>)}</ul>
+          </section> : <section
             className="card space-y-4"
             aria-labelledby="recipe-stock-title"
           >
@@ -262,7 +270,7 @@ function RecipeContent({
               화면의 비교 결과는 조리 시 실제 차감할 로트·수량의 미리보기가
               아닙니다.
             </p>
-          </section>
+          </section>}
 
           <section
             className="card space-y-3"
@@ -303,7 +311,9 @@ function RecipeContent({
           </section>
 
           </div></div>
-          <CookingPanel
+          {publicOnly ? <MemberLink to="/recommend" feature="개인 맞춤 식단 추천" className="btn-secondary">
+            <LockKeyhole size={16} aria-hidden="true" />개인 맞춤 식단 추천<span className="sr-only">로그인 필요</span>
+          </MemberLink> : <CookingPanel
             ingredients={data.ingredients ?? []}
             inventory={inventory}
             usageScope={String(requestedServings ?? data.servings)}
@@ -314,19 +324,22 @@ function RecipeContent({
             servings={data.servings}
             recipeReady={!recipe.isFetching && !recipe.isError && Number(servingInput) === data.servings && (requestedServings == null || requestedServings === data.servings)}
             onBusyChange={setCookingBusy}
-          />
+          />}
         </>
       )}
     </div>
   );
 }
 
-export function RecipeDetailPage() {
-  const { id } = useParams();
-  const { hash } = useLocation();
+export function RecipeDetailPage({ publicOnly = false }) {
+  const id = useMatch('/recipes/:id')?.params.id;
+  const { hash, state } = useLocation();
   const [params, setParams] = useSearchParams();
   const date = validRecipeDate(params.get("date")) ? params.get("date") : null;
-  const backTo = date ? `/recommend?date=${date}` : "/recommend";
+  const fromCatalog = publicOnly || state?.catalogPage != null;
+  const page = recipeCatalogPage(state?.catalogPage);
+  const backTo = fromCatalog ? (page === 1 ? '/recipes' : '/recipes?page=' + page) : (date ? `/recommend?date=${date}` : '/recommend');
+  const backLabel = fromCatalog ? '전체 레시피로 돌아가기' : '식단 추천으로 돌아가기';
   const rawServings = params.get("servings");
   const validId = validRecipeId(id);
   if (!validId || (rawServings != null && !validRecipeServings(rawServings))) {
@@ -351,13 +364,15 @@ export function RecipeDetailPage() {
           </Link>
         )}
         <Link to={backTo} className="btn-secondary min-h-11">
-          식단 추천으로 돌아가기
+          {backLabel}
         </Link>
       </section>
     );
   }
   return (
     <RecipeContent
+      publicOnly={publicOnly}
+      backLabel={backLabel}
       focusCooking={hash === "#cook"}
       mealPlanId={params.get("mealPlanId")}
       date={date}
@@ -368,7 +383,7 @@ export function RecipeDetailPage() {
       onServingsChange={(servings) => {
         const next = new URLSearchParams(params);
         next.set("servings", String(servings));
-        setParams(next, { replace: true });
+        setParams(next, { replace: true, state });
       }}
     />
   );

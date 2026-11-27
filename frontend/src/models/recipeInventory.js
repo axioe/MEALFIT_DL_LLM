@@ -72,6 +72,11 @@ export function validRecipeId(id) {
   return /^[1-9]\d*$/.test(String(id)) && BigInt(id) <= 9223372036854775807n
 }
 
+export function recipeCatalogPage(value) {
+  const page = Number(value)
+  return Number.isSafeInteger(page) && page >= 1 && page <= Math.floor(2147483647 / 24) ? page : 1
+}
+
 export function validRecipeServings(value) {
   return /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value))
     && Number(value) >= 1 && Number(value) <= 2147483647

@@ -34,22 +34,22 @@ export function useSearchInput() {
   return { input, term, visible, settled: !composing && term === ready, change, submit, setOpen, setComposing }
 }
 
-export function useWebSearch(term) {
+export function useWebSearch(term, guest) {
   const userId = useAuthStore(state => state.user?.id)
   return useQuery({
-    queryKey: queryKeys.search.all(userId, term),
-    queryFn: ({ signal }) => searchWeb({ q: term, limit: SEARCH_LIMIT }, signal),
-    enabled: Boolean(userId), gcTime: 0, staleTime: 0, retry: false,
+    queryKey: queryKeys.search.all(guest ? 'public' : userId, term),
+    queryFn: ({ signal }) => searchWeb({ q: term, limit: SEARCH_LIMIT, guest }, signal),
+    enabled: guest || Boolean(userId), gcTime: 0, staleTime: 0, retry: false,
   })
 }
 
-export function useMoreSearchResults(term, group, firstPage) {
+export function useMoreSearchResults(term, group, firstPage, guest) {
   const userId = useAuthStore(state => state.user?.id)
   const firstOffset = nextSearchOffset(firstPage)
   const query = useInfiniteQuery({
-    queryKey: queryKeys.search.more(userId, term, group.type),
+    queryKey: queryKeys.search.more(guest ? 'public' : userId, term, group.type),
     queryFn: async ({ pageParam, signal }) => {
-      const response = await searchWeb({ q: term, type: group.type, offset: pageParam, limit: SEARCH_LIMIT }, signal)
+      const response = await searchWeb({ q: term, type: group.type, offset: pageParam, limit: SEARCH_LIMIT, guest }, signal)
       return response[group.field]
     },
     initialPageParam: firstOffset,

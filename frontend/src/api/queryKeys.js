@@ -29,6 +29,8 @@ export const queryKeys = {
     byDate: (date) => ['mealPlans', date],
   },
   recipes: {
+    catalog: page => ['publicRecipes', 'catalog', page],
+    publicDetail: (id, servings) => ['publicRecipes', 'detail', id, servings],
     detail: (id, servings) => ['recipes', id, servings],
   },
   allergens: {

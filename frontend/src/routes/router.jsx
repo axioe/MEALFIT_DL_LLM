@@ -15,6 +15,7 @@ export const router = createBrowserRouter([
         { element: <AppLayout />, children: [
             { path: '/dashboard', lazy: page(() => import('@/pages/DashboardPage'), 'DashboardPage') },
             { path: '/recommend', lazy: page(() => import('@/pages/RecommendPage'), 'RecommendPage') },
+            { path: '/recipes', lazy: page(() => import('@/pages/RecipeCatalogPage'), 'RecipeCatalogPage') },
             { path: '/recipes/:id', lazy: page(() => import('@/pages/RecipeDetailPage'), 'RecipeDetailPage') },
             { path: '/fridge', lazy: page(() => import('@/pages/FridgePage'), 'FridgePage') },
             { path: '/shopping', lazy: page(() => import('@/pages/ShoppingPage'), 'ShoppingPage') },

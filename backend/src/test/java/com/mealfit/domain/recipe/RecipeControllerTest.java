@@ -3,20 +3,25 @@ package com.mealfit.domain.recipe;
 import com.mealfit.domain.recipe.entity.Recipe;
 import com.mealfit.domain.recipe.entity.RecipeSource;
 import com.mealfit.domain.recipe.repository.RecipeRepository;
+import com.mealfit.domain.recipe.service.RecipeService;
+import com.mealfit.domain.recipe.dto.RecipeCatalogResponse;
 import com.mealfit.support.TestJwt;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -30,6 +35,38 @@ class RecipeControllerTest {
 
     @Autowired
     private RecipeRepository recipeRepository;
+
+    @Autowired JdbcTemplate jdbc;
+    @Autowired RecipeService service;
+
+    @Test
+    void 비회원이_CSV_전체_목록과_마지막_레시피_상세를_열_수_있다() throws Exception {
+        List<Long> curated = jdbc.queryForList("select id from recipes where recipe_code is not null order by id", Long.class);
+        assertThat(curated).hasSize(2481);
+        var first = service.getPublicCatalog(1);
+        List<Long> ids = new ArrayList<>();
+        for (int page = 1; page <= first.totalPages(); page++) {
+            service.getPublicCatalog(page).items().stream().map(RecipeCatalogResponse.Item::id).forEach(ids::add);
+        }
+        assertThat(ids).containsAll(curated).doesNotHaveDuplicates().hasSize((int) first.total());
+        mockMvc.perform(get("/api/v1/recipes/public").param("page", String.valueOf(first.totalPages())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].name").isNotEmpty());
+        mockMvc.perform(get("/api/v1/recipes/public/{id}", curated.getLast()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.ingredients[0].ingredientName").isNotEmpty())
+                .andExpect(jsonPath("$.steps[0]").isNotEmpty());
+    }
+
+    @Test
+    void 개인_레시피는_공개_목록과_상세에서_제외한다() throws Exception {
+        long total = service.getPublicCatalog(1).total();
+        var privateRecipe = saveRecipe(7L);
+        mockMvc.perform(get("/api/v1/recipes/public")).andExpect(jsonPath("$.total").value(total));
+        mockMvc.perform(get("/api/v1/recipes/public/{id}", privateRecipe.getId())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/recipes/public/{id}", privateRecipe.getId()).with(TestJwt.user(7L)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/recipes/{id}", privateRecipe.getId())).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/recipes/public").param("page", "0")).andExpect(status().isBadRequest());
+    }
 
     private Recipe saveRecipe(Long userId) {
         Recipe recipe = Recipe.builder()
