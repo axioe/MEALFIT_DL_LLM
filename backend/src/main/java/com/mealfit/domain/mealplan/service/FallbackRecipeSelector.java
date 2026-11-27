@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,10 +70,11 @@ public class FallbackRecipeSelector {
                 .collect(Collectors.toSet());
 
         // 같은 요리의 변형(예: 소스만 다른 검수 레시피)은 같은 메뉴로 본다. 변형 묶음이 없으면 이름 자체가 기준이다.
-        Map<String, String> groupByName = new HashMap<>();
-        safe.forEach(recipe -> groupByName.put(recipe.getName(), dishKey(recipe)));
+        // 이름이 같은 레시피가 여러 묶음에 걸칠 수 있으므로(예: '간장 참치 덮밥'의 채소만 다른 변형), 이름이 걸린 묶음을 모두 피한다.
+        Map<String, Set<String>> groupsByName = new HashMap<>();
+        safe.forEach(recipe -> groupsByName.computeIfAbsent(recipe.getName(), k -> new HashSet<>()).add(dishKey(recipe)));
         Function<Collection<String>, Set<String>> groupsOf = names -> names.stream()
-                .map(name -> groupByName.getOrDefault(name, name))
+                .flatMap(name -> groupsByName.getOrDefault(name, Set.of(name)).stream())
                 .collect(Collectors.toSet());
         Set<String> sameDayGroups = groupsOf.apply(sameDayNames);
         Set<String> previousGroups = groupsOf.apply(previousNames);
