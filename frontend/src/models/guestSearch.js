@@ -3,12 +3,10 @@ import { CORE_EXAMPLES, GUEST_WORKOUT_AREAS, detailText, doseText } from './gues
 
 // 비로그인에게는 회원 전용 기능의 이름과 목적지만 제공한다.
 const features = [
-  { title: '운동 둘러보기', to: '/workout', keywords: '운동 종목 예시' },
   { title: '내 냉장고', to: '/fridge', memberOnly: true, keywords: '보유 식재료 재고 소비기한' },
   { title: '식재료 등록', to: '/fridge?add=1', memberOnly: true, keywords: '냉장고 사진 영수증 재고 입고' },
   { title: '내 식단 추천·확정', to: '/recommend', memberOnly: true, keywords: '개인 맞춤 식단 추천 조리 섭취 기록' },
   { title: '장보기 목록', to: '/shopping', memberOnly: true, keywords: '부족 재료 구매' },
-  { title: '내 운동 루틴', to: '/workout', memberOnly: true, keywords: '운동 기록 루틴 추천 자세 피드백' },
   { title: '식단 캘린더', to: '/calendar', memberOnly: true, keywords: '달력 섭취 기록' },
   { title: '체중 관리', to: '/weight', memberOnly: true, keywords: '몸무게 체중 기록' },
   { title: '마이페이지', to: '/mypage', memberOnly: true, keywords: '내 설정 프로필 계정 보안 신체 체력' },
@@ -20,11 +18,14 @@ export function exercisePreview(title, details, area) {
   return { title, details: description, to: '/workout', state: { area, exercisePreview: { title, details: description } } }
 }
 
-const examples = [
+const exercises = [
+  { title: '운동 둘러보기', to: '/workout', details: ['부위별 운동'], keywords: '운동 종목 예시' },
+  { title: '내 운동 루틴', to: '/workout', details: ['맞춤 운동 루틴'], memberOnly: true, keywords: '운동 기록 루틴 추천 자세 피드백' },
   ...GUEST_WORKOUT_AREAS.flatMap(({ key, label }) => GUEST_WORKOUT_EXAMPLES[key].map(item => ({
-    id: key + '-' + item.name, ...exercisePreview(item.name, [label + ' 운동 예시', detailText(item), doseText(item)], key),
+    id: key + '-' + item.name, keywords: label + ' 운동 예시',
+    ...exercisePreview(item.name, [label + ' 운동', detailText(item), doseText(item)], key),
   }))),
-  ...CORE_EXAMPLES.map(name => ({ id: 'core-' + name, ...exercisePreview(name, ['코어 운동 예시'], 'core') })),
+  ...CORE_EXAMPLES.map(name => ({ id: 'core-' + name, keywords: '코어 운동 예시', ...exercisePreview(name, ['코어 운동'], 'core') })),
 ]
 
 function compact(value) {
@@ -41,12 +42,19 @@ export function guestRecipeQuery(term) {
   return match ? match[1].trim() : null
 }
 
-const entries = [
-  ...features.map(item => ({ ...item, id: item.to + item.title, details: ['서비스 기능'] })),
-  ...examples,
-].map(item => ({ ...item, searchText: [item.title, ...item.details, item.keywords ?? ''].map(compact) }))
+function indexEntries(items) {
+  return items.map(item => {
+    const details = item.details ?? ['서비스 기능']
+    const searchText = [item.title, ...details, item.keywords ?? ''].map(compact)
+    return { ...item, id: item.id ?? item.to + item.title, details, searchText }
+  })
+}
+
+const exerciseIndex = indexEntries(exercises)
+const featureIndex = indexEntries(features)
 
 export function searchGuestEntries(terms) {
   const keys = terms.map(compact).filter(Boolean)
-  return entries.filter(item => keys.some(key => item.searchText.some(text => text.includes(key))))
+  const matches = item => keys.some(key => item.searchText.some(text => text.includes(key)))
+  return { exercises: exerciseIndex.filter(matches), features: featureIndex.filter(matches) }
 }
