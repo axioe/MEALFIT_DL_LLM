@@ -18,6 +18,8 @@ public class WithdrawalDataRepository {
         jdbc.update("delete from workout_sessions where user_id = ?", userId);
         jdbc.update("delete from workout_routines where user_id = ?", userId);
 
+        // 영수증 일괄 등록의 중복 방지 기록(V17)도 users를 참조하므로 먼저 삭제합니다.
+        jdbc.update("delete from inventory_batch_requests where user_id = ?", userId);
         jdbc.update("delete from inventory_transactions where user_id = ?", userId);
         jdbc.update("delete from inventory_lots where user_id = ?", userId);
         jdbc.update("delete from intake_logs where user_id = ?", userId);

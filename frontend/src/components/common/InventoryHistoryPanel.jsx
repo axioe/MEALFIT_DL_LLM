@@ -1,3 +1,4 @@
+import { readInventoryMemo } from '@/models/inventoryMemo'
 import { useEffect, useId, useRef, useState } from 'react'
 import { RefreshCw, X } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
@@ -69,7 +70,7 @@ export function InventoryHistoryPanel({ lotId, lots, onSelectLot, onClose }) {
                       <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">{INVENTORY_TRANSACTION_TYPE_LABEL[row.type] ?? '기타 변경'}</span>
                       <span>묶음 #{row.lotId}</span><time dateTime={row.createdAt}>{formatDate(row.createdAt)}</time>
                     </div>
-                    {row.memo && <p className="mt-2 whitespace-pre-wrap break-all text-xs leading-5 text-gray-600">{row.memo}</p>}
+                    {row.memo && <p className="mt-2 whitespace-pre-wrap break-all text-xs leading-5 text-gray-600">{readInventoryMemo(row.memo).productInfo && <span className="block">상품 정보: {readInventoryMemo(row.memo).productInfo}</span>}{readInventoryMemo(row.memo).memo}</p>}
                   </li>
                 )
               })}

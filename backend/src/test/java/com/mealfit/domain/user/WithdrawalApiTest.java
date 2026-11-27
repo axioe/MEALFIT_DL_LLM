@@ -329,9 +329,9 @@ class WithdrawalApiTest {
 
         assertThat(users.findById(ownId)).isEmpty();
         assertThat(users.findById(otherId)).isPresent();
-        for (String table : List.of("workout_logs", "workout_sessions", "workout_routines", "inventory_transactions",
-            "inventory_lots", "intake_logs", "cooking_events", "meal_plans", "recipes", "shopping_items", "profiles",
-            "user_social_accounts", "refresh_tokens", "email_verification_tokens")) {
+        for (String table : List.of("inventory_batch_requests", "workout_logs", "workout_sessions", "workout_routines",
+            "inventory_transactions", "inventory_lots", "intake_logs", "cooking_events", "meal_plans", "recipes",
+            "shopping_items", "profiles", "user_social_accounts", "refresh_tokens", "email_verification_tokens")) {
             assertThat(countBy(table, "user_id", ownId)).as(table).isZero();
             assertThat(countBy(table, "user_id", otherId)).as(table).isOne();
         }
@@ -365,6 +365,11 @@ class WithdrawalApiTest {
             insert into user_social_accounts (user_id, provider, provider_user_id, created_at, updated_at)
             values (?, 'GOOGLE', ?, current_timestamp, current_timestamp)
             """, userId, "withdrawal-" + userId);
+        // 영수증 일괄 등록의 중복 방지 기록 (V17)
+        jdbc.update("""
+            insert into inventory_batch_requests (user_id, client_request_id, payload_sha256, response_json, created_at)
+            values (?, ?, repeat('0', 64), '{}', current_timestamp)
+            """, userId, "batch-" + userId);
 
         createWorkoutData(userId);
         long recipeId = createRecipe(userId);

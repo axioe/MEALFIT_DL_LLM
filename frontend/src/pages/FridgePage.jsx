@@ -1,3 +1,4 @@
+import { ReceiptRecognitionDialog } from '@/components/fridge/ReceiptRecognitionDialog'
 import { Camera, History, Plus, Refrigerator, RefreshCw, TriangleAlert } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
 import { InventoryHistoryPanel } from '@/components/common/InventoryHistoryPanel'
@@ -30,6 +31,7 @@ export function FridgePage() {
         <button type="button" onClick={page.openPhotoRecognition} className="btn-secondary min-h-11 text-xs">
           <Camera aria-hidden="true" className="h-4 w-4" />사진으로 등록
         </button>
+        <button type="button" onClick={() => page.openReceiptRecognition()} className="btn-secondary min-h-11 text-xs">영수증으로 등록</button>
         <button type="button" onClick={page.openStockIn} className="btn-primary min-h-11 text-xs">
           <Plus aria-hidden="true" className="h-4 w-4" />식재료 추가
         </button>
@@ -40,6 +42,7 @@ export function FridgePage() {
         onClose={page.closeLotAction}
         onSuccess={page.handleLotSaved} />}
       {page.showHistory && <InventoryHistoryPanel lotId={page.historyLotId} lots={view.allLots} onSelectLot={page.setHistoryLotId} onClose={page.closeHistory} />}
+      {page.showReceiptRecognition && <ReceiptRecognitionDialog onClose={page.closeReceiptRecognition} />}
       {page.showPhotoRecognition && <PhotoRecognitionDialog onClose={page.closePhotoRecognition} onConfirm={page.openStockInFromPhoto} />}
       {page.showStockIn && <StockInDialog initialIngredientName={page.initialIngredientName} onClose={page.closeStockIn} onSuccess={page.handleStockedIn} />}
 

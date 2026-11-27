@@ -1,3 +1,4 @@
+import { readInventoryMemo, inventoryProductLabel } from '@/models/inventoryMemo'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Pencil, TriangleAlert, X } from 'lucide-react'
 import { getErrorCode, getErrorMessage } from '@/api/client'
@@ -15,7 +16,8 @@ export function InventoryLotDialog({ lot, mode, onClose, onSuccess }) {
   const [form, setForm] = useState({
     quantity: String(lot.quantity), storageLocation: lot.storageLocation,
     expiryDate: lot.expiryDate ?? '', minStockQty: String(lot.minStockQty ?? 0),
-    memo: isDisposal ? '' : lot.memo ?? '',
+    memo: isDisposal ? '' : readInventoryMemo(lot.memo).memo,
+    ...(!isDisposal && { productInfo: readInventoryMemo(lot.memo).productInfo }),
   })
   const [confirmed, setConfirmed] = useState(false)
   const [errors, setErrors] = useState({})
@@ -59,7 +61,7 @@ export function InventoryLotDialog({ lot, mode, onClose, onSuccess }) {
       }
       if (!hasChanges) nextErrors.form = '변경한 내용이 없습니다.'
     }
-    if (form.memo.length > 255) nextErrors.memo = '메모는 255자 이내로 입력해 주세요.'
+    if ((isDisposal ? form.memo : body.memo ?? lot.memo ?? '').length > 255) nextErrors.memo = '상품 정보·메모와 저장 표식을 합쳐 255자 이내로 입력해 주세요.'
     if (requiresConfirmation && !confirmed) nextErrors.confirmation = '안내를 확인하고 체크해 주세요.'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
@@ -96,7 +98,7 @@ export function InventoryLotDialog({ lot, mode, onClose, onSuccess }) {
         <button type="button" aria-label="재고 관리 창 닫기" disabled={mutation.isPending} onClick={onClose} className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed"><X aria-hidden="true" className="h-5 w-5" /></button>
       </div>
       <div className="mb-4 rounded-xl bg-gray-50 p-3">
-        <p className="break-all text-sm font-bold">{lot.ingredientName} <span className="font-normal text-gray-500">({lot.unit})</span></p>
+        <p className="break-all text-sm font-bold">{inventoryProductLabel(lot)} <span className="font-normal text-gray-500">({lot.unit})</span></p>
         <p className="mt-1 text-xs text-gray-500">묶음 #{lot.id} · 현재 수량 {lot.quantity}{lot.unit}</p>
         {!isDisposal && <p className="mt-1 text-xs text-gray-500">식재료명과 단위는 변경할 수 없습니다.</p>}
       </div>
@@ -127,6 +129,9 @@ export function InventoryLotDialog({ lot, mode, onClose, onSuccess }) {
               </div>
             </>
           )}
+          {!isDisposal && <div><label className="label" htmlFor={`${id}-productInfo`}>추가 상품 정보 (선택)</label>
+            <input {...propsFor('productInfo')} maxLength={100} />
+          </div>}
           <div><label className="label" htmlFor={`${id}-memo`}>{isDisposal ? '폐기 사유·메모 (선택)' : '메모'}</label>
             <textarea {...propsFor('memo')} rows={2} maxLength={255} />{errorFor('memo')}
           </div>

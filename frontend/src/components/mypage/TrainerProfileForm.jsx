@@ -1,12 +1,12 @@
 import { AlertTriangle, Award, CheckCircle2, Clock, Sparkles, Target, Zap } from 'lucide-react'
 import { DIET_TYPE_OPTIONS, EQUIPMENT_OPTIONS, INJURY_AREA_OPTIONS, WORKOUT_MINUTES_OPTIONS } from '@/lib/profileOptions'
 import { toggleExclusiveItem, toggleItem } from '@/models/profileForm'
+import { AllergySummary } from '@/components/mypage/AllergySettings'
 
 /** 마이페이지 탭: AI 트레이너 프로필: 신체 정보·운동 환경·식단 설정 (화면만 담당, 상태·저장은 hooks/useMyPageForm) */
-export function TrainerProfileForm({ form, updateField, onSubmit, isSaving }) {
-  const { trainerAge, trainerHeight, trainerWeight, trainerGoal, trainerLevel, trainerEnvironment, trainerEquipment, trainerAvailableTime, trainerInjuries, trainerAllergiesText, trainerDislikedFoodsText, trainerDietType, trainerBudget } = form
+export function TrainerProfileForm({ form, updateField, onSubmit, isSaving, allergies, onEditAllergies }) {
+  const { trainerAge, trainerHeight, trainerWeight, trainerGoal, trainerLevel, trainerEnvironment, trainerEquipment, trainerAvailableTime, trainerInjuries, trainerDislikedFoodsText, trainerDietType, trainerBudget } = form
   const setTrainerAge = (value) => updateField('trainerAge', value)
-  const setTrainerAllergiesText = (value) => updateField('trainerAllergiesText', value)
   const setTrainerAvailableTime = (value) => updateField('trainerAvailableTime', value)
   const setTrainerBudget = (value) => updateField('trainerBudget', value)
   const setTrainerDietType = (value) => updateField('trainerDietType', value)
@@ -306,18 +306,7 @@ export function TrainerProfileForm({ form, updateField, onSubmit, isSaving }) {
 
         {/* 알레르기 & 기피 음식 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="font-bold text-gray-700 block mb-1">
-              알레르기 유발 식재료 (쉼표 구분)
-            </label>
-            <input
-              type="text"
-              placeholder="예: 땅콩, 갑각류, 복숭아, 우유"
-              value={trainerAllergiesText}
-              onChange={(e) => setTrainerAllergiesText(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs focus:outline-emerald-500"
-            />
-          </div>
+          <AllergySummary allergies={allergies} onEdit={onEditAllergies} />
           <div>
             <label className="font-bold text-gray-700 block mb-1">
               기피/싫어하는 음식 (쉼표 구분)

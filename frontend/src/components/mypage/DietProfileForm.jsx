@@ -1,8 +1,8 @@
+import { AllergySummary } from '@/components/mypage/AllergySettings'
 
 /** 마이페이지 탭: 식단 기호와 알레르기 (화면만 담당, 상태·저장은 hooks/useMyPageForm) */
-export function DietProfileForm({ form, updateField, onSubmit, isSaving }) {
-  const { dietGoal, allergiesText, dislikedFoodsText, preferredFoodsText, cookTime, defaultServings, budgetPerMeal, prioritizeFridge } = form
-  const setAllergiesText = (value) => updateField('allergiesText', value)
+export function DietProfileForm({ form, updateField, onSubmit, isSaving, allergies, onEditAllergies }) {
+  const { dietGoal, dislikedFoodsText, preferredFoodsText, cookTime, defaultServings, budgetPerMeal, prioritizeFridge } = form
   const setBudgetPerMeal = (value) => updateField('budgetPerMeal', value)
   const setCookTime = (value) => updateField('cookTime', value)
   const setDefaultServings = (value) => updateField('defaultServings', value)
@@ -40,21 +40,7 @@ export function DietProfileForm({ form, updateField, onSubmit, isSaving }) {
         </select>
       </div>
 
-      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900">
-        <label className="font-bold block mb-1">
-          🚨 알레르기 및 제외 식재료 (쉼표로 구분 - 엄격 준수)
-        </label>
-        <input
-          type="text"
-          placeholder="예: 땅콩, 갑각류, 복숭아, 우유"
-          value={allergiesText}
-          onChange={(e) => setAllergiesText(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-sm focus:outline-rose-500"
-        />
-        <p className="text-[11px] text-rose-700 mt-1">
-          * 알레르기·제외 재료를 입력하세요.
-        </p>
-      </div>
+      <AllergySummary allergies={allergies} onEdit={onEditAllergies} />
 
       <div>
         <label className="font-bold text-gray-700 block mb-1">
