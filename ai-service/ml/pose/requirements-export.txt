@@ -1,0 +1,10 @@
+# -*- coding: utf-8 -*-
+# 자세 판별 ONNX 변환·배포 패키지 (export_onnx.py, build_deploy.py). TensorFlow 없이 실행한다.
+# Python 3.12. 학습 환경(requirements-train.txt)과 protobuf 버전이 달라 따로 둔다.
+onnx==1.23.2
+onnxruntime==1.32.0
+skl2onnx==1.20.0
+numpy==2.5.5
+scipy==1.18.1
+scikit-learn==1.9.1
+joblib==1.6.0

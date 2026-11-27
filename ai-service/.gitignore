@@ -2,3 +2,12 @@
 .venv/
 __pycache__/
 *.pyc
+
+# [자세판별] ml/pose 학습 스크립트가 만드는 데이터·모델·결과는 git에 넣지 않는다 (AGENTS.md 4장, 저장 위치는 docs/pose-model-card.md)
+ml/pose/**/*.npz
+ml/pose/**/*.keras
+ml/pose/**/*.onnx
+ml/pose/**/*.joblib
+ml/pose/**/*.task
+ml/pose/results/
+ml/pose/models/

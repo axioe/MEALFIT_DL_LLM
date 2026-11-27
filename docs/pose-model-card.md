@@ -133,3 +133,38 @@
 - **버전:** 폴더 이름이 버전이고, 응답의 `modelVersion`에 같은 값을 넣는다. 되돌릴 때는 환경 변수만 이전 폴더로 바꾼다.
 - **교체 이력:** 교체 전 모델은 manifest의 `_replaced`에 남긴다 (최원석 모델 2종 교체, 바벨 로우 LogReg → CNN).
 - **백업 위치:** 미정 (PL 결정 필요).
+
+## 8. 재현 방법 (ai-service/ml/pose)
+
+학습·변환 스크립트는 `ai-service/ml/pose/`에 있다. 서비스 코드는 이 폴더를 불러오지 않는다.
+데이터·모델·결과 파일은 git에 넣지 않는다 (`ai-service/.gitignore`의 `ml/pose/` 규칙).
+
+### 환경 (같은 환경에 함께 설치하지 않는다)
+
+| 파일 | 쓰는 스크립트 | 비고 |
+|---|---|---|
+| `requirements-train.txt` | 좌표 추출, 학습, 모델 선택, 최종 학습, 최원석 모델 합치기, 촬영 방향 범위 | TensorFlow 2.21, mediapipe 1.2.2, scikit-learn 1.9.1. 2026-11-19 최종 모델 학습 환경 |
+| `requirements-export.txt` | ONNX 변환, 배포 패키지 | onnx 1.23, onnxruntime 1.32, skl2onnx 1.20. TensorFlow 없음 |
+
+냉장고 모델 학습(`ai-service/ml/requirements-train.txt`)과는 numpy·Pillow·scipy·OpenCV 버전이 겹쳐 따로 둔다. Python 3.12.
+
+### 순서
+
+| 단계 | 명령 (요약) | 결과 |
+|---|---|---|
+| 1. 좌표 추출 | `raw_extract_par.py --tar <원시 tar> --project <라벨 캐시> --zip 맨몸운동/08 --model <heavy.task> --out <heavy>/body_08.npz` | 묶음별 npz + `_clips.json` (heavy, IMAGE 모드, 긴 변 960px) |
+| 2. 교차검증 | `train_pose.py --data <heavy>/body_08.npz,... --test <heavy>/valid_body.npz --models logreg,hgb,cnn,gru --fix-lr --out <결과>/final` | 조건별 balanced accuracy CSV (수행자 단위 GroupKFold, 외부 평가) |
+| 3. 모델 선택 | `pick_best.py --results <결과> --heavy <heavy> --runs final_s0,... --train ... --test valid_body --out best.json` | 운동별 최고 모델 (GRU 최고면 CNN) |
+| 4. 최종 학습 | `final_fit.py --heavy <heavy> --out <모델> [--files ... --exercises ... --best best.json]` | 운동별 폴더 + manifest.json (검증셋 제외) |
+| 5. 최원석 모델 | `merge_choi.py --choi <최원석 모델 폴더> --models <모델> --heavy <heavy>` | 스텝 포워드 런지·바이시클 크런치를 최원석 v2 HGB 로 교체 |
+| 6. ONNX 변환 | `export_onnx.py --models <모델>` | CNN·HGB ONNX, 원본 예측과 최대 오차 기록 |
+| 7. 배포 패키지 | `build_deploy.py --src <모델> --version pose-YYYYMMDD-NN --out <배포>` | 서비스용 파일만 복사, manifest sha256, 파일 목록 TSV, tar.gz |
+| (참고) 촬영 방향 범위 | `camera_ranges.py --heavy <heavy>` | `mealfit_ai/services/pose_camera_ranges.json`, 프론트 `poseCameraGuide.js` |
+
+- **시드:** CNN·GRU 는 시드 0·100·200 앙상블, 검증 수행자 15% 조기 종료(patience 15). HGB `random_state` 는 시드. LogReg·HGB 하이퍼파라미터는 `train_pose.make_model` 에 있다.
+- **최종 선택 기록:** `final_fit.py` 의 LOGREG·HGB·BASE16·BAR6 이 2026-11-19~23 최종 모델에 쓴 선택이다.
+- **스크립트로 남기지 않은 작업:**
+  - 바벨 로우 교체(2026-11-23): manifest 의 `바벨 로우` 항목을 `_replaced` 로 옮긴 뒤 `final_fit.py --files <바벨 6묶음 + 맨몸 5묶음> --exercises 바벨 로우 --best best_row.json`(`{"바벨 로우": "cnn"}`) 으로 다시 학습했다.
+  - 조건별 정확도(`accuracy`): 2·3단계 결과 CSV 의 최고 모델 값(외부 평가가 있으면 external, 교차검증 cv)을 manifest 에 붙였다. `build_deploy.py` 는 이 값이 없으면 멈춘다.
+- **입력 데이터 위치 (유지훈 PC):** heavy 좌표 npz 35개 `E:\aihub_raw\pose\heavy\` (원시 tar 는 추출 후 삭제), 라벨 캐시 `D:\YOOJIHUN\DL_Project\` (`cache/`, `data/`), 최원석 모델 `D:\YOOJIHUN\MealFit_pose\compare_choi\`, 모델 폴더 `D:\YOOJIHUN\MealFit_pose\models_final\`.
+- **옮긴 뒤 확인 (2026-11-26):** 모델 선택·LogReg 최종 학습·최원석 모델 합치기 결과가 원래 스크립트와 바이트 단위로 같고, 배포 패키지 파일 62개의 SHA-256 이 기존 `pose-20261123-41` 과 같다. 작은 CNN(스탠딩 니업, body_04) 학습 → ONNX 변환 최대 오차 3e-7. 원시 tar 가 없어 좌표 추출(1단계)은 실행하지 못했다.
