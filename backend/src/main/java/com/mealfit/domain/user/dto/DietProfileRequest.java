@@ -15,6 +15,8 @@ public record DietProfileRequest(
      @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> excludedIngredients,
     @Min(1) @Max(6) @JsonDeserialize(using = WholeNumberDeserializer.class) Integer defaultServings,
     @NotNull Boolean prioritizeFridge,
-     @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> preferredFoods
+     @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> preferredFoods,
+    // [마이페이지통합] 식단 유형을 식단 설정 카드에서 함께 저장
+    @Pattern(regexp = "regular|high_protein|low_carb|keto|vegan|balanced") String dietType
 ) {
 }

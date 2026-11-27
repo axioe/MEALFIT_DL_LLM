@@ -130,19 +130,21 @@ public class ProfileDetails extends BaseTimeEntity {
     }
 
     /** Diet 탭의 값만 수정하며 다른 탭 설정은 보존합니다. */
-    public void updateDiet(Integer defaultServings, Boolean prioritizeFridge, Set<String> preferredFoods) {
+    public void updateDiet(Integer defaultServings, Boolean prioritizeFridge, Set<String> preferredFoods, String dietType) {
         this.defaultServings = defaultServings;
         this.prioritizeFridge = prioritizeFridge;
+        this.dietType = dietType;
         this.preferredFoods.clear();
         this.preferredFoods.addAll(preferredFoods);
     }
 
     /** Fitness 탭의 값만 수정하며 다른 탭 설정은 보존합니다. */
-    public void updateFitness(String workoutGoal, String workoutLevel, Integer workoutMinutes, Integer daysPerWeek, Set<String> equipment, Set<String> injuries) {
+    public void updateFitness(String workoutGoal, String workoutLevel, Integer workoutMinutes, Integer daysPerWeek, Set<String> equipment, Set<String> injuries, String environment) {
         this.workoutGoal = workoutGoal;
         this.workoutLevel = workoutLevel;
         this.workoutMinutes = workoutMinutes;
         this.daysPerWeek = daysPerWeek;
+        this.environment = environment;
         this.equipment.clear();
         this.equipment.addAll(equipment);
         this.injuries.clear();
