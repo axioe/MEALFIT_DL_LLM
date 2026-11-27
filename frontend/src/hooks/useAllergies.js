@@ -79,7 +79,8 @@ export function useAllergyEditor(saved, categories, onDirtyChange, onSavingChang
   function editing() {
     setError('')
     setMessage('')
-    onDirtyChange(true)
+    // [마이페이지통합] onDirtyChange 미전달 시에도 안전하게 동작하도록 옵셔널 체이닝 적용
+    onDirtyChange?.(true)
   }
   function update(next) {
     editing()
@@ -103,19 +104,19 @@ export function useAllergyEditor(saved, categories, onDirtyChange, onSavingChang
       return
     }
     lock.current = true
-    onSavingChange(true)
+    onSavingChange?.(true)
     setError('')
     try {
       await save.mutateAsync(next)
       setDraft(null)
       setInput('')
-      onDirtyChange(false)
+      onDirtyChange?.(false)
       setMessage('알레르기를 저장했습니다.')
     } catch (failure) {
       setError(getErrorMessage(failure))
     } finally {
       lock.current = false
-      onSavingChange(false)
+      onSavingChange?.(false)
     }
   }
   return {

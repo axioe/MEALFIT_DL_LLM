@@ -11,7 +11,7 @@ export function FitnessTestForm({ form, updateField, onSubmit, isSaving }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs space-y-4 text-xs max-w-2xl"
+      className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs space-y-4 text-xs w-full"
     >
       <div className="flex items-center gap-2 mb-1">
         <Scale className="w-4 h-4 text-emerald-600" />

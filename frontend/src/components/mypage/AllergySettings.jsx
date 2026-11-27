@@ -47,7 +47,7 @@ function BulkSelect({ codes, selected, toggle, group }) {
 function AllergyForm({ saved, categories, onDirtyChange, onSavingChange }) {
   const editor = useAllergyEditor(saved, categories, onDirtyChange, onSavingChange)
   const { selection, toggle } = editor
-  return <form onSubmit={editor.submit} className="card max-w-2xl space-y-4">
+  return <form onSubmit={editor.submit} className="card w-full space-y-4">
     <h2 className="font-bold text-gray-900">내 알레르기</h2>
     <fieldset disabled={editor.isSaving} className="min-w-0 space-y-5">
       <AllergenSearch selection={selection} toggle={toggle} />
@@ -58,9 +58,10 @@ function AllergyForm({ saved, categories, onDirtyChange, onSavingChange }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {categories.map(({ name, items }) => <fieldset key={name} className="rounded-xl border border-gray-200 px-3 pb-3">
           <legend className="px-1 text-sm font-bold">{name}</legend>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {items.map((item) => <label key={item.code} className="flex cursor-pointer items-baseline gap-1.5 py-1 text-sm">
-              <input type="checkbox" checked={selection.codes.includes(item.code)} onChange={() => toggle([item.code])} />
+          {/* [마이페이지통합] 부연 설명 유무와 무관하게 체크박스 상단 라인을 일렬 정렬 */}
+          <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
+            {items.map((item) => <label key={item.code} className="flex cursor-pointer items-start gap-1.5 py-1 text-sm">
+              <input type="checkbox" className="mt-1 shrink-0" checked={selection.codes.includes(item.code)} onChange={() => toggle([item.code])} />
               <span>{item.name}
                 {item.legalStatus === ALLERGEN_LEGAL_STATUS.PROPOSED && <small className="block text-gray-600">개정 예고</small>}
                 {item.legalCondition && <small className="block text-gray-600">{item.legalCondition}</small>}

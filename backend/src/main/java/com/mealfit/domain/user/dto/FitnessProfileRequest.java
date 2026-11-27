@@ -14,6 +14,8 @@ public record FitnessProfileRequest(
     @Min(15) @Max(60) @JsonDeserialize(using = WholeNumberDeserializer.class) Integer workoutMinutes,
     @Min(2) @Max(6) @JsonDeserialize(using = WholeNumberDeserializer.class) Integer daysPerWeek,
      @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) @Pattern(regexp = "dumbbell|band|mat|pullup_bar|foam_roller|kettlebell|none|barbell|gym") String> equipment,
-     @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> injuries
+     @NotNull @Size(max = 50) Set<@NotBlank @Size(max = 100) String> injuries,
+    // [마이페이지통합] 운동 환경을 신체·운동 설정 카드에서 함께 저장
+    @Pattern(regexp = "home|gym|outdoor") String environment
 ) {
 }

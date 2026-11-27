@@ -39,3 +39,26 @@ test('장비 없음(none)은 바벨·덤벨과 배타적으로 토글된다', ()
   assert.deepEqual(toggleExclusiveItem(['barbell', 'dumbbell'], 'none'), ['none'])
   assert.deepEqual(toggleExclusiveItem(['none'], 'barbell'), ['barbell'])
 })
+
+test('마이페이지 통합 폼은 dietType과 environment를 각각 diet·fitness 요청 본문에 포함한다', () => {
+  const details = {
+    body: { nickname: '밀핏러', age: 27, height: 172, currentWeight: 68, targetWeight: 65, gender: 'male', activityLevel: 'light' },
+    trainer: {
+      age: 27, height: 172, currentWeight: 68, workoutGoal: 'loss', workoutLevel: 'beginner',
+      environment: 'home', equipment: ['mat'], workoutMinutes: 30,
+      injuries: [], allergies: ['우유'], excludedIngredients: ['오이'], dietType: 'low_carb', mealBudget: 9000,
+    },
+    diet: { goal: 'LOSE', cookTimeMin: 20, mealBudget: 9000, allergies: ['우유'], excludedIngredients: ['오이'], preferredFoods: ['두부'], defaultServings: 1, prioritizeFridge: true, dietType: 'low_carb' },
+    fitness: { workoutGoal: 'loss', workoutLevel: 'beginner', workoutMinutes: 30, daysPerWeek: 3, equipment: ['mat'], injuries: [], environment: 'home' },
+    tests: {},
+  }
+  const form = createProfileForm(details)
+  assert.equal(form.dietType, 'low_carb')
+  assert.equal(form.environment, 'home')
+
+  const dietBody = buildProfileSectionBody('diet', { ...form, dietType: 'high_protein' }, ['우유'])
+  assert.equal(dietBody.dietType, 'high_protein')
+
+  const fitnessBody = buildProfileSectionBody('fitness', { ...form, environment: 'gym' })
+  assert.equal(fitnessBody.environment, 'gym')
+})
