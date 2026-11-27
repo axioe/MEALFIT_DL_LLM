@@ -4,11 +4,7 @@ import {
   ArrowRight,
   CircleCheck,
   Clock,
-  Dumbbell,
   Flame,
-  Info,
-  Leaf,
-  Refrigerator,
   RefreshCw,
   Scale,
   ShoppingCart,
@@ -19,20 +15,18 @@ import {
   Zap,
 } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
-import { MOCK_AREAS } from '@/api/dashboard'
-import { useCoaching, useDashboard, useProfileSummary, useRecordIntake, useSetWorkoutCompleted, useTodayWorkout, useWeightSummary } from '@/hooks/useDashboard'
+import { HomeDinner } from '@/components/dashboard/HomeDinner'
+import { useCoaching, useDashboard, useRecordIntake, useWeightSummary } from '@/hooks/useDashboard'
 import { ConditionCheckDialog } from '@/components/dashboard/ConditionCheckDialog'
 import { Spinner } from '@/components/common/Spinner'
 import { ExpirationBadge, MealPlanStatusBadge, RecipeSourceBadge } from '@/components/common/StatusBadge'
-import { addDays, today } from '@/lib/date'
+import { today } from '@/lib/date'
 import { INTAKE_STATUS, MEAL_PLAN_STATUS, MEAL_TYPE } from '@/lib/enums'
 import { formatQuantity } from '@/lib/format'
 import { INTAKE_STATUS_LABEL, MEAL_TYPE_LABEL, STORAGE_LABEL } from '@/lib/labels'
 
 const MEAL_ORDER = [MEAL_TYPE.BREAKFAST, MEAL_TYPE.LUNCH, MEAL_TYPE.DINNER]
 const PREVIEW_LIMIT = 5
-const GOAL_TEXT = { LOSE: '체중 감량', MAINTAIN: '체중 유지', GAIN: '근육 증량' }
-const MOCK_AREA_LABEL = { dashboard: '식단', profile: '프로필', workout: '운동', weight: '체중', coaching: 'AI 코칭' }
 const FATIGUE_LABEL = { LOW: '피로도 낮음', MEDIUM: '피로도 보통', HIGH: '피로도 높음' }
 const SORENESS_LABEL = { NONE: '근육통 없음', MILD: '근육통 조금', SEVERE: '근육통 심함' }
 
@@ -194,43 +188,6 @@ function AiCoachingCard() {
 
 /* ───────────── 인사 배너 ───────────── */
 
-function GreetingCard() {
-  const { data: profile } = useProfileSummary()
-  const goal = GOAL_TEXT[profile?.goal]
-
-  return (
-    <section className="rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white md:p-6">
-      <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold">
-        <Leaf aria-hidden="true" className="h-3 w-3" />
-        맞춤 헬스 파트너
-      </span>
-      <p className="mt-3 text-xl font-extrabold md:text-2xl">안녕하세요{profile ? `, ${profile.nickname}님` : ''}!</p>
-      <p className="mt-1 text-sm text-emerald-50">
-        {goal ? `${goal}과 건강한 식습관을 위해 오늘도 밀핏이 함께합니다.` : '건강한 식습관을 위해 오늘도 밀핏이 함께합니다.'}
-      </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Link
-          to={`/recommend?date=${addDays(today(), 1)}`}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
-        >
-          <Sparkles aria-hidden="true" className="h-4 w-4" />
-          내일 식단 AI 추천받기
-        </Link>
-        <Link
-          to="/fridge"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/20"
-        >
-          <Refrigerator aria-hidden="true" className="h-4 w-4" />
-          냉장고 재료 등록
-        </Link>
-      </div>
-    </section>
-  )
-}
-
-/* ───────────── 오늘의 식단 ───────────── */
-
-/** 확정된 식단에만 먹음/건너뜀을 기록한다. 같은 상태를 다시 누르는 것은 막는다 (StatusTransition 규칙) */
 function IntakeButtons({ meal, recordIntake }) {
   const isSaving = recordIntake.isPending && recordIntake.variables?.mealPlanId === meal.id
   const options = [
@@ -336,7 +293,7 @@ function TodayMealsCard({ dashboard }) {
 
   return (
     <section className="card space-y-4">
-      <CardHeader icon={UtensilsCrossed} title="오늘의 식단" to="/recommend" linkLabel="주간 식단표" />
+      <CardHeader icon={UtensilsCrossed} title="오늘의 세 끼" to="/recommend" linkLabel="하루 식단 보기" />
       {dashboard.isPending ? (
         <CardLoading />
       ) : dashboard.isError ? (
@@ -363,58 +320,6 @@ function TodayMealsCard({ dashboard }) {
 }
 
 /* ───────────── 오늘의 맞춤 운동 ───────────── */
-
-function TodayWorkoutCard({ date }) {
-  const { data: workout, isPending, isError, error, refetch } = useTodayWorkout(date)
-  const setCompleted = useSetWorkoutCompleted()
-
-  return (
-    <section className="card space-y-4">
-      <CardHeader icon={Dumbbell} title="오늘의 맞춤 운동" description={workout?.focus} to="/workout" linkLabel="전체 루틴 보기" />
-      {isPending ? (
-        <CardLoading />
-      ) : isError ? (
-        <CardError error={error} onRetry={() => refetch()} />
-      ) : !workout ? (
-        <EmptyText>오늘은 휴식일이에요. 가벼운 스트레칭으로 회복해 주세요.</EmptyText>
-      ) : (
-        <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">{workout.dayLabel}</span>
-              <p className="mt-2 text-sm font-bold text-gray-900">{workout.title}</p>
-            </div>
-            <button
-              type="button"
-              aria-pressed={workout.completed}
-              disabled={setCompleted.isPending}
-              onClick={() => setCompleted.mutate({ date, completed: !workout.completed })}
-              className={`inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
-                workout.completed ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <CircleCheck aria-hidden="true" className="h-4 w-4" />
-              {setCompleted.isPending ? '저장 중...' : workout.completed ? '운동 완료' : '운동 완료 체크'}
-            </button>
-          </div>
-          <p className="text-xs font-semibold text-gray-700">주요 동작 (총 {workout.totalMinutes}분)</p>
-          <ul className="divide-y divide-gray-100">
-            {workout.exercises.map((exercise) => (
-              <li key={exercise.name} className="flex items-center justify-between gap-3 py-2 text-xs">
-                <span className="text-gray-700">• {exercise.name}</span>
-                <span className="shrink-0 text-gray-500">
-                  {exercise.sets}세트 × {exercise.reps}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </section>
-  )
-}
-
-/* ───────────── 오른쪽 열: 기한 임박 · 장바구니 · 체중 ───────────── */
 
 function ExpiringLotsCard({ dashboard }) {
   const lots = dashboard.data?.expiringLots ?? []
@@ -451,7 +356,7 @@ function ShortagesCard({ dashboard }) {
   const items = dashboard.data?.shortages ?? []
   return (
     <section className="card space-y-4">
-      <CardHeader icon={ShoppingCart} title="장바구니 부족분" to="/shopping" linkLabel="목록 보기" />
+      <CardHeader icon={ShoppingCart} title="사야 할 재료" to="/shopping" linkLabel="목록 보기" />
       {dashboard.isPending ? (
         <CardLoading />
       ) : dashboard.isError ? (
@@ -479,7 +384,7 @@ function WeightCard() {
   const { data: weight, isPending } = useWeightSummary()
   return (
     <section className="card space-y-3">
-      <CardHeader icon={Scale} title="체중 추이" to="/mypage" linkLabel="기록하기" />
+      <CardHeader icon={Scale} title="체중 추이" to="/weight" linkLabel="기록하기" />
       {isPending ? (
         <CardLoading />
       ) : !weight ? (
@@ -512,29 +417,24 @@ export function DashboardPage() {
   const date = today()
   const dashboard = useDashboard(date)
 
-  return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {MOCK_AREAS.length > 0 && (
-        <p className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800">
-          <Info aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-          {MOCK_AREAS.map((area) => MOCK_AREA_LABEL[area]).join(' · ')}은(는) API 연결 전이라 예시 데이터예요. 기한 임박 식재료와 장바구니는 실제 데이터예요.
-        </p>
-      )}
-
-      <AiCoachingCard />
-      <GreetingCard />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="min-w-0 space-y-6 lg:col-span-2">
-          <TodayMealsCard dashboard={dashboard} />
-          <TodayWorkoutCard date={date} />
-        </div>
-        <div className="min-w-0 space-y-6">
-          <ExpiringLotsCard dashboard={dashboard} />
-          <ShortagesCard dashboard={dashboard} />
-          <WeightCard />
-        </div>
-      </div>
-    </div>
-  )
+  const [showExtras, setShowExtras] = useState(false)
+  const { plans, fridge } = dashboard
+  const todaysPlans = plans.data?.mealPlans ?? []
+  const dinner = todaysPlans.find(plan => plan.mealType === MEAL_TYPE.DINNER)
+  const first = plans.isSuccess && fridge.isSuccess && todaysPlans.length === 0 && fridge.data.groups.length === 0
+  const soon = dashboard.inventory.data?.expiringLots.find(lot => lot.expirationStatus !== 'EXPIRED')
+  return <div className="mf-stack">
+    <header className="mf-heading mb-0"><div><h1>오늘의 밀핏</h1><p>저녁 메뉴부터 재료 준비까지 한곳에서 확인하세요.</p></div>{!first && <Link className="btn-secondary" to="/recommend?mode=quick">15분 요리 찾기</Link>}</header>
+    {plans.isPending || fridge.isPending ? <div className="card"><CardLoading /></div> : plans.isError || fridge.isError ?
+      <div className="card"><CardError error={plans.error ?? fridge.error} onRetry={() => Promise.all([plans.refetch(), fridge.refetch()])} /></div> :
+      <HomeDinner date={date} dinner={dinner} inventory={fridge.data} first={first} busy={plans.isFetching || fridge.isFetching} />}
+    <div className={first ? "mf-home-first" : "mf-two"}><div className="mf-stack">
+      {first ? <section className="card mf-stack"><h2 className="mf-section-title">식단 설정</h2><p className="mf-copy">알레르기와 피하고 싶은 재료를 등록해 두세요.</p><Link className="btn-secondary justify-self-start" to="/mypage?tab=allergies">식단 조건 설정</Link></section> : <TodayMealsCard dashboard={dashboard.meals} />}
+      <section className="card mf-result"><div><span className="mf-status">이번 주 운동</span><h3>오늘 할 운동</h3><p className="mf-copy text-sm">운동 시간과 부위를 확인하고 조정하세요.</p></div><Link className="btn-secondary" to="/workout">내 루틴 보기</Link></section>
+    </div><div className="mf-stack">
+      {soon && <section className="card mf-stack mf-expiry"><span className="mf-status warn">먼저 쓸 재료</span><h2 className="mf-section-title">{soon.ingredientName} · {formatQuantity(soon.quantity, soon.unit)}</h2><p>소비기한 {soon.expiryDate}</p><Link className="btn-secondary justify-self-start" to={'/recommend?mode=quick&ingredient=' + encodeURIComponent(soon.ingredientName)}>이 재료로 요리 찾기</Link></section>}
+      {!first && <><ShortagesCard dashboard={dashboard.shopping} /><ExpiringLotsCard dashboard={dashboard.inventory} /></>}
+    </div></div>
+    <details className="card" onToggle={event => setShowExtras(event.currentTarget.open)}><summary className="cursor-pointer font-bold">컨디션 코칭과 체중 요약 예시</summary>{showExtras && <div className="mt-4 grid gap-4 lg:grid-cols-2"><AiCoachingCard /><WeightCard /></div>}</details>
+  </div>
 }

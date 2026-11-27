@@ -1,19 +1,18 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { Header } from '@/components/layout/Header';
-import { BottomNav } from '@/components/layout/BottomNav';
-import { findNavItem } from '@/components/layout/navItems';
-import { SocialLinkPromptModal } from '@/components/common/SocialLinkPromptModal';
+import { Outlet } from 'react-router-dom'
+import { Sidebar } from './Sidebar'
+import { Header } from './Header'
+import { BottomNav } from './BottomNav'
+import { SocialLinkPromptModal } from '@/components/common/SocialLinkPromptModal'
+
 export function AppLayout() {
-    const item = findNavItem(useLocation().pathname);
-    return <div className="flex min-h-screen bg-gray-50 text-gray-900">
+  return <div className="mf-shell">
+    <a className="mf-skip" href="#mealfit-main">본문으로 이동</a>
     <Sidebar />
-    <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-8">
-      <Header title={item.label} subtitle={item.subtitle}/>
-      <main className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-8"><Outlet /></main>
+    <div className="min-w-0 flex-1">
+      <Header />
+      <main id="mealfit-main" className="mf-main" tabIndex={-1}><Outlet /></main>
     </div>
     <BottomNav />
-    {/* [소셜로그인] 3개 소셜 도메인 일반 가입자에게 최초 1회만 연동 안내 팝업을 표시합니다. */}
     <SocialLinkPromptModal />
-  </div>;
+  </div>
 }

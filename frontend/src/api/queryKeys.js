@@ -38,6 +38,7 @@ export const queryKeys = {
     all: ['shopping'],
   },
   // [문장조정][운동기록] 운동 루틴·기록 쿼리 키
+  quickMenu: (userId) => ['quick-menu', userId],
   workout: {
     all: ['workout'],
     current: (week) => ['workout', 'current', week ?? null],
