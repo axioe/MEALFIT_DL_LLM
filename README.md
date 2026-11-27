@@ -8,7 +8,7 @@
 
 ## 현재 구현 상태 (2026-11-24, `develop` 기준)
 
-회원·마이페이지부터 **재고 → 식단 추천·확정 → 장보기 → 조리**까지 화면과 API가 연결되어 동작한다. 15분 요리 추천은 Flask + Gemini로 연결되어 있고 자체 모델로 전환할 예정이다. **하루 3끼 AI 추천, 섭취 기록, 대시보드 API, 운동 화면 연결, 체중**이 남아 있다.
+회원·마이페이지부터 **재고 → 식단 추천·확정 → 장보기 → 조리**까지 화면과 API가 연결되어 동작한다. 15분 요리·하루 식단 AI 추천은 Flask + 자체 LLM(Ollama, gemma4:e2b)으로 연결되어 있다(외부 AI API 미사용). **하루 3끼 AI 추천, 섭취 기록, 대시보드 API, 운동 화면 연결, 체중**이 남아 있다.
 
 | 기능 | 백엔드 API | 프론트 화면 | 남은 일 |
 |---|---|---|---|
@@ -19,7 +19,7 @@
 | 레시피 상세·인분 환산 | ✅ | ✅ | |
 | 자동 장보기 (부족분·부분 구매·입고) | ✅ | ✅ | |
 | 조리 차감·사용량 수정·식단 없는 조리·취소 복원 | ✅ | ✅ | |
-| 15분 요리 AI 추천 (Spring → Flask → Gemini) | ✅ | ✅ | 자체 모델 전환 (운영은 `GEMINI_API_KEY`가 있을 때만 동작) |
+| 15분 요리 AI 추천 (Spring → Flask → 자체 LLM) | ✅ | ✅ | 운영 EC2는 LLM 미가동(`LLM_BASE_URL` 비움) → 검수 레시피 대체 |
 | 대시보드 | ❌ | ⚠️ 일부 예시 데이터 (`api/dashboard.js`의 `MOCK`) | `GET /dashboard` |
 | 섭취 기록 (먹음/건너뜀) | ❌ (테이블·엔티티만) | ⚠️ 예시 데이터 | `POST /intake-logs` |
 | 운동 루틴 (규칙 엔진) | ✅ 추천·현재 루틴 | ⚠️ 화면만 | 화면 연결, 완료 기록 |
@@ -32,7 +32,7 @@
 
 | 항목 | 개요서 | 실제 |
 |---|---|---|
-| AI 엔진 | OpenAI API | **Gemini API** (`google-genai` SDK) |
+| AI 엔진 | OpenAI API | **자체 LLM** (Ollama · gemma4:e2b, D14) |
 | AI 서비스 | Python FastAPI | **Python Flask** (`ai-service/`) |
 | DB | MySQL 또는 PostgreSQL | **PostgreSQL 16 (+pgvector)**. 운영은 Amazon RDS for PostgreSQL (2026-11 MariaDB에서 전환) |
 | 디자인 | Figma | 사용 안 함. AI Studio 프로토타입 화면을 기준으로 바로 구현 |
@@ -58,14 +58,14 @@ MealFit/
 │        └─ client/ config/ exception/   외부 AI 호출, 설정, 도메인 예외 (필요한 도메인만)
 │        도메인: auth, user, inventory, mealplan, recipe, shopping, cooking, intake, workout, ai
 ├─ backend/src/main/resources/db/migration/postgresql/   V1–V7, V9–V12 (V8은 db/vendor/postgresql/)
-├─ ai-service/                    Python Flask + Gemini
+├─ ai-service/                    Python Flask + 자체 LLM(Ollama)
 │  ├─ app.py                      실행 진입점 (python app.py)
 │  ├─ mealfit_ai/
 │  │  ├─ __init__.py              create_app (설정·Blueprint·오류 처리 등록)
 │  │  ├─ controllers/             /health, /ai/quick-recipes, /ai/meal-plans 라우트와 오류 응답 (Controller)
 │  │  ├─ services/                15분 요리·하루 식단 프롬프트와 응답 검증 (Model)
 │  │  ├─ schemas/                 요청 본문 검증
-│  │  ├─ clients/                 Gemini 호출
+│  │  ├─ clients/                 자체 LLM(Ollama)·자세 판별 모델 호출
 │  │  └─ errors.py
 │  └─ tests/
 ├─ frontend/                      React + JavaScript + Vite
@@ -90,7 +90,7 @@ MealFit/
 
 ## 로컬 실행
 
-**준비물:** JDK 17 이상(21이 없으면 Gradle이 자동으로 받음), Node.js 24, Docker Desktop(또는 로컬 PostgreSQL 16). 15분 요리 AI까지 확인하려면 Python 3과 Gemini API 키.
+**준비물:** JDK 17 이상(21이 없으면 Gradle이 자동으로 받음), Node.js 24, Docker Desktop(또는 로컬 PostgreSQL 16). 15분 요리 AI까지 확인하려면 Python 3과 Ollama(`ollama pull gemma4:e2b`).
 
 ```bash
 cp .env.example .env                        # 아래 JWT_SECRET 설정 필수
@@ -132,7 +132,7 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 ```bash
 cd ai-service
 python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt   # macOS/Linux: .venv/bin/python
-cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 파일에만 둔다)
+cp .env.example .env                        # LLM_BASE_URL·LLM_MODEL 확인 (기본: 로컬 Ollama, gemma4:e2b)
 .venv/Scripts/python app.py                 # http://127.0.0.1:8000
 ```
 
@@ -142,7 +142,7 @@ cp .env.example .env                        # GEMINI_API_KEY 입력 (키는 이 
 **테스트**
 - 백엔드: `cd backend && ./gradlew test` (H2 메모리 DB). CI는 `PG_TEST_URL`로 실제 PostgreSQL 검증도 하고, 그 테스트가 건너뛰어지면 실패한다
 - 프론트: `cd frontend && npm run lint && npm test && npm run build`
-- AI 서비스: `cd ai-service && .venv/Scripts/python -m pip install -r requirements-test.txt` 후 `.venv/Scripts/python -m unittest -v` (Gemini SDK를 mock해서 외부 호출 없음)
+- AI 서비스: `cd ai-service && .venv/Scripts/python -m pip install -r requirements-test.txt` 후 `.venv/Scripts/python -m unittest -v` (LLM 호출을 mock해서 LLM 서버 없이 실행)
 
 ## 배포 (AWS EC2)
 
@@ -210,7 +210,7 @@ cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up 
 | 김영현 (PL) | `global/*`, 배포·CI, 리뷰 | 공통 구조 (`api/client.js`, `routes`, `components/layout`) |
 | 백가연 (PM) | API 명세(Swagger) 관리, QA 시나리오 | |
 | 김수현 | **스마트 냉장고** `domain/inventory` | **스마트 냉장고** `pages/FridgePage`, `pages/Recommend·Shopping·RecipeDetail` 화면, `components/common` |
-| 박희진 | `ai-service/` (Flask + Gemini), `domain/ai` 연동 | |
+| 박희진 | `ai-service/` (Flask + 자체 LLM), `domain/ai` 연동 | |
 | 유지훈 | **운동** (Phase 1), `domain/shopping·cooking·recipe·mealplan`, 서버 검증 | **운동** `pages/WorkoutPage` |
 | 최원석 | **로그인·회원가입·마이페이지** `domain/auth`, `domain/user`, `domain/intake`, 대시보드 API | `pages/LoginPage`, `pages/SignupPage`, `pages/MyPage`, `pages/DashboardPage`, (Phase 1) 캘린더·체중 |
 
@@ -244,7 +244,7 @@ cd ~/MEALFIT_DL_LLM && git pull && docker compose -f docker-compose.prod.yml up 
 | ✅ | 운동 | POST / GET | `/workout-routines/recommend`, `/workout-routines/current` | 루틴 추천(규칙 엔진), 현재 루틴 |
 | ❌ | 대시보드 | GET | `/dashboard?date=` | 오늘의 식단, 기한 임박 재료, 부족분 |
 | ❌ | 섭취 | POST | `/intake-logs` | 먹음/건너뜀 기록 |
-| ✅ | (내부) ai-service | POST / GET | `/ai/quick-recipes`, `/health` | Flask → Gemini 15분 요리 추천, 상태 확인 |
+| ✅ | (내부) ai-service | POST / GET | `/ai/quick-recipes`, `/health` | Flask → 자체 LLM 15분 요리 추천, 상태 확인 |
 | ❌ | (내부) ai-service | POST | `/ai/meal-plans` | 하루 3끼 AI 식단 |
 
 ## 개발 규칙
@@ -305,8 +305,8 @@ feature/* ──PR──▶ develop(벽) ──PR──▶ main ──자동─�
 - import 경로는 `@/`(= `src/`)로 시작한다 (예: `import { api } from '@/api/client'`)
 
 ### AI 서비스 연동 (Spring ↔ Flask)
-- Gemini API 키는 `ai-service/.env`에만 둔다. 브라우저·Spring·저장소에는 노출 금지
+- LLM 서버 주소·모델은 `ai-service/.env`(`LLM_BASE_URL`·`LLM_MODEL`)에 둔다. LLM 서버는 외부에 열지 않는다
 - 이름·이메일·토큰·사용자 ID 등 개인정보는 AI 요청에 넣지 않는다 (재고·목표·알레르기·제외 재료만)
-- Spring은 `domain/ai/config/AiClientConfig`의 `aiRestClient`로 호출한다. 타임아웃: Spring 연결 3초·읽기 20초, Flask → Gemini 18초(추가 재시도 없음), 프론트 axios 30초
+- Spring은 `domain/ai/config/AiClientConfig`의 `aiRestClient`로 호출한다. 타임아웃: Spring 연결 3초·읽기 20초(`AI_READ_TIMEOUT`), Flask → 자체 LLM 18초(`LLM_TIMEOUT_SECONDS`, 추가 재시도 없음), 프론트 axios 30초
 - AI 결과는 항상 초안이다. Spring이 출처·필수 필드·시간·수량·알레르기·제외 재료를 다시 검사한다
 - 실패 시 대응: 하루 3끼 추천은 로컬 대체 식단을 쓰고 `RecipeSource.LOCAL_FALLBACK`으로 표기한다. 15분 요리 추천은 가짜 결과를 만들지 않고 오류 코드(`QUICK_AI_001`~`005`)로 안내한다

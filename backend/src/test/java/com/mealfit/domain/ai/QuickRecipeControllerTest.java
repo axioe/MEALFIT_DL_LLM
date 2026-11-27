@@ -49,7 +49,7 @@ class QuickRecipeControllerTest {
     @Test
     @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named = "MEALFIT_LIVE_AI_URL", matches = ".+")
     @SuppressWarnings("unchecked")
-    void liveAuthenticatedSpringToFlaskGeminiWithoutDatabaseWrites() throws Exception {
+    void liveAuthenticatedSpringToFlaskLlmWithoutDatabaseWrites() throws Exception {
         var inventory = mock(com.mealfit.domain.inventory.repository.InventoryLotRepository.class);
         var lot = com.mealfit.domain.inventory.entity.InventoryLot.builder().userId(7L).ingredientName("달걀")
                 .quantity(new java.math.BigDecimal("4")).unit("개")
@@ -70,7 +70,7 @@ class QuickRecipeControllerTest {
                 .andExpect(jsonPath("$.recipes.length()").value(3)).andReturn();
         String capture = System.getenv("MEALFIT_AI_CAPTURE_PATH");
         if (capture != null) java.nio.file.Files.writeString(java.nio.file.Path.of(capture), result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
-        System.out.println("LIVE_SPRING_FLASK_GEMINI_SUCCESS recipes=3");
+        System.out.println("LIVE_SPRING_FLASK_LLM_SUCCESS recipes=3");
     }
 
 }

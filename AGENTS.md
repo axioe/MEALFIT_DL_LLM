@@ -32,7 +32,7 @@
 |---|---|
 | backend | Spring Boot 3.5 · Java 21 · JPA · Flyway · PostgreSQL 16 + pgvector (테스트는 H2 PostgreSQL 모드, CI는 실제 PostgreSQL, 운영은 Amazon RDS for PostgreSQL·TLS 인증서 검증) · JWT · 소셜 로그인(OAuth2: Google·Naver·Kakao) |
 | frontend | React + JavaScript(TypeScript 금지) · Vite · TanStack Query · Zustand · Tailwind |
-| ai-service | Python 3.12 · Flask · 현재 Gemini (google-genai), 자체 모델로 전환 예정 |
+| ai-service | Python 3.12 · Flask · 자체 LLM(Ollama, gemma4:e2b — D14) |
 | CI | GitHub Actions (.github/workflows/ci.yml) |
 
 작업 일정 (중간발표 12/4 기준)
@@ -128,7 +128,7 @@ ai-service (ai-service/)
 | mealfit_ai/controllers/ | Controller | Flask Blueprint 라우트, 오류 응답 |
 | mealfit_ai/services/ | Model | 프롬프트 구성, 응답 검증, 추론 로직 |
 | mealfit_ai/schemas/ | — | 요청 본문 검증 |
-| mealfit_ai/clients/ | — | 외부 모델·API 호출 (Gemini 등) |
+| mealfit_ai/clients/ | — | 자체 모델 호출 (Ollama LLM, 자세 판별 ONNX) |
 | tests/ | — | unittest. 외부 API는 반드시 mock |
 
 DL·LLM 심화 작업용 위치 (새 규칙)
@@ -136,7 +136,7 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 | 위치 | 넣는 것 |
 |---|---|
 | ai-service/mealfit_ai/services/ | 서비스에서 쓰는 추론·LLM 로직 (학습된 모델을 불러와 예측하는 코드 포함) |
-| ai-service/mealfit_ai/clients/ | LLM·외부 모델 API 호출 래퍼 (Gemini, 그 외 LLM) |
+| ai-service/mealfit_ai/clients/ | 자체 LLM(Ollama)·모델 호출 래퍼 |
 | ai-service/ml/ | 학습·실험 코드 (데이터 전처리, 학습 스크립트, 평가). 서비스 코드가 ml/을 import하지 않는다 |
 | ai-service/ml/notebooks/ | 실험용 노트북 (출력 셀은 비우고 커밋) |
 | docs/ | 모델 카드, 데이터 설명, 실험 결과 요약 |
@@ -146,7 +146,7 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 
 ## 4. DL · LLM 작업 규칙
 
-- 외부 AI API 호출을 새로 추가하지 않는다. 목표는 자체 서빙 모델(LLM vLLM, 임베딩 bge-m3, OCR PaddleOCR)이고, 현재 코드는 아직 Gemini를 쓴다. 기존 Gemini 클라이언트는 전환 전까지만 유지한다.
+- 외부 AI API 호출을 추가하지 않는다. 자체 서빙 모델만 쓴다 (LLM: Ollama gemma4:e2b(D14), 임베딩 bge-m3, OCR PaddleOCR). LLM 호출은 `clients/ollama_client.py` 하나로 한다.
 - 데이터·모델 파일은 git에 올리지 않는다. 데이터셋, 체크포인트(*.pt, *.pth, *.ckpt, *.h5, *.onnx, *.safetensors), 실험 로그(wandb/, mlruns/, runs/)는 .gitignore에 들어 있다. 공유가 필요하면 저장 위치(드라이브 링크 등)를 docs/에 적는다.
 - 재현 가능하게. 시드 고정, 하이퍼파라미터는 코드나 설정 파일에 남기고, 결과(지표·데이터 버전)를 docs/에 기록한다.
 - LLM 출력은 항상 "초안"이다. Spring이 출처·필수 필드·수량·알레르기·제외 재료를 다시 검증하는 기존 흐름을 유지한다. LLM 결과를 검증 없이 DB에 저장하거나 사용자에게 바로 보여 주지 않는다.
@@ -157,7 +157,7 @@ DL·LLM 심화 작업용 위치 (새 규칙)
 - 영수증의 상호·주소·전화번호·카드·결제·승인번호와 인식한 글자 원문 전체는 저장하거나 로그에 남기지 않는다.
 - 테스트에서 실제 API를 부르지 않는다. LLM·외부 모델 호출은 mock한다 (비용·속도·키 노출 방지). CI에는 API 키가 없다.
 - 프롬프트는 services/에 코드로 둔다. 프롬프트를 바꾸면 응답 검증 테스트도 같이 고친다.
-- 타임아웃을 지킨다. 현재: Spring → Flask 연결 3초·읽기 20초, Flask → 모델 호출(현재 Gemini) 18초, 프론트 30초. 무거운 모델을 넣어 이 시간을 넘길 것 같으면 먼저 상의한다.
+- 타임아웃을 지킨다. 현재: Spring → Flask 연결 3초·읽기 20초, Flask → 자체 LLM 호출 18초(`LLM_TIMEOUT_SECONDS`, Spring은 `AI_READ_TIMEOUT`), 프론트 30초. 무거운 모델을 넣어 이 시간을 넘길 것 같으면 먼저 상의한다.
 - 모델·API 비용이 드는 대량 호출(배치 생성, 평가 수백 건 이상)은 실행 전에 사용자에게 확인한다.
 
 ## 5. DB 스키마 (Flyway)

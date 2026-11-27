@@ -11,5 +11,5 @@ def recommend_meals():
     """하루 식단 추천: 요청한 끼니마다 식단 초안을 만든다 (Spring이 최종 검증)."""
     config = current_app.config
     validated = meal_plan_service.validate_request(read_json_body(), config['TODAY']())
-    raw = config['MEAL_GENERATOR'](validated, config['GEMINI_API_KEY'], config['GEMINI_MODEL'])
+    raw = config['MEAL_GENERATOR'](validated, config['LLM_BASE_URL'], config['LLM_MODEL'])
     return jsonify(meal_plan_service.validate_response(raw, validated))
