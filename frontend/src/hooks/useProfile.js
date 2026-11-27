@@ -53,6 +53,7 @@ export function useUpdateMyProfile() {
 
       // 회원 조회와 대시보드 프로필도 최신 정보로 다시 확인합니다.
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.quickMenu(userId) }),
         queryClient.invalidateQueries({ queryKey: profileKeys.settings(userId) }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.auth.me(userId),
@@ -94,6 +95,7 @@ export function useUpdateProfileSection() {
       queryClient.setQueryData(profileKeys.settings(userId), details)
       useAuthStore.setState({ user: { ...currentUser, nickname: details.body.nickname } })
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.quickMenu(userId) }),
         queryClient.invalidateQueries({ queryKey: profileKeys.detail(userId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.auth.me(userId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.profile }),

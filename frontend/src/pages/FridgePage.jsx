@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { stockInMessage } from '@/models/fridge'
+import { pickExpiringLots } from '@/models/dashboard'
 import { ReceiptRecognitionDialog } from '@/components/fridge/ReceiptRecognitionDialog'
 import { Camera, History, Plus, Refrigerator, RefreshCw, TriangleAlert } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
@@ -8,22 +12,34 @@ import { StockInDialog } from '@/components/common/StockInDialog'
 import { PhotoRecognitionDialog } from '@/components/fridge/PhotoRecognitionDialog'
 import { ArchivedLots } from '@/components/fridge/ArchivedLots'
 import { FridgeFilters } from '@/components/fridge/FridgeFilters'
-import { FridgeSummary } from '@/components/fridge/FridgeSummary'
 import { InventoryGroup } from '@/components/fridge/InventoryGroup'
 import { useFridgePage } from '@/hooks/useFridgePage'
 
 /** 스마트 냉장고 화면 (View). 상태·흐름은 hooks/useFridgePage, 계산은 models/fridge */
 export function FridgePage() {
   const page = useFridgePage()
+  const [addedLot, setAddedLot] = useState(null)
+  const addedName = addedLot && page.successMessage === stockInMessage(addedLot) ? addedLot.ingredientName : ''
   const { data, isPending, isError, error, isFetching, refetch } = page.inventory
   const { view } = page
+  const [params, setParams] = useSearchParams()
+  const addRequested = params.get('add') === '1'
+  const soon = data && pickExpiringLots(data).find(lot => lot.expirationStatus !== 'EXPIRED')
+  function finishAdd(lot) {
+    if (lot) { page.handleStockedIn(lot); setAddedLot(lot) }
+    else page.closeStockIn()
+    if (addRequested) {
+      const next = new URLSearchParams(params)
+      next.delete('add')
+      setParams(next, { replace: true })
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm leading-6 text-gray-600">재료별 수량과 소비기한을 한눈에 확인해 보세요.</p>
+      <div className="mf-heading"><div><h1>내 냉장고</h1><p>보관 중인 양과 먼저 써야 할 재료를 확인하세요.</p></div>
         <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => page.openHistory()} className="btn-secondary min-h-11 text-xs"><History aria-hidden="true" className="h-4 w-4" />재고 변경 이력</button>
+<details className="mf-more"><summary className="btn-secondary">다른 등록·관리 방법</summary><div>        <button type="button" onClick={() => page.openHistory()} className="btn-secondary min-h-11 text-xs"><History aria-hidden="true" className="h-4 w-4" />재고 변경 이력</button>
         <button type="button" onClick={() => refetch()} disabled={isFetching} className="btn-secondary min-h-11 text-xs">
           <RefreshCw aria-hidden="true" className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? '불러오는 중...' : '새로고침'}
@@ -32,20 +48,22 @@ export function FridgePage() {
           <Camera aria-hidden="true" className="h-4 w-4" />사진으로 등록
         </button>
         <button type="button" onClick={() => page.openReceiptRecognition()} className="btn-secondary min-h-11 text-xs">영수증으로 등록</button>
+</div></details>
         <button type="button" onClick={page.openStockIn} className="btn-primary min-h-11 text-xs">
-          <Plus aria-hidden="true" className="h-4 w-4" />식재료 추가
+          <Plus aria-hidden="true" className="h-4 w-4" />재료 등록
         </button>
         </div>
       </div>
-      {page.successMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{page.successMessage}</p>}
+      {page.successMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{page.successMessage}{addedName && <Link className="mf-text-link ml-3" to={'/recommend?mode=quick&ingredient=' + encodeURIComponent(addedName)}>{addedName}로 요리 찾기</Link>}</p>}
       {page.lotAction && <InventoryLotDialog key={`${page.lotAction.mode}-${page.lotAction.lot.id}`} lot={page.lotAction.lot} mode={page.lotAction.mode}
         onClose={page.closeLotAction}
         onSuccess={page.handleLotSaved} />}
       {page.showHistory && <InventoryHistoryPanel lotId={page.historyLotId} lots={view.allLots} onSelectLot={page.setHistoryLotId} onClose={page.closeHistory} />}
       {page.showReceiptRecognition && <ReceiptRecognitionDialog onClose={page.closeReceiptRecognition} />}
       {page.showPhotoRecognition && <PhotoRecognitionDialog onClose={page.closePhotoRecognition} onConfirm={page.openStockInFromPhoto} />}
-      {page.showStockIn && <StockInDialog initialIngredientName={page.initialIngredientName} onClose={page.closeStockIn} onSuccess={page.handleStockedIn} />}
+      {(page.showStockIn || addRequested) && <StockInDialog initialIngredientName={page.initialIngredientName} onClose={() => finishAdd()} onSuccess={finishAdd} />}
 
+      <div className="mf-two"><section className="card mf-stack"><h2 className="mf-section-title">보관 중인 재료</h2>
       <FridgeFilters searchQuery={page.searchQuery} onSearchChange={page.setSearchQuery}
         storageFilter={page.storageFilter} onStorageChange={page.setStorageFilter} />
 
@@ -66,7 +84,7 @@ export function FridgePage() {
           )}
           {data && (
             <>
-              <FridgeSummary activeIngredientCount={view.activeIngredientCount} activeLotCount={view.activeLotCount} imminentCount={view.imminentCount} />
+
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500" aria-live="polite">
                 <p>검색 결과 <span className="font-semibold text-gray-700">{view.visibleGroups.length}</span>개 재료·단위 그룹</p>
                 <p>소비기한 기준일 {data.asOfDate}</p>
@@ -93,6 +111,9 @@ export function FridgePage() {
           )}
         </>
       )}
-    </div>
+    </section><aside className="card mf-stack mf-expiry"><h2 className="mf-section-title">먼저 쓸 재료</h2>
+      {isPending ? <p>소비기한 확인 중…</p> : isError ? <p>최신 소비기한을 확인해 주세요.</p> : soon ? <><span className="mf-status warn">소비기한 {soon.expiryDate}</span>
+      <strong className="text-xl">{soon.ingredientName} {soon.quantity}{soon.unit}</strong><Link className="btn-primary justify-self-start" to={'/recommend?mode=quick&ingredient=' + encodeURIComponent(soon.ingredientName)}>{soon.ingredientName}로 15분 요리 찾기</Link></> : <><p>소비기한이 임박한 재료가 없어요.</p><Link to="/recommend?mode=quick" className="mf-text-link">내 재료로 15분 요리 찾기</Link></>}
+    </aside></div></div>
   )
 }
