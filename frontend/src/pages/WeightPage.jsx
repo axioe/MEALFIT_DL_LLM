@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Info, Scale, Trash2, X } from 'lucide-react';
 import { today } from '@/lib/date';
 import { buildWeightChart, CHART } from '@/models/weightChart';
@@ -7,7 +7,7 @@ export function WeightPage() {
     const targetWeight = "";
     const currentWeight = "";
     // Add Modal
-    const [showAddModal, setShowAddModal] = useState(false);
+    const entryDialog = useRef(null);
     const [inputDate, setInputDate] = useState(today);
     const [inputWeight, setInputWeight] = useState('');
     const [inputMemo, setInputMemo] = useState('');
@@ -39,7 +39,7 @@ export function WeightPage() {
             <span className="text-2xl font-bold text-gray-800">
               {currentWeight && targetWeight ? Number((currentWeight - targetWeight).toFixed(1)) : '—'} kg
             </span>
-            <button onClick={() => setShowAddModal(true)} className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer">
+            <button onClick={() => entryDialog.current.showModal()} className="min-h-11 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer">
               + 체중 기록
             </button>
           </div>
@@ -48,7 +48,7 @@ export function WeightPage() {
 
       {/* SVG Interactive Weight Trend Chart */}
       <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
             <Scale className="w-4 h-4 text-emerald-600"/>
             체중 변화 궤적
@@ -124,41 +124,39 @@ export function WeightPage() {
       </div>
 
       {/* Add Weight Modal */}
-      {showAddModal && (<div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-              <h3 className="text-base font-bold text-gray-900">오늘의 체중 입력</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 p-1 cursor-pointer">
-                <X className="w-5 h-5"/>
-              </button>
-            </div>
+      <dialog ref={entryDialog} aria-labelledby="weight-entry-title" className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-sm overflow-y-auto overscroll-contain rounded-2xl bg-white p-4 shadow-xl backdrop:bg-black/50 sm:p-6">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+          <h3 id="weight-entry-title" className="text-base font-bold text-gray-900">오늘의 체중 입력</h3>
+          <button aria-label="체중 입력 닫기" onClick={() => entryDialog.current.close()} className="grid size-11 cursor-pointer place-items-center text-gray-500">
+            <X className="w-5 h-5"/>
+          </button>
+        </div>
 
-            <form onSubmit={event => event.preventDefault()} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">측정 날짜</label>
-                <input type="date" required value={inputDate} onChange={e => setInputDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm bg-white"/>
-              </div>
-
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">체중 (kg) *</label>
-                <input type="number" step="0.1" min="30" max="250" required value={inputWeight} onChange={e => setInputWeight(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-emerald-500"/>
-              </div>
-
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">메모 (선택)</label>
-                <input type="text" placeholder="예: 기상 직후 공복 측정" value={inputMemo} onChange={e => setInputMemo(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-emerald-500"/>
-              </div>
-
-              <div className="flex items-center gap-3 pt-3">
-                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold min-h-[44px] cursor-pointer">
-                  취소
-                </button>
-                <button type="submit" className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold min-h-[44px] cursor-pointer" disabled>
-                  저장하기
-                </button>
-              </div>
-            </form>
+        <form onSubmit={event => event.preventDefault()} className="space-y-4 text-xs">
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">측정 날짜</label>
+            <input type="date" required value={inputDate} onChange={e => setInputDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm bg-white"/>
           </div>
-        </div>)}
+
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">체중 (kg) *</label>
+            <input type="number" step="0.1" min="30" max="250" required value={inputWeight} onChange={e => setInputWeight(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-emerald-500"/>
+          </div>
+
+          <div>
+            <label className="font-bold text-gray-700 block mb-1">메모 (선택)</label>
+            <input type="text" placeholder="예: 기상 직후 공복 측정" value={inputMemo} onChange={e => setInputMemo(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-emerald-500"/>
+          </div>
+
+          <div className="flex items-center gap-3 pt-3">
+            <button type="button" onClick={() => entryDialog.current.close()} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold min-h-[44px] cursor-pointer">
+              취소
+            </button>
+            <button type="submit" className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold min-h-[44px] cursor-pointer" disabled>
+              저장하기
+            </button>
+          </div>
+        </form>
+      </dialog>
     </>);
 }

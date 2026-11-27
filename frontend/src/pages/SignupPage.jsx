@@ -70,7 +70,7 @@ export function SignupPage() {
 
   if (signedUpEmail) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xl max-w-lg w-full text-center">
           <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
             <CheckCircle2 aria-hidden="true" className="w-6 h-6" />
@@ -79,7 +79,7 @@ export function SignupPage() {
             인증 메일을 발송했습니다
           </h1>
           <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-            <strong className="text-gray-900">{signedUpEmail}</strong> 로 인증 링크를 보냈습니다.
+            <strong className="wrap-anywhere text-gray-900">{signedUpEmail}</strong> 로 인증 링크를 보냈습니다.
             <br />
             메일의 인증 링크를 클릭한 뒤 로그인해 주세요.
           </p>
@@ -114,7 +114,7 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-gradient-to-b from-emerald-50/50 via-gray-50 to-white flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-xl max-w-lg w-full">
         <div className="text-center mb-6">
           <BrandLogo className="w-12 h-12 mx-auto mb-2" />

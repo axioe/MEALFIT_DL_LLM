@@ -76,7 +76,7 @@ export function SocialLinkPromptModal() {
       aria-labelledby="social-link-prompt-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl border border-gray-200">
+      <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-white p-6 shadow-xl border border-gray-200">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">

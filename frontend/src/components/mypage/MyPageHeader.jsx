@@ -5,14 +5,14 @@ export function MyPageHeader({ user, onLogout, logoutPending, disabled }) {
   const profile = { nickname: user.nickname }
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-xl flex items-center justify-center">
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="w-14 h-14 shrink-0 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-xl flex items-center justify-center">
           {profile?.nickname?.[0] ||
             user?.nickname?.[0] ||
             user?.name?.[0] ||
             "M"}
         </div>
-        <div>
+        <div className="min-w-0">
           <h3 className="font-extrabold text-lg text-gray-900">
             {profile?.nickname || user?.nickname || user?.name || "프로필"}
           </h3>
