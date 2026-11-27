@@ -231,4 +231,29 @@ class ProfileDetailsApiTest {
         assertThat(result.path("trainer").path("workoutGoal").asText()).isEqualTo("hypertrophy");
         assertThat(result.path("trainer").path("allergies").get(0).asText()).isEqualTo("달걀");
     }
+
+    @Test
+    void 마이페이지통합_식단유형과_운동환경을_각각_식단과_운동API로_저장하고_잘못된값은_거절한다() throws Exception {
+        var dietReq = diet();
+        dietReq.put("dietType", "high_protein");
+        save("diet", dietReq).andExpect(status().isOk());
+
+        var fitnessReq = fitness();
+        fitnessReq.put("environment", "gym");
+        save("fitness", fitnessReq).andExpect(status().isOk());
+
+        var result = reload(USER);
+        assertThat(result.path("diet").path("dietType").asText()).isEqualTo("high_protein");
+        assertThat(result.path("trainer").path("dietType").asText()).isEqualTo("high_protein");
+        assertThat(result.path("fitness").path("environment").asText()).isEqualTo("gym");
+        assertThat(result.path("trainer").path("environment").asText()).isEqualTo("gym");
+
+        var invalidDiet = diet();
+        invalidDiet.put("dietType", "invalid_diet");
+        save("diet", invalidDiet).andExpect(status().isBadRequest());
+
+        var invalidFitness = fitness();
+        invalidFitness.put("environment", "space");
+        save("fitness", invalidFitness).andExpect(status().isBadRequest());
+    }
 }

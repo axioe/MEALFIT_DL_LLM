@@ -96,7 +96,8 @@ public class ProfileDetailsService {
         ProfileDetails details = details(profile);
         profile.updateDietProfile(profile.getNickname(), request.goal(), request.cookTimeMin(),
             request.mealBudget(), normalize(request.allergies()), normalize(request.excludedIngredients()));
-        details.updateDiet(request.defaultServings(), request.prioritizeFridge(), normalize(request.preferredFoods()));
+        // [마이페이지통합] 식단 유형(dietType) 함께 저장
+        details.updateDiet(request.defaultServings(), request.prioritizeFridge(), normalize(request.preferredFoods()), request.dietType());
         return response(profile, details);
     }
 
@@ -106,7 +107,8 @@ public class ProfileDetailsService {
         Set<String> normalizedInjuries = normalize(request.injuries());
         validateWorkout(request.workoutMinutes(), request.equipment(), normalizedInjuries);
         ProfileDetails details = details(profile);
-        details.updateFitness(request.workoutGoal(), request.workoutLevel(), request.workoutMinutes(), request.daysPerWeek(), normalize(request.equipment()), normalizedInjuries);
+        // [마이페이지통합] 운동 환경(environment) 함께 저장
+        details.updateFitness(request.workoutGoal(), request.workoutLevel(), request.workoutMinutes(), request.daysPerWeek(), normalize(request.equipment()), normalizedInjuries, request.environment());
         return response(profile, details);
     }
 
@@ -122,8 +124,8 @@ public class ProfileDetailsService {
         return new ProfileDetailsResponse(
             new BodyProfileRequest(profile.getNickname(), details.getAge(), details.getHeight(), details.getCurrentWeight(), details.getTargetWeight(), details.getGender(), details.getActivityLevel()),
             new TrainerProfileRequest(details.getAge(), details.getHeight(), details.getCurrentWeight(), details.getWorkoutGoal(), details.getWorkoutLevel(), details.getEnvironment(), details.getWorkoutMinutes(), details.getDietType(), details.getEquipment(), details.getInjuries(), profile.getAllergies(), profile.getExcludedIngredients(), profile.getMealBudget()),
-            new DietProfileRequest(profile.getGoal(), profile.getCookTimeMin(), profile.getMealBudget(), profile.getAllergies(), profile.getExcludedIngredients(), details.getDefaultServings(), details.getPrioritizeFridge(), details.getPreferredFoods()),
-            new FitnessProfileRequest(details.getWorkoutGoal(), details.getWorkoutLevel(), details.getWorkoutMinutes(), details.getDaysPerWeek(), details.getEquipment(), details.getInjuries()),
+            new DietProfileRequest(profile.getGoal(), profile.getCookTimeMin(), profile.getMealBudget(), profile.getAllergies(), profile.getExcludedIngredients(), details.getDefaultServings(), details.getPrioritizeFridge(), details.getPreferredFoods(), details.getDietType()),
+            new FitnessProfileRequest(details.getWorkoutGoal(), details.getWorkoutLevel(), details.getWorkoutMinutes(), details.getDaysPerWeek(), details.getEquipment(), details.getInjuries(), details.getEnvironment()),
             new TestsProfileRequest(details.getRestingHeartRate(), details.getPushups(), details.getSquat30s(), details.getPlankSeconds())
         );
     }

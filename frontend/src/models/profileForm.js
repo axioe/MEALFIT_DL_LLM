@@ -26,9 +26,11 @@ export function createProfileForm({ body, trainer, diet, fitness, tests }) {
     cookTime: diet.cookTimeMin ?? "",
     defaultServings: diet.defaultServings ?? "",
     budgetPerMeal: diet.mealBudget ?? "",
+    dietType: diet.dietType ?? trainer.dietType ?? "",
     prioritizeFridge: diet.prioritizeFridge ?? false,
     fitnessGoal: fitness.workoutGoal ?? "",
     experience: fitness.workoutLevel ?? "",
+    environment: fitness.environment ?? trainer.environment ?? "",
     equipment: fitness.equipment,
     daysPerWeek: fitness.daysPerWeek ?? "",
     durationMinutes: fitness.workoutMinutes ?? "",
@@ -74,11 +76,15 @@ export function buildProfileSectionBody(section, form, savedAllergies) {
     allergies: savedAllergies, excludedIngredients: items(form.dislikedFoodsText),
     preferredFoods: items(form.preferredFoodsText), defaultServings: n(form.defaultServings),
     prioritizeFridge: form.prioritizeFridge,
+    // [마이페이지통합] 식단 유형을 식단 설정 카드에서 함께 저장
+    dietType: optional(form.dietType),
   }
   if (section === 'fitness') return {
     workoutGoal: optional(form.fitnessGoal), workoutLevel: optional(form.experience),
     equipment: form.equipment, daysPerWeek: n(form.daysPerWeek),
     workoutMinutes: n(form.durationMinutes), injuries: form.fitnessInjuries,
+    // [마이페이지통합] 운동 환경을 신체·운동 설정 카드에서 함께 저장
+    environment: optional(form.environment),
   }
   if (section === 'tests') return {
     restingHeartRate: n(form.restingHeartRate), pushups: n(form.pushups),

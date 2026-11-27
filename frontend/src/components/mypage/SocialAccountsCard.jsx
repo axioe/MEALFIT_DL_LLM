@@ -86,7 +86,7 @@ export function SocialAccountsCard({ disabled = false }) {
   const isBusy = disabled || prepareLink.isPending || unlink.isPending
 
   return (
-    <div className="mt-6 bg-white rounded-2xl p-6 border border-gray-200 shadow-xs max-w-2xl space-y-4">
+    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-xs w-full space-y-4">
       <div className="flex items-center gap-2">
         <Link2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
         <h4 className="font-bold text-sm text-gray-900">소셜 계정 연동</h4>
