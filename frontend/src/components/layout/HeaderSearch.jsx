@@ -30,31 +30,36 @@ function SearchHit({ result }) {
     : <Link to={result.to} state={result.state} className="mf-search-hit">{contents}</Link>
 }
 
-function SearchGroup({ term, group, page, guest }) {
+function SearchGroup({ term, group, page, guest, localEntries = [] }) {
   const { results, total, hasMore, loading, error, loadMore } = useMoreSearchResults(term, group, page, guest)
-  return <section className="mf-search-group" aria-label={group.label}>
-    <h3>{group.label} <span>{total.toLocaleString()}건</span></h3>
+  const [extraLocal, setExtraLocal] = useState(0)
+  const localLimit = Math.max(0, SEARCH_LIMIT - results.length) + extraLocal
+  const guestExercises = guest && group.type === SEARCH_TYPE.EXERCISE
+  const label = guestExercises ? '운동' : group.label
+  return <section className="mf-search-group" aria-label={label}>
+    <h3>{label} <span>{(total + localEntries.length).toLocaleString()}건</span></h3>
     <ul>
       {results.map(result => {
-        let hit = result
-        if (guest && group.type === SEARCH_TYPE.EXERCISE) hit = exercisePreview(result.title, result.details)
+        const hit = guestExercises ? exercisePreview(result.title, result.details) : result
         return <li key={result.id}><SearchHit result={hit} /></li>
       })}
+      {localEntries.slice(0, localLimit).map(result => <li key={result.id}><SearchHit result={result} /></li>)}
     </ul>
     {error && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(error, '추가 결과를 불러오지 못했어요.')}</p>}
-    {hasMore && <button className="mf-search-more" type="button" onClick={loadMore} disabled={loading}>
-      {group.label} {loading ? '불러오는 중…' : error ? '다시 불러오기' : '더보기'}<ChevronDown size={14} aria-hidden="true" />
+    {(hasMore || localEntries.length > localLimit) && <button className="mf-search-more" type="button" disabled={loading}
+      onClick={hasMore ? loadMore : () => setExtraLocal(count => count + SEARCH_LIMIT)}>
+      {label} {loading ? '불러오는 중…' : error ? '다시 불러오기' : '더보기'}<ChevronDown size={14} aria-hidden="true" />
     </button>}
   </section>
 }
 
-function GuestEntries({ entries }) {
+function GuestFeatures({ entries }) {
   const [limit, setLimit] = useState(SEARCH_LIMIT)
-  return <section className="mf-search-group" aria-label="서비스 기능과 공개 예시">
-    <h3>서비스 기능과 공개 예시 <span>{entries.length.toLocaleString()}건</span></h3>
+  return <section className="mf-search-group" aria-label="서비스 기능">
+    <h3>서비스 기능 <span>{entries.length.toLocaleString()}건</span></h3>
     <ul>{entries.slice(0, limit).map(result => <li key={result.id}><SearchHit result={result} /></li>)}</ul>
     {entries.length > limit && <button type="button" className="mf-search-more" onClick={() => setLimit(limit + SEARCH_LIMIT)}>
-      기능과 예시 더보기<ChevronDown size={14} aria-hidden="true" />
+      서비스 기능 더보기<ChevronDown size={14} aria-hidden="true" />
     </button>}
   </section>
 }
@@ -85,16 +90,19 @@ function MatchedSearchResults({ term, guest, recipeTerm }) {
   const keyword = recipeTerm ?? term
   const query = useWebSearch(keyword, guest)
   const recipesOnly = guest && (recipeTerm !== null || query.data?.recipes?.total > 0)
-  const entries = guest && !query.isPending && !recipesOnly ? searchGuestEntries(query.data?.terms ?? [term]) : []
-  const groups = SEARCH_GROUPS.filter(group => (!recipesOnly || group.type === SEARCH_TYPE.RECIPE) && query.data?.[group.field]?.total > 0)
-  const total = groups.reduce((sum, group) => sum + query.data[group.field].total, entries.length)
+  const { exercises, features } = guest && !query.isPending && !recipesOnly
+    ? searchGuestEntries(query.data?.terms ?? [term]) : { exercises: [], features: [] }
+  const groups = SEARCH_GROUPS.filter(group => (group.type === SEARCH_TYPE.EXERCISE && exercises.length > 0)
+    || ((!recipesOnly || group.type === SEARCH_TYPE.RECIPE) && query.data?.[group.field]?.total > 0))
+  const total = groups.reduce((sum, group) => sum + (query.data?.[group.field]?.total ?? 0), exercises.length + features.length)
   return <>
-    {(query.isSuccess || entries.length > 0) && <div className="mf-search-summary" role="status">
+    {(query.isSuccess || total > 0) && <div className="mf-search-summary" role="status">
       <h2>검색 결과 <span>{total.toLocaleString()}건</span></h2>
       {query.data?.terms?.length > 1 && <p>{query.data.terms.join('·')}로 찾았어요.</p>}
     </div>}
-    {entries.length > 0 && <GuestEntries entries={entries} />}
-    {groups.map(group => <SearchGroup key={group.type} term={keyword} group={group} page={query.data[group.field]} guest={guest} />)}
+    {features.length > 0 && <GuestFeatures entries={features} />}
+    {groups.map(group => <SearchGroup key={group.type} term={keyword} group={group} guest={guest}
+      page={query.data?.[group.field] ?? { total: 0, items: [] }} localEntries={group.type === SEARCH_TYPE.EXERCISE ? exercises : undefined} />)}
     <SearchFeedback query={query} />
     {query.isSuccess && total === 0 && <p className="mf-search-message">‘{term}’에 해당하는 결과가 없어요. 다른 검색어를 입력해 보세요.</p>}
   </>

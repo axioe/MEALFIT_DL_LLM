@@ -10,16 +10,31 @@ test('게스트 식단·요리 검색은 카탈로그를 사용하고 기능명�
   assert.equal(guestRecipeQuery('달걀 레시피'), '달걀')
   assert.equal(guestRecipeQuery('두부요리'), '두부')
   for (const term of ['스쿼트', '장보기', '식단 조건 설정', '내 식단']) assert.equal(guestRecipeQuery(term), null)
-  assert.ok(searchGuestEntries(['개인 맞춤 식단 추천']).some(item => item.memberOnly))
-  assert.ok(searchGuestEntries(['내  냉장고']).some(item => item.to === '/fridge' && item.memberOnly))
-  assert.deepEqual(searchGuestEntries(['   ']), [])
+  assert.ok(searchGuestEntries(['개인 맞춤 식단 추천']).features.some(item => item.memberOnly))
+  assert.ok(searchGuestEntries(['내  냉장고']).features.some(item => item.to === '/fridge' && item.memberOnly))
+  assert.deepEqual(searchGuestEntries(['   ']), { exercises: [], features: [] })
 })
 
-test('달걀·계란과 요리 이름으로 정적 식단 예시를 반환하지 않고 운동 예시는 유지한다', () => {
-  assert.deepEqual(searchGuestEntries(['계란', '달걀']), [])
-  assert.deepEqual(searchGuestEntries(['두부 달걀 덮밥']), [])
-  const plank = searchGuestEntries(['플랭크']).find(item => item.state?.area === 'core')
+test('달걀·계란과 요리 이름은 공개 레시피 검색에 맡긴다', () => {
+  assert.deepEqual(searchGuestEntries(['계란', '달걀']), { exercises: [], features: [] })
+  assert.deepEqual(searchGuestEntries(['두부 달걀 덮밥']), { exercises: [], features: [] })
+})
+
+test('비로그인 하체 검색은 운동 그룹에 부위별 동작과 상세 정보를 제공한다', () => {
+  const { exercises, features } = searchGuestEntries(['하체'])
+  assert.deepEqual(features, [])
+  assert.ok(exercises.length > 5)
+  assert.ok(exercises.every(item => item.state.area === 'lower' && item.details[0] === '하체 운동'))
+  const stairs = exercises.find(item => item.title === '계단 두 칸씩 두발 뛰기')
+  assert.deepEqual(stairs.state.exercisePreview.details, stairs.details)
+  assert.deepEqual(searchGuestEntries(['하체 운동 예시']).exercises, exercises)
+})
+
+test('코어 동작은 공개 상세로 연결하고 내 운동 루틴은 회원 전용으로 표시한다', () => {
+  const plank = searchGuestEntries(['플랭크']).exercises.find(item => item.state?.area === 'core')
   assert.equal(plank.state.exercisePreview.title, '플랭크')
+  assert.deepEqual(plank.details, ['코어 운동'])
+  assert.ok(searchGuestEntries(['내 운동 루틴']).exercises.some(item => item.memberOnly))
   const catalog = exercisePreview('스쿼트', ['하체', '맨몸', null])
   assert.equal(catalog.to, '/workout')
   assert.deepEqual(catalog.state.exercisePreview.details, ['하체', '맨몸'])
