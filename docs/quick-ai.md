@@ -1,6 +1,6 @@
 # 15분 AI 요리 연동 실행 안내
 
-브라우저 → Spring `POST /api/v1/quick-recipes/recommend` → Flask `POST /ai/quick-recipes` → Gemini 흐름입니다.
+브라우저 → Spring `POST /api/v1/quick-recipes/recommend` → Flask `POST /ai/quick-recipes` → 자체 LLM(Ollama, gemma4:e2b) 흐름입니다. 외부 AI API는 쓰지 않습니다.
 추천은 DB에 저장하거나 재고를 변경하지 않습니다. 조리 전 미리보기·완료·취소는 기존 Spring API를 사용합니다.
 
 ## 실행
@@ -65,5 +65,5 @@ AI 응답 인분을 그대로 사용하며 Flask는 요청 인분 환산 계약�
 ## 팀 협의 사항
 
 - 기존 AI 서비스는 8000 포트의 `/ai/meal-plans`도 예정되어 있습니다. 하나의 AI_SERVICE_URL을 공유하므로 향후 하루 식단 AI API와 15분 Flask를 같은 서비스로 운영할지, 별도 주소 설정을 둘지 협의해야 합니다. 기존 호출 코드는 수정하지 않았습니다.
-- 실제 Gemini 요청 지연·할당량에 따라 추천이 실패할 수 있습니다. 오류 후 사용자가 다시 요청합니다.
+- CPU에서 LLM 생성이 느려(2개 약 50–85초) 기본 제한(18초)을 넘으면 504로 실패합니다. 시연 때는 `LLM_TIMEOUT_SECONDS`·`AI_READ_TIMEOUT`을 늘립니다. 운영 EC2는 `LLM_BASE_URL`이 비어 있어 503입니다.
 - 레시피는 임시 추천이며 새로고침 시 목록부터 다시 요청합니다. 조리 이벤트 조회 부재 등 18차 제한은 유지됩니다.

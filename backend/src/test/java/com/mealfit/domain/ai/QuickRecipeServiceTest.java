@@ -109,7 +109,7 @@ class QuickRecipeServiceTest {
                 .hasMessageNotContaining("private-url");
     }
     @Test @EnabledIfEnvironmentVariable(named = "MEALFIT_LIVE_AI_URL", matches = ".+")
-    void liveFlaskGeminiRecommendationWithoutDatabaseWrites() {
+    void liveFlaskLlmRecommendationWithoutDatabaseWrites() {
         var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules()
                 .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         RestClient client = RestClient.builder().baseUrl(System.getenv("MEALFIT_LIVE_AI_URL"))
@@ -121,6 +121,6 @@ class QuickRecipeServiceTest {
         var result = service(client).recommend(7L, new QuickRecipeModels.Request(List.of(1L), 15, 3));
         assertThat(result.source()).isEqualTo("AI_GENERATED");
         assertThat(result.recipes()).hasSize(3);
-        System.out.println("LIVE_FLASK_GEMINI_SUCCESS recipes=" + result.recipes().size());
+        System.out.println("LIVE_FLASK_LLM_SUCCESS recipes=" + result.recipes().size());
     }
 }

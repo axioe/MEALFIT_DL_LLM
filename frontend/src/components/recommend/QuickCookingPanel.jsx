@@ -85,7 +85,7 @@ export function QuickCookingPanel() {
     </section>
     <section className="card space-y-4" aria-label="15분 요리 요청">
       <div><p className="text-xs font-bold text-emerald-600">RECIPE MATCH</p><h3 className="mt-1 font-extrabold">추천 기준 및 재료 확인</h3><p className="mt-1 text-xs leading-5 text-gray-500">15분 이내 · 활성 재고 사용 · 기한 경과 제외 · 다른 단위 임의 환산 없음</p></div>
-      <p className="rounded-xl bg-violet-50 p-3 text-xs leading-6 text-violet-900">Gemini AI가 현재 냉장고 재고로 추천해요. 추천만으로 재고는 바뀌지 않으며, 실제 사용량은 조리 전 서버 미리보기에서 다시 확인해요.</p>
+      <p className="rounded-xl bg-violet-50 p-3 text-xs leading-6 text-violet-900">MealFit 자체 AI가 현재 냉장고 재고로 추천해요. 추천만으로 재고는 바뀌지 않으며, 실제 사용량은 조리 전 서버 미리보기에서 다시 확인해요.</p>
       <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">선택한 재료 {chosen.length}개</h3><button type="button" disabled={!chosen.length || busy} onClick={() => setSelected([])} className="btn-secondary min-h-11">선택 해제</button></div>
       <div className="flex flex-wrap gap-2">{chosen.map((item) => <span key={item.key} className="max-w-full break-all rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{item.ingredientName} {item.quantity}{item.unit}</span>)}</div>
       <label className="block max-w-xs"><span className="label">최대 조리 시간 (분)</span><input type="number" min="1" max="15" step="1" value={maxCookTimeMin} disabled={busy} onChange={(event) => setMaxCookTimeMin(event.target.value)} className="input min-h-11" /></label>

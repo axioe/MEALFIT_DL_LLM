@@ -12,5 +12,5 @@ def recommend():
     """15분 요리 추천: 선택 재료로 레시피 초안을 만든다 (Spring이 최종 검증)."""
     config = current_app.config
     validated = validate_request(read_json_body(), config['TODAY']())
-    raw = config['GENERATOR'](validated, config['GEMINI_API_KEY'], config['GEMINI_MODEL'])
+    raw = config['GENERATOR'](validated, config['LLM_BASE_URL'], config['LLM_MODEL'])
     return jsonify(validate_response(raw, validated))

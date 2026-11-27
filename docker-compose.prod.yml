@@ -59,15 +59,16 @@ services:
       - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
       - ${ACME_WEBROOT:-/var/www/certbot}:/var/www/certbot:ro
 
-  # Flask + Gemini. backend가 AI_SERVICE_URL(http://ai-service:8000)로만 부르고 외부에는 열지 않는다.
-  # GEMINI_API_KEY가 없어도 배포는 멈추지 않는다 → AI가 503을 주고 backend는 검증된 로컬 대체 식단을 쓴다
+  # Flask + 자체 LLM(Ollama, D14). backend가 AI_SERVICE_URL(http://ai-service:8000)로만 부르고 외부에는 열지 않는다.
+  # 운영 EC2(CPU)는 LLM을 돌리지 않는다 → LLM_BASE_URL이 비어 있으면 AI가 503을 주고 backend는 검수 레시피로 대체한다
   ai-service:
     build: ./ai-service
     container_name: mealfit-ai
     restart: always
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-gemma4:e2b}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-18}
       HOST: 0.0.0.0
       PORT: 8000
       TZ: Asia/Seoul

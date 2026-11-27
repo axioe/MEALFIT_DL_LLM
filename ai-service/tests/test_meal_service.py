@@ -33,7 +33,7 @@ class MealServiceTest(unittest.TestCase):
             self.received.append(body)
             return json.dumps(self.result, ensure_ascii=False)
 
-        self.app = create_app({'TESTING': True, 'GEMINI_API_KEY': '', 'MEAL_GENERATOR': generator,
+        self.app = create_app({'TESTING': True, 'LLM_BASE_URL': '', 'MEAL_GENERATOR': generator,
                                'TODAY': lambda: date(2026, 10, 22)})
         self.client = self.app.test_client()
 
@@ -136,7 +136,7 @@ class MealServiceTest(unittest.TestCase):
         self.assertEqual(response.status_code, 504)
         self.assertEqual(response.json['code'], 'AI_005')
 
-    def test_daily_generator_reuses_sdk_with_distinct_schema(self):
+    def test_daily_generator_reuses_llm_client_with_distinct_schema(self):
         with patch('mealfit_ai.services.meal_plan_service.generate', return_value='[]') as generate:
             self.assertEqual(generate_meals(self.body, '', 'model'), '[]')
             self.assertEqual(generate.call_args.kwargs['system_prompt'], SYSTEM_PROMPT)
