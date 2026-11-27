@@ -2,7 +2,9 @@ import React, { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertCircle, CheckCircle2, Mail, Zap } from 'lucide-react'
 import { BrandLogo } from '@/components/common/BrandLogo'
+import { SocialAuthOptions } from '@/components/common/SocialAuthOptions'
 import { useResendEmailVerification, useSignup } from '@/hooks/useAuth'
+import { useLoginNavigation } from '@/hooks/useLoginNavigation'
 import { getErrorMessage } from '@/api/client'
 import { buildSignupBody, validateSignupForm } from '@/models/authForm'
 
@@ -19,6 +21,7 @@ export function SignupPage() {
   const [resendNotice, setResendNotice] = useState('')
   const submitLock = useRef(false)
   const signup = useSignup()
+  const { startSocialLogin } = useLoginNavigation()
   const resend = useResendEmailVerification()
   const isSubmitting = signup.isPending
   const error = formError || (
@@ -122,9 +125,11 @@ export function SignupPage() {
             MealFit 회원가입
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            계정 정보를 입력하고 밀핏을 시작하세요.
+            소셜 계정이나 이메일로 밀핏을 시작하세요.
           </p>
         </div>
+
+        <SocialAuthOptions onContinue={startSocialLogin} emailLabel="또는 이메일로 가입하기" disabled={isSubmitting} />
 
         {error && (
           <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
