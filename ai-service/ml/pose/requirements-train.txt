@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+# 자세 판별 좌표 추출·학습 (raw_extract_par.py, train_pose.py, pick_best.py, final_fit.py, merge_choi.py, camera_ranges.py)
+# Python 3.12. 냉장고 모델 학습(ml/requirements-train.txt)과 버전이 겹쳐 따로 둔다. 같은 환경에 함께 설치하지 않는다.
+# 2026-11-19 최종 모델을 학습한 환경의 버전이다.
+tensorflow==2.21.0
+keras==3.15.1
+mediapipe==1.2.2
+opencv-contrib-python==5.0.0.93
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+pandas==2.3.3
+joblib==1.6.0
