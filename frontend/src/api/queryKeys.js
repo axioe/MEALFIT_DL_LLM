@@ -4,6 +4,10 @@
  * 예) 조리 완료 → inventory, mealPlans, dashboard 무효화
  */
 export const queryKeys = {
+  search: {
+    all: (userId, q) => ['search', userId, q, 'all'],
+    more: (userId, q, type) => ['search', userId, q, type],
+  },
   auth: {
     // 회원 간 인증 조회 캐시를 분리합니다.
     me: (userId) => ['auth', 'me', userId ?? null],
