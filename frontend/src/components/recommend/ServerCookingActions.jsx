@@ -11,7 +11,9 @@ export function ServerCookingActions({ mode, body, inputError, inventory, blocke
   const intent = useRef(createCookingIntent())
   const eventRequest = useRef(null)
   const submit = useRef(createCookingSubmission())
-  const [requested, setRequested] = useState(null)
+  const signature = JSON.stringify(body)
+  const snapshot = JSON.stringify([signature, inventory.dataUpdatedAt])
+  const [requested, setRequested] = useState(() => body && inventory.data && !inventory.isFetching ? snapshot : null)
   const [event, setEvent] = useState(null)
   const [confirmation, setConfirmation] = useState(null)
   const [error, setError] = useState('')
@@ -21,9 +23,7 @@ export function ServerCookingActions({ mode, body, inputError, inventory, blocke
     try { return loadPendingCooking(sessionStorage, userId) }
     catch { return { invalid: true } }
   })
-  const signature = JSON.stringify(body)
   const ready = Boolean(body) && !inputError && !blockedReason && !inventory.isFetching && !inventory.isError && Boolean(inventory.data)
-  const snapshot = JSON.stringify([signature, inventory.dataUpdatedAt])
   const preview = useActualUsagePreview({ mode, body, snapshot,
     enabled: ready && requested === snapshot && !event && !pending && !uncertain })
   const mutation = useActualCookingAction({ mode, date })
@@ -66,7 +66,7 @@ export function ServerCookingActions({ mode, body, inputError, inventory, blocke
   return <div className="space-y-4">
     {inputError && !event && <p role="alert" className="text-sm leading-6 text-amber-900">{inputError}</p>}
     {blockedReason && !event && <p className="text-sm leading-6 text-amber-900">{blockedReason}</p>}
-    {!event && !pending && !uncertain && <button type="button" disabled={!ready || mutation.isPending || preview.isFetching} onClick={() => { setRequested(snapshot); setConfirmation(null); setError(''); if (requested === snapshot) preview.refetch({ cancelRefetch: false }) }} className="btn-primary min-h-11">{preview.isFetching ? '재료 확인 중…' : '요리 전 재료 확인'}</button>}
+    {!visible && !event && !pending && !uncertain && <button type="button" disabled={!ready || mutation.isPending || preview.isFetching} onClick={() => { setRequested(snapshot); setConfirmation(null); setError(''); if (requested === snapshot) preview.refetch({ cancelRefetch: false }) }} className="btn-primary min-h-11">{preview.isFetching ? '재료 확인 중…' : '요리 전 재료 확인'}</button>}
     {requested && requested !== snapshot && !event && !pending && <p role="status" className="text-sm text-amber-900">재료나 재고가 바뀌었어요. 요리 전 재료를 다시 확인해 주세요.</p>}
     {preview.isFetching && <p role="status" className="text-sm text-gray-500">서버에서 실제 사용량과 냉장고 재고를 확인하고 있어요.</p>}
     {preview.isError && requested === snapshot && <p role="alert" className="text-sm text-rose-700">{cookingErrorMessage(preview.error)}</p>}

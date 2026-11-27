@@ -1,3 +1,4 @@
+import { nutritionForServings } from '@/models/menuDiscovery'
 import { useRecipe } from '@/hooks/useRecipes'
 import { RecipeAllergenCheck } from '@/components/recommend/RecipeAllergenCheck'
 import { formatQuantity } from '@/lib/format'
@@ -22,14 +23,15 @@ export function DailyMealInfo({ plan }) {
   const query = useRecipe(plan.recipe.id, plan.servings, validRecipeId(plan.recipe.id) && validRecipeServings(plan.servings))
   const recipe = !query.isError ? query.data : null
   const summary = recipe ?? plan.recipe
+  const nutrient = (field) => recipe ? nutritionForServings(recipe[field], recipe.servingSize, recipe.servings) : null
   return <div className="space-y-3">
     {recipe?.description && <p className="break-words text-xs leading-6 text-gray-500">{recipe.description}</p>}
     <dl className="grid grid-cols-2 gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs">{[
       ['조리 시간', summary.cookTimeMin == null ? null : summary.cookTimeMin + '분'],
-      ['열량', summary.calories == null ? null : summary.calories + ' kcal'],
-      ['단백질', summary.proteinG == null ? null : summary.proteinG + 'g'],
+      ['열량', nutrient('calories') == null ? null : nutrient('calories') + ' kcal'],
+      ['단백질', nutrient('proteinG') == null ? null : nutrient('proteinG') + 'g'],
       ['인분', plan.servings + '인분'],
     ].filter(([,value]) => value != null).map(([label,value]) => <div key={label}><dt className="text-emerald-700">{label}</dt><dd className="mt-1 break-all font-extrabold text-emerald-950">{value}</dd></div>)}</dl>
-    <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">{summary.carbsG != null && <span>탄수화물 {summary.carbsG}g</span>}{summary.fatG != null && <span>지방 {summary.fatG}g</span>}<span>영양 정보는 저장된 레시피 기준{summary.nutritionEstimated ? ' · 추정치' : ''}</span></p>
+    <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">{nutrient('carbsG') != null && <span>탄수화물 {nutrient('carbsG')}g</span>}{nutrient('fatG') != null && <span>지방 {nutrient('fatG')}g</span>}<span>영양 정보는 {plan.servings}인분 기준{summary.nutritionEstimated ? ' · 추정치' : ''}</span></p>
   </div>
 }

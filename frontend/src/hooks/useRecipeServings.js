@@ -23,16 +23,17 @@ export function useRecipeServings({ recipeId, initialServings, onServingsChange,
     if (!recipe.isFetching) requestLock.current = false
   }, [recipe.isFetching])
 
-  function applyServings(event) {
+  function applyServings(event, value = servingInput) {
     event.preventDefault()
     if (requestLock.current || recipe.isFetching || cookingBusy) return
-    if (!validRecipeServings(servingInput)) {
+    if (!validRecipeServings(value)) {
       setFormError('인분은 1 이상 2,147,483,647 이하의 정수로 입력해 주세요.')
       return
     }
     requestLock.current = true
     setFormError('')
-    const next = Number(servingInput)
+    const next = Number(value)
+    setServingInput(String(next))
     if (next === requestedServings) recipe.refetch({ cancelRefetch: false })
     else setRequestedServings(next)
     onServingsChange(next)

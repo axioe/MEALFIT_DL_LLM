@@ -1,3 +1,5 @@
+import { RecipeSteps } from '@/components/recommend/RecipeSteps'
+import { nutritionForServings } from '@/models/menuDiscovery'
 import { CookingPanel } from "@/components/recommend/CookingPanel";
 import { RecipeAllergenCheck } from "@/components/recommend/RecipeAllergenCheck";
 import { useState } from "react";
@@ -82,9 +84,9 @@ function RecipeContent({
                 <RecipeSourceBadge source={data.source} />
               )}
             </div>
-            <h2 className="break-all text-2xl font-extrabold text-gray-900">
+            <h1 className="mf-title">
               {data.name}
-            </h2>
+            </h1>
             {data.description && (
               <p className="whitespace-pre-wrap break-all text-sm leading-7 text-gray-600">
                 {data.description}
@@ -104,7 +106,8 @@ function RecipeContent({
               noValidate
               className="flex flex-wrap items-end gap-3 border-t border-gray-100 pt-4"
             >
-              <div className="min-w-0 flex-1">
+              <div className="flex gap-2">{[1, 2].map(n => <button key={n} type="button" className="mf-chip" aria-pressed={data.servings === n} disabled={recipe.isFetching || cookingBusy} onClick={e => applyServings(e, n)}>{n}인분</button>)}</div>
+              <div className="min-w-0 max-w-40 flex-1">
                 <label htmlFor="recipe-servings" className="label">
                   필요한 인분
                 </label>
@@ -150,43 +153,14 @@ function RecipeContent({
             </p>
           </section>
 
-          <section
-            className="card space-y-4"
-            aria-labelledby="recipe-ingredients-title"
-          >
-            <h3 id="recipe-ingredients-title" className="text-base font-bold">
-              필요한 재료 · {data.servings}인분
-            </h3>
-            {(data.ingredients ?? []).length === 0 ? (
-              <p className="text-sm text-gray-500">
-                제공된 재료 정보가 없습니다.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {data.ingredients.map((ingredient, index) => (
-                  <li
-                    key={`${ingredient.ingredientName}-${index}`}
-                    className="flex flex-wrap items-start justify-between gap-2 rounded-xl bg-gray-50 p-3 text-sm"
-                  >
-                    <span className="min-w-0 break-all font-semibold">
-                      {ingredient.ingredientName}
-                    </span>
-                    <span className="break-all">
-                      {formatQuantity(ingredient.quantity, ingredient.unit)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
+          <div className="mf-two"><div className="mf-stack">
           <section
             className="card space-y-4"
             aria-labelledby="recipe-stock-title"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 id="recipe-stock-title" className="text-base font-bold">
-                냉장고 보유 재료
+                사용할 재료 · {data.servings}인분
               </h3>
               <button
                 type="button"
@@ -202,9 +176,7 @@ function RecipeContent({
               </button>
             </div>
             <p className="text-xs leading-5 text-gray-500">
-              이름의 앞뒤 공백을 제외하고 일치하는 활성 재고를 비교합니다. 기한
-              경과·소진·폐기 재고는 제외하며, 오늘 만료·기한 미등록 재고는
-              포함합니다. kg↔g, L↔ml 이외의 단위는 임의 환산하지 않습니다.
+              필요한 양과 지금 쓸 수 있는 재료를 비교해요. 소비기한이 지난 재료는 제외돼요.
             </p>
             {inventory.isPending && (
               <p role="status" className="text-sm text-gray-500">
@@ -293,36 +265,6 @@ function RecipeContent({
           </section>
 
           <section
-            className="card space-y-4"
-            aria-labelledby="recipe-steps-title"
-          >
-            <h3 id="recipe-steps-title" className="text-base font-bold">
-              단계별 조리법
-            </h3>
-            {(data.steps ?? []).length === 0 ? (
-              <p className="text-sm text-gray-500">
-                제공된 조리 순서가 없습니다.
-              </p>
-            ) : (
-              <ol className="space-y-4">
-                {data.steps.map((step, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-3 rounded-xl bg-gray-50 p-4"
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
-                      {index + 1}
-                    </span>
-                    <p className="min-w-0 whitespace-pre-wrap break-all text-sm leading-7 text-gray-700">
-                      {step}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-
-          <section
             className="card space-y-3"
             aria-labelledby="recipe-nutrition-title"
           >
@@ -330,8 +272,7 @@ function RecipeContent({
               영양 정보{data.nutritionEstimated ? " (추정치)" : ""}
             </h3>
             <p className="text-xs leading-5 text-gray-500">
-              저장된 레시피 기준 {data.servingSize}인분의 정보입니다. 인분을
-              변경해도 API가 영양 값을 환산하지 않아 그대로 표시합니다.
+              {data.servingSize}인분 레시피를 기준으로 계산한 {data.servings}인분 전체의 영양입니다.
             </p>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -343,13 +284,25 @@ function RecipeContent({
                 <div key={label} className="min-w-0 rounded-xl bg-gray-50 p-3">
                   <dt className="text-xs text-gray-500">{label}</dt>
                   <dd className="mt-2 break-all text-sm font-bold">
-                    {value == null ? "미제공" : formatQuantity(value, unit)}
+                    {nutritionForServings(value, data.servingSize, data.servings) == null ? "미제공" : formatQuantity(nutritionForServings(value, data.servingSize, data.servings), unit)}
                   </dd>
                 </div>
               ))}
             </dl>
           </section>
 
+          </div><div className="mf-stack">
+          <section
+            className="card space-y-4"
+            aria-labelledby="recipe-steps-title"
+          >
+            <h3 id="recipe-steps-title" className="text-base font-bold">
+              단계별 조리법
+            </h3>
+            <RecipeSteps name={data.name} steps={data.steps ?? []} />
+          </section>
+
+          </div></div>
           <CookingPanel
             ingredients={data.ingredients ?? []}
             inventory={inventory}
