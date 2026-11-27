@@ -24,6 +24,7 @@
 | TS-20261124-03 | 세션 처리 작업과 최신 develop의 인증 코드 충돌 | frontend / Git | 해결 |
 | TS-20261124-04 | 로그인 후 원래 요청한 화면으로 돌아가지 않음 | frontend | 해결 |
 | TS-20261125-01 | 루틴을 다시 받으면 위험 신호 운동 차단이 풀림 | backend | 해결 |
+| TS-20261127-01 | 로그인 안내를 닫으면 누른 버튼에서 키보드 포커스가 사라짐 | frontend | 해결 |
 
 ## 양식 (복사해서 "기록" 맨 아래에 붙여 넣기)
 
@@ -120,3 +121,16 @@
 | 해결 | 재추천 시작일이 오늘이면, 오늘 날짜에 차단 표시가 남은 세션(교체된 비활성 세션 포함)이 있는지 확인하고 새로 만든 오늘 세션에 같은 차단 표시를 다시 넣는다. DB 스키마 변경 없음. backend에서 gradlew.bat test 실행 결과 372개 중 실패 0개(기존 조건부 건너뜀 10개). |
 | 재발 방지 | WorkoutSessionAdjustApiTest에 회귀 테스트 2개 추가: 오늘 차단 후 재추천(2회)·조회·일반 문장 조정에서도 startBlocked=true 유지, 미래 날짜 차단은 재추천 후 이어 가지 않음. 오늘 차단 테스트는 일요일(주 6일 루틴에 세션 없음)에는 건너뛴다. |
 | 관련 | PR #34 / MEALFIT-116 / WorkoutRoutineService.java / WorkoutSessionRepository.java / WorkoutSessionAdjustApiTest.java / feature/workout-keep-emergency-block |
+
+### TS-20261127-01 로그인 안내를 닫으면 누른 버튼에서 키보드 포커스가 사라짐
+
+| 항목 | 내용 |
+|---|---|
+| 작성일 / 작성자 | 2026-11-27 / Codex |
+| 영역 / 상태 | frontend / 해결 |
+| 증상 | 비로그인 홈에서 ‘첫 재료 등록하기’로 모달을 연 뒤 Esc를 누르면 키보드 포커스가 문서 본문으로 이동했다. |
+| 발생 상황 | 로컬 H2와 Chrome에서 회원 전용 기능 안내 모달의 열기·닫기를 검증하던 중 발견했다. |
+| 원인 | 닫기 시 React가 열린 dialog를 먼저 제거하고, effect 정리 단계에서 close()를 호출했다. |
+| 해결 | ‘계속 둘러보기’와 Esc에서 dialog.close()를 호출한 후 모달을 제거한다. |
+| 재발 방지 | 데스크톱 1440px·모바일 390px에서 Esc를 누른 뒤 document.activeElement가 ‘첫 재료 등록하기’인지 확인했다. |
+| 관련 | frontend/src/components/common/LoginPromptDialog.jsx |

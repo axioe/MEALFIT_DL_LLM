@@ -1,11 +1,23 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { useSessionRecovery } from '@/hooks/useSessionRecovery'
 import { Spinner } from '@/components/common/Spinner'
+import { guestScreenForPath } from '@/models/guestAccess'
+
+const GuestPage = lazy(() => import('@/pages/GuestPage').then(module => ({ default: module.GuestPage })))
 
 /** 세션 복구 상태에 따라 보호 화면·재시도 안내·로그인 화면을 표시합니다. */
 export function RequireAuth() {
   const location = useLocation()
   const session = useSessionRecovery()
+  const guestScreen = guestScreenForPath(location.pathname)
+
+  if (guestScreen && ['restoring', 'anonymous', 'restore-error'].includes(session.status)) {
+    return <Suspense fallback={<div role="status" className="p-4">화면을 불러오는 중…</div>}>
+      <GuestPage key={location.key} screen={guestScreen}
+        onRetrySession={session.status === 'restore-error' ? session.retry : undefined} />
+    </Suspense>
+  }
 
   if (session.status === 'restore-error' || session.status === 'user-error') {
     return (

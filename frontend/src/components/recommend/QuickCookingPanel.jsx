@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { MemberLink } from '@/components/common/MemberLink'
 import { Check, Plus, RefreshCw } from 'lucide-react'
 import { getErrorMessage } from '@/api/client'
 import { useInventory } from '@/hooks/useInventory'
@@ -39,7 +40,7 @@ export function MenuBrowser({ items, date, selected, onSelect, recipes = [], loa
       </div>
       <p className="text-sm text-gray-600">선택한 재료를 모두 쓰는 메뉴를 찾아요.</p>
       {chosen.length > 0 && <button type="button" className="mf-text-link" onClick={() => onSelect([])}>재료 선택 해제</button>}
-      <Link className="mf-text-link" to={example ? '/fridge?add=1' : '/fridge'}>{example ? '내 재료 등록하기' : '내 냉장고 보기'}</Link>
+      <MemberLink className="mf-text-link" feature={example ? '재료 등록' : '내 냉장고'} to={example ? '/fridge?add=1' : '/fridge'}>{example ? '내 재료 등록하기' : '내 냉장고 보기'}</MemberLink>
       {extra}
     </aside>
     <section className="mf-stack" aria-label="검색 결과">
@@ -49,7 +50,7 @@ export function MenuBrowser({ items, date, selected, onSelect, recipes = [], loa
         matches.length ? <QuickRecipeResults recipes={matches} onRecipe={onRecipe} /> :
           <div className="card mf-stack"><h3 className="font-bold">{items.length ? '조건에 맞는 메뉴가 없어요' : '냉장고에 쓸 수 있는 재료가 없어요'}</h3>
             {readyOnly ? <button className="btn-secondary justify-self-start" onClick={() => setReadyOnly(false)}>부족한 재료가 있는 메뉴도 보기</button> :
-               chosen.length ? <button className="btn-secondary justify-self-start" onClick={() => onSelect([])}>재료 선택 해제하고 보기</button> : <Link to="/fridge?add=1" className="btn-secondary justify-self-start">재료 등록하기</Link>}
+               chosen.length ? <button className="btn-secondary justify-self-start" onClick={() => onSelect([])}>재료 선택 해제하고 보기</button> : <MemberLink to="/fridge?add=1" feature="재료 등록" className="btn-secondary justify-self-start">재료 등록하기</MemberLink>}
           </div>}
     </section>
   </div>

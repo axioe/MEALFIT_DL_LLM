@@ -177,14 +177,14 @@
       border-color: #D6E5CC99;
     }
   }
-  .mf-hero-fridge a:focus-visible { outline-color: #D6E5CC; }
+  .mf-hero-fridge :is(a, button):focus-visible { outline-color: #D6E5CC; }
   .mf-hero-art { width: min(34%, 252px); @apply shrink-0 object-contain; }
 
   .mf-bottom {
     @apply fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-gray-200 bg-white/95 px-2 pt-1 shadow-lg backdrop-blur-md md:hidden;
     padding-bottom: max(.25rem, env(safe-area-inset-bottom));
   }
-  .mf-bottom a {
+  .mf-bottom :is(a, button) {
     @apply flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] leading-tight font-medium text-gray-500 transition-colors hover:text-gray-900;
   }
   .mf-bottom [aria-current] { @apply font-bold text-emerald-600; }
