@@ -14,6 +14,16 @@ export const MEAL_TYPE_LABEL = {
   DINNER: '저녁',
 }
 
+export const EXERCISE_FOCUS_LABEL = {
+  UPPER_PUSH: '상체 밀기', UPPER_PULL: '상체 당기기', LOWER: '하체', CORE: '코어',
+  FULL: '전신', CARDIO: '유산소', MOBILITY: '가동성',
+}
+
+export const EXERCISE_EQUIPMENT_LABEL = {
+  BODYWEIGHT: '맨몸', MAT: '매트', DUMBBELL: '덤벨', BAND: '밴드',
+  PULLUP_BAR: '철봉', FOAM_ROLLER: '폼롤러', KETTLEBELL: '케틀벨', BARBELL: '바벨',
+}
+
 export const MEAL_PLAN_STATUS_LABEL = {
   DRAFT: '추천 초안',
   CONFIRMED: '식단 확정',
