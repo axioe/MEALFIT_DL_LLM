@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  --color-forest: #195940;
+  --color-sage: #D6E5CC;
+  --color-sage-light: #E8F1E2;
   --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
@@ -103,7 +106,6 @@
 
   .mf-crumb a { @apply text-emerald-700 hover:underline; }
   .mf-crumb [aria-hidden] { @apply text-gray-300; }
-  .mf-bar time { @apply shrink-0 text-xs text-gray-500; }
 
   .mf-main {
     @apply mx-auto w-full min-w-0 max-w-6xl wrap-anywhere p-4 outline-none md:p-8;
@@ -142,43 +144,43 @@
   .mf-status.warn { @apply border-amber-200 bg-amber-50 text-amber-800; }
 
   .mf-hero {
-    @apply flex min-h-56 items-center justify-between gap-4 border-transparent text-white;
+    @apply flex min-h-56 items-center justify-between gap-4 border-transparent bg-forest text-white;
   }
   .mf-hero .mf-title, .mf-hero .mf-copy {
     @apply text-white;
   }
-  .mf-hero-dinner { background-color: #3ccb7c; }
-  .mf-hero-dinner .mf-title, .mf-hero-dinner .mf-copy {
-    text-shadow: 0 0 2px #064e3b, 0 1px 2px #064e3b;
-  }
   .mf-hero .mf-status { @apply border-transparent bg-[#176443] text-white; }
-  .mf-hero-dinner .btn-primary { @apply bg-[#064e3b] text-white hover:bg-[#043d2e]; }
-  .mf-hero-dinner .btn-secondary { @apply border-transparent bg-[#166478] text-white hover:bg-[#104d5d]; }
-  .mf-hero :is(a, button):focus-visible { @apply outline-emerald-950; }
-  .mf-hero-fridge { background-color: #195940; }
-  .mf-hero-fridge .btn-primary {
-    background-color: #D6E5CC;
-    color: #195940;
-    font-weight: 700;
+  .mf-hero .btn-primary {
+    @apply bg-sage text-forest;
   }
-  .mf-hero-fridge .btn-secondary {
+  .mf-hero .btn-secondary {
     background-color: #D6E5CC38;
     border-color: transparent;
     color: #F4FAF2;
-    font-weight: 500;
   }
+  .mf-hero-fridge .btn-secondary { font-weight: 500; }
   @media (hover: hover) {
-    .mf-hero-fridge .btn-primary:hover {
-      background-color: #E8F1E2;
+    .mf-hero .btn-primary:hover {
+      @apply bg-sage-light;
       box-shadow: 0 3px 8px #0A332640;
     }
-    .mf-hero-fridge .btn-secondary:hover {
+    .mf-hero .btn-secondary:hover {
       background-color: #D6E5CC40;
       border-color: #D6E5CC99;
     }
   }
-  .mf-hero-fridge :is(a, button):focus-visible { outline-color: #D6E5CC; }
+  .mf-hero :is(a, button):focus-visible { @apply outline-sage; }
   .mf-hero-art { width: min(34%, 252px); @apply shrink-0 object-contain; }
+
+  /* 요약 영역의 공용 카드 헤더, 컨디션 입력, 포커스에도 같은 강조색을 쓴다. */
+  .mf-health-summary {
+    --color-emerald-50: var(--color-sage-light);
+    --color-emerald-500: var(--color-forest);
+    --color-emerald-600: var(--color-forest);
+    --color-emerald-700: #154c36;
+    --color-emerald-800: #10432f;
+  }
+  .mf-coaching :is(a, button):not(:where(dialog *)):focus-visible { @apply outline-sage; }
 
   .mf-bottom {
     @apply fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-gray-200 bg-white/95 px-2 pt-1 shadow-lg backdrop-blur-md lg:hidden;

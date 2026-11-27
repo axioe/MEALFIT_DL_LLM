@@ -88,25 +88,25 @@ function AiCoachingCard() {
   const { data: coaching, isPending } = useCoaching()
 
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950 p-5 text-white md:p-6">
+    <section className="mf-coaching rounded-2xl bg-forest p-5 text-white md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sage text-forest">
             <Zap aria-hidden="true" className="h-5 w-5" />
           </span>
           <div>
             <h3 className="flex flex-wrap items-center gap-2 text-base font-bold">
               오늘의 AI 코칭
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">AI Trainer</span>
+              <span className="rounded-full bg-sage/15 px-2 py-0.5 text-[11px] font-semibold text-sage-light">AI Trainer</span>
             </h3>
-            <p className="mt-0.5 text-xs text-gray-400">오늘 무엇을 할지 실시간 컨디션과 냉장고 재고로 결정해 드려요.</p>
+            <p className="mt-0.5 text-xs text-sage">오늘 무엇을 할지 실시간 컨디션과 냉장고 재고로 결정해 드려요.</p>
           </div>
         </div>
         {coaching && (
           <button
             type="button"
             onClick={() => setShowCheck(true)}
-            className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-white/20 px-3 text-xs font-semibold text-gray-200 hover:bg-white/10"
+            className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-sage/50 px-3 text-xs font-semibold text-sage-light hover:bg-sage/25"
           >
             <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
             컨디션 다시 체크
@@ -116,7 +116,7 @@ function AiCoachingCard() {
 
       {isPending ? (
         <div className="flex min-h-40 items-center justify-center">
-          <Spinner className="h-8 w-8" />
+          <Spinner className="h-8 w-8 [--color-emerald-600:var(--color-sage)]" />
         </div>
       ) : coaching ? (
         <div className="mt-6 space-y-4">
@@ -127,24 +127,24 @@ function AiCoachingCard() {
               SORENESS_LABEL[coaching.condition.soreness],
               `가능 시간 ${coaching.condition.availableMinutes}분`,
             ].map((chip) => (
-              <li key={chip} className="rounded-full bg-white/10 px-3 py-1 text-gray-200">
+              <li key={chip} className="rounded-full bg-sage/15 px-3 py-1 text-sage-light">
                 {chip}
               </li>
             ))}
           </ul>
           <p className="text-base font-bold leading-7">{coaching.summary}</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl bg-white/5 p-4">
-              <p className="text-xs text-emerald-300">추천 운동</p>
+            <div className="rounded-xl bg-sage/10 p-4">
+              <p className="text-xs text-sage-light">추천 운동</p>
               <p className="mt-1 text-sm font-semibold">{coaching.workout}</p>
-              <Link to="/workout" className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200">
+              <Link to="/workout" className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-sage-light hover:text-white">
                 운동 루틴 보기 <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
               </Link>
             </div>
-            <div className="rounded-xl bg-white/5 p-4">
-              <p className="text-xs text-emerald-300">추천 식단</p>
+            <div className="rounded-xl bg-sage/10 p-4">
+              <p className="text-xs text-sage-light">추천 식단</p>
               <p className="mt-1 text-sm font-semibold">{coaching.meal}</p>
-              <Link to="/recommend" className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200">
+              <Link to="/recommend" className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-sage-light hover:text-white">
                 냉장고 맞춤 식단 받기 <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -152,28 +152,28 @@ function AiCoachingCard() {
         </div>
       ) : (
         <div className="flex flex-col items-center px-2 py-8 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-emerald-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-sage/30 bg-sage/10 text-sage">
             <Sparkles aria-hidden="true" className="h-6 w-6" />
           </span>
           <p className="mt-4 text-lg font-bold">오늘의 운동과 식단, AI가 정해드립니다</p>
-          <p className="mt-2 max-w-md text-sm leading-6 text-gray-300">
+          <p className="mt-2 max-w-md text-sm leading-6 text-sage-light">
             수면 시간, 피로도, 근육통, 오늘 가용 시간만 30초 체크해 주세요. 오늘 최적의{' '}
-            <span className="font-semibold text-emerald-400">추천 운동 루틴</span>과{' '}
-            <span className="font-semibold text-emerald-400">냉장고 맞춤 식단</span>을 바로 완성합니다.
+            <span className="font-semibold text-sage">추천 운동 루틴</span>과{' '}
+            <span className="font-semibold text-sage">냉장고 맞춤 식단</span>을 바로 완성합니다.
           </p>
           <button
             type="button"
             onClick={() => setShowCheck(true)}
-            className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-gray-900 transition hover:bg-emerald-300"
+            className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-sage px-5 py-2.5 text-sm font-bold text-forest transition hover:bg-sage-light"
           >
             <Zap aria-hidden="true" className="h-4 w-4" />
             30초 컨디션 체크 시작하기
             <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </button>
-          <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-400">
+          <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-sage">
             {['수면 & 피로도 맞춤', 'WHO 주 150분 기준', '냉장고 파먹기 연동'].map((item) => (
               <li key={item} className="inline-flex items-center gap-1">
-                <CircleCheck aria-hidden="true" className="h-3.5 w-3.5 text-emerald-500" />
+                <CircleCheck aria-hidden="true" className="h-3.5 w-3.5 text-sage" />
                 {item}
               </li>
             ))}
@@ -383,7 +383,7 @@ function ShortagesCard({ dashboard }) {
 function WeightCard() {
   const { data: weight, isPending } = useWeightSummary()
   return (
-    <section className="card space-y-3">
+    <section className="card space-y-3 border-sage bg-sage-light/40">
       <CardHeader icon={Scale} title="체중 추이" to="/weight" linkLabel="기록하기" />
       {isPending ? (
         <CardLoading />
@@ -392,13 +392,13 @@ function WeightCard() {
       ) : (
         <>
           <div className="flex items-end justify-between gap-2">
-            <p className="text-2xl font-extrabold text-gray-900">
+            <p className="text-2xl font-extrabold text-forest">
               {weight.currentKg}
               <span className="ml-1 text-sm font-medium text-gray-500">kg</span>
             </p>
             {weight.targetKg != null && (
               <p className="text-xs text-gray-500">
-                목표 <span className="font-bold text-gray-800">{weight.targetKg}kg</span>
+                목표 <span className="font-bold text-forest">{weight.targetKg}kg</span>
               </p>
             )}
           </div>
@@ -435,6 +435,9 @@ export function DashboardPage() {
       {soon && <section className="card mf-stack mf-expiry"><span className="mf-status warn">먼저 쓸 재료</span><h2 className="mf-section-title">{soon.ingredientName} · {formatQuantity(soon.quantity, soon.unit)}</h2><p>소비기한 {soon.expiryDate}</p><Link className="btn-secondary justify-self-start" to={'/recommend?mode=quick&ingredient=' + encodeURIComponent(soon.ingredientName)}>이 재료로 요리 찾기</Link></section>}
       {!first && <><ShortagesCard dashboard={dashboard.shopping} /><ExpiringLotsCard dashboard={dashboard.inventory} /></>}
     </div></div>
-    <details className="card" onToggle={event => setShowExtras(event.currentTarget.open)}><summary className="cursor-pointer font-bold">컨디션 코칭과 체중 요약 예시</summary>{showExtras && <div className="mt-4 grid gap-4 lg:grid-cols-2"><AiCoachingCard /><WeightCard /></div>}</details>
+    <details className="card mf-health-summary" onToggle={event => setShowExtras(event.currentTarget.open)}>
+      <summary className="cursor-pointer font-bold text-forest">컨디션 코칭과 체중 요약 예시</summary>
+      {showExtras && <div className="mt-4 grid gap-4 lg:grid-cols-2"><AiCoachingCard /><WeightCard /></div>}
+    </details>
   </div>
 }
