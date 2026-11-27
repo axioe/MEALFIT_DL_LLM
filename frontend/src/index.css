@@ -65,8 +65,37 @@
   }
 
   .mf-bar {
-    @apply flex min-h-14 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 md:px-8;
+    @apply flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-white px-4 py-3 md:flex-nowrap md:px-8;
   }
+
+  .mf-header-search { @apply relative order-last w-full min-w-0 md:order-none md:max-w-lg md:flex-1; }
+  .mf-search-form {
+    @apply flex min-h-11 items-center rounded-full border-2 border-[#287455] bg-white pr-0.5 pl-4 transition-shadow focus-within:border-[#195940] focus-within:ring-3 focus-within:ring-emerald-100;
+  }
+  .mf-search-form input {
+    @apply min-w-0 flex-1 appearance-none bg-transparent py-2 text-base text-gray-900 placeholder:text-gray-500;
+  }
+  .mf-shell .mf-search-form input:focus-visible { outline: none; }
+  .mf-search-form input::-webkit-search-cancel-button { display: none; }
+  .mf-search-submit, .mf-search-clear { @apply grid size-9 shrink-0 cursor-pointer place-items-center rounded-full; }
+  .mf-search-submit { @apply bg-[#195940] text-white transition-colors hover:bg-[#10432f]; }
+  .mf-search-clear { @apply text-gray-500 hover:bg-gray-100; }
+  .mf-search-popover {
+    @apply absolute inset-x-0 top-full z-30 mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-xl;
+    max-height: min(36rem, calc(100dvh - 12rem));
+  }
+  .mf-search-summary { @apply border-b border-gray-100 bg-emerald-50/60 px-4 py-3; }
+  .mf-search-summary h2 { @apply text-sm font-bold; }
+  .mf-search-summary h2 span { @apply ml-1 text-emerald-800; }
+  .mf-search-summary p, .mf-search-hit p { @apply mt-1 break-words text-xs text-gray-600; }
+  .mf-search-message { @apply break-words px-4 py-5 text-sm text-gray-600; }
+  .mf-search-group { @apply border-b border-gray-100 px-2 py-2 last:border-0; }
+  .mf-search-group h3 { @apply px-2 py-1 text-sm font-bold text-[#195940]; }
+  .mf-search-group h3 span { @apply ml-1 text-xs font-medium text-gray-500; }
+  .mf-search-hit { @apply flex min-h-11 items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm hover:bg-emerald-50 focus-visible:bg-emerald-50; }
+  .mf-search-hit > svg { @apply shrink-0 text-gray-400; }
+  .mf-search-warning { @apply inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900; }
+  .mf-search-more { @apply flex min-h-10 cursor-pointer items-center gap-1 rounded-lg px-2 text-xs font-semibold text-emerald-800 hover:underline disabled:text-gray-500; }
 
   .mf-crumb {
     @apply flex items-center gap-2 text-sm font-semibold tracking-tight text-gray-900;
