@@ -6,15 +6,16 @@ import { QuickExample } from '@/components/recommend/QuickExample'
 import { MemberLink } from '@/components/common/MemberLink'
 import { LoginPromptDialog } from '@/components/common/LoginPromptDialog'
 import { GuestLoginContext, useGuestLogin } from '@/hooks/useGuestLogin'
+import { GUEST_WORKOUT_EXAMPLES, GUEST_WORKOUT_SOURCE } from '@/lib/guestWorkoutExamples'
+import { GUEST_WORKOUT_AREAS, detailText, doseText, guestWorkoutList } from '@/models/guestWorkout'
 
 const exampleMeals = [
   { meal: '아침', name: '달걀 토스트' },
   { meal: '점심', name: '버섯 비빔밥' },
   { meal: '저녁', name: '두부 달걀 덮밥' },
 ]
-const exampleExercises = {
-  상체: ['덤벨 컬', '레터럴 레이즈'], 하체: ['스쿼트', '런지'], 코어: ['플랭크', '바이시클 크런치'],
-}
+// 코어는 세부 부위 합의 전이라 기존 예시를 그대로 둔다 (상체·하체·전신은 국민체력100 예시)
+const coreExamples = ['플랭크', '바이시클 크런치']
 
 function GuestHome() {
   return <div className="mf-stack">
@@ -52,13 +53,27 @@ function GuestMeals() {
 }
 
 function GuestWorkout() {
-  const [area, setArea] = useState('상체')
+  const [area, setArea] = useState('upper')
+  const [showAll, setShowAll] = useState(false)
   const requestLogin = useGuestLogin()
+  const areas = [...GUEST_WORKOUT_AREAS, { key: 'core', label: '코어' }]
+  const label = areas.find(item => item.key === area)?.label
+  const list = area === 'core' ? null : guestWorkoutList(GUEST_WORKOUT_EXAMPLES, area, showAll)
+  function pick(key) { setArea(key); setShowAll(false) }
   return <div className="mf-stack"><header className="mf-heading mb-0"><div><h1>운동 둘러보기</h1></div></header>
     <section className="card mf-stack"><h2 className="mf-section-title">부위별 운동 예시</h2>
-      <div className="flex flex-wrap gap-2">{Object.keys(exampleExercises).map(name =>
-        <button type="button" key={name} className="mf-chip" aria-pressed={area === name} onClick={() => setArea(name)}>{name}</button>)}</div>
-      <ul className="mf-list" aria-label={area + ' 운동'}>{exampleExercises[area].map(name => <li key={name}>{name}</li>)}</ul>
+      <div className="flex flex-wrap gap-2">{areas.map(item =>
+        <button type="button" key={item.key} className="mf-chip" aria-pressed={area === item.key} onClick={() => pick(item.key)}>{item.label}</button>)}</div>
+      {list ? <>
+        <ul className="mf-list" aria-label={label + ' 운동'}>{list.items.map(item =>
+          <li key={item.name} className="!items-start">
+            <span className="min-w-0"><span className="block font-semibold text-gray-900">{item.name}</span>
+              <span className="block text-xs text-gray-500">{detailText(item)}</span></span>
+            {doseText(item) && <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-emerald-700">{doseText(item)}</span>}
+          </li>)}</ul>
+        {list.hidden > 0 && <button type="button" className="btn-secondary justify-self-start" onClick={() => setShowAll(true)}>{label} 운동 {list.hidden}개 더 보기</button>}
+        <p className="text-xs text-gray-500">운동 정보 출처: {GUEST_WORKOUT_SOURCE}</p>
+      </> : <ul className="mf-list" aria-label="코어 운동">{coreExamples.map(name => <li key={name}>{name}</li>)}</ul>}
       <button type="button" className="btn-primary justify-self-start" aria-haspopup="dialog" onClick={() => requestLogin('내 운동 루틴')}>내 루틴 보기</button>
     </section>
   </div>
