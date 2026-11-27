@@ -3,6 +3,27 @@ import assert from 'node:assert/strict'
 import { SEARCH_TYPE } from '../src/lib/enums.js'
 import { queryKeys } from '../src/api/queryKeys.js'
 import { normalizeSearchTerm, nextSearchOffset, SEARCH_GROUPS } from '../src/models/webSearch.js'
+import { exercisePreview, guestRecipeQuery, searchGuestEntries } from '../src/models/guestSearch.js'
+
+test('게스트 식단·요리 검색은 카탈로그를 사용하고 기능명은 통합 검색에 남긴다', () => {
+  for (const term of ['식단', '레시피', '식단 예시', '전체 레시피 보기']) assert.equal(guestRecipeQuery(term), '')
+  assert.equal(guestRecipeQuery('달걀 레시피'), '달걀')
+  assert.equal(guestRecipeQuery('두부요리'), '두부')
+  for (const term of ['스쿼트', '장보기', '식단 조건 설정', '내 식단']) assert.equal(guestRecipeQuery(term), null)
+  assert.ok(searchGuestEntries(['개인 맞춤 식단 추천']).some(item => item.memberOnly))
+  assert.ok(searchGuestEntries(['내  냉장고']).some(item => item.to === '/fridge' && item.memberOnly))
+  assert.deepEqual(searchGuestEntries(['   ']), [])
+})
+
+test('달걀·계란과 요리 이름으로 정적 식단 예시를 반환하지 않고 운동 예시는 유지한다', () => {
+  assert.deepEqual(searchGuestEntries(['계란', '달걀']), [])
+  assert.deepEqual(searchGuestEntries(['두부 달걀 덮밥']), [])
+  const plank = searchGuestEntries(['플랭크']).find(item => item.state?.area === 'core')
+  assert.equal(plank.state.exercisePreview.title, '플랭크')
+  const catalog = exercisePreview('스쿼트', ['하체', '맨몸', null])
+  assert.equal(catalog.to, '/workout')
+  assert.deepEqual(catalog.state.exercisePreview.details, ['하체', '맨몸'])
+})
 
 test('검색어의 앞뒤와 연속 공백을 정리하고 한글·특수문자를 보존한다', () => {
   assert.equal(normalizeSearchTerm('   김치  찌개  '), '김치 찌개')

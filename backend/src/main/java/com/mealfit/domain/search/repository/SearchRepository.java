@@ -4,6 +4,7 @@ import com.mealfit.domain.inventory.entity.InventoryLot;
 import com.mealfit.domain.inventory.entity.LotStatus;
 import com.mealfit.domain.mealplan.entity.MealPlan;
 import com.mealfit.domain.recipe.entity.Recipe;
+import com.mealfit.domain.recipe.repository.RecipeRepository;
 import com.mealfit.domain.shopping.entity.ShoppingItem;
 import com.mealfit.domain.workout.entity.ExerciseCatalog;
 import com.mealfit.domain.workout.entity.WorkoutSession;
@@ -46,7 +47,7 @@ public class SearchRepository {
 
     /** 요리명 또는 재료명이 걸리는 공용·본인 레시피 (id → 요리명 일치 여부), 요리명 일치 먼저 */
     public Map<Long, Boolean> recipeIds(Long userId, List<String> patterns) {
-        String access = "(r.userId is null or r.userId = :userId)";
+        String access = userId == null ? RecipeRepository.PUBLIC_RECIPE : "(r.userId is null or r.userId = :userId)";
         TypedQuery<Long> byName = em.createQuery(
                 "select r.id from Recipe r where " + access + " and " + anyMatch(List.of("r.name"), patterns.size())
                         + " order by r.id", Long.class);
@@ -54,7 +55,9 @@ public class SearchRepository {
                 "select distinct i.recipe.id from RecipeIngredient i join i.recipe r where " + access + " and "
                         + anyMatch(List.of("i.ingredientName"), patterns.size()), Long.class);
         for (TypedQuery<Long> q : List.of(byName, byIngredient)) {
-            q.setParameter("userId", userId);
+            if (userId != null) {
+                q.setParameter("userId", userId);
+            }
             bind(q, patterns);
         }
         Map<Long, Boolean> ids = new LinkedHashMap<>();

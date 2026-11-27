@@ -94,6 +94,39 @@ class SearchApiTest {
     }
 
     @Test
+    void 공개_검색은_공용_레시피와_운동_사전만_반환한다() throws Exception {
+        long personalRecipe = ownRecipe(USER, "검색전용 개인반찬");
+        mealPlan(USER, personalRecipe);
+        lot(OTHER, "검색전용 개인반찬", "ACTIVE");
+        shopping(USER, "검색전용 개인반찬");
+        workout(USER, "검색전용 개인반찬");
+        mvc.perform(get("/api/v1/search/public").param("q", "검색전용 개인반찬"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recipes.total").value(0))
+                .andExpect(jsonPath("$.exercises.total").value(0))
+                .andExpect(jsonPath("$.inventory").doesNotExist())
+                .andExpect(jsonPath("$.mealPlans").doesNotExist())
+                .andExpect(jsonPath("$.shoppingItems").doesNotExist())
+                .andExpect(jsonPath("$.workouts").doesNotExist());
+        mvc.perform(get("/api/v1/search/public").param("q", "검색전용 개인반찬").with(user(USER)))
+                .andExpect(jsonPath("$.recipes.total").value(0));
+        mvc.perform(get("/api/v1/search/public").param("q", "계란").param("limit", "2"))
+                .andExpect(jsonPath("$.terms", hasItem("달걀")))
+                .andExpect(jsonPath("$.recipes.items", hasSize(2)))
+                .andExpect(jsonPath("$.recipes.items[*].mine", everyItem(is(false))));
+        mvc.perform(get("/api/v1/search/public").param("q", "스쿼트").param("types", "EXERCISE")
+                        .param("limit", "1").param("offset", "1"))
+                .andExpect(jsonPath("$.exercises.items", hasSize(1)))
+                .andExpect(jsonPath("$.recipes").doesNotExist());
+    }
+
+    @Test
+    void 공개_검색에서_개인_범위를_명시해도_조회할_수_없다() throws Exception {
+        mvc.perform(get("/api/v1/search/public").param("q", "달걀").param("types", "RECIPE,INVENTORY"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void 별칭으로_같은_재료를_함께_찾고_내_데이터만_보여준다() throws Exception {
         lot(USER, "달걀", "ACTIVE");
         lot(USER, "달걀", "DEPLETED");

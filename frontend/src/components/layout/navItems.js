@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
 ]
 export const navItems = NAV_ITEMS
 export function findNavItem(pathname) {
-  if (pathname.startsWith('/recipes/')) return { label: '레시피', to: '/recommend' }
+  if (pathname === '/recipes' || pathname.startsWith('/recipes/')) return { label: '레시피', to: '/recommend' }
   return NAV_ITEMS.find(item => pathname.startsWith(item.to)) ?? { label: '밀핏' }
 }
 export function findNavTitle(pathname) { return findNavItem(pathname).label }

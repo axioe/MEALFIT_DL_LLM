@@ -1,30 +1,45 @@
-import { useEffect, useRef } from 'react'
-import { ArrowRight, ChevronDown, Search, TriangleAlert, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, ChevronDown, LockKeyhole, Search, TriangleAlert, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getErrorMessage } from '@/api/client'
+import { MemberLink } from '@/components/common/MemberLink'
+import { useGuestLogin } from '@/hooks/useGuestLogin'
+import { usePublicRecipeCatalog } from '@/hooks/useRecipes'
 import { useMoreSearchResults, useSearchInput, useWebSearch } from '@/hooks/useWebSearch'
-import { MAX_SEARCH_LENGTH, SEARCH_GROUPS } from '@/models/webSearch'
+import { SEARCH_TYPE } from '@/lib/enums'
+import { exercisePreview, guestRecipeQuery, searchGuestEntries } from '@/models/guestSearch'
+import { MAX_SEARCH_LENGTH, SEARCH_GROUPS, SEARCH_LIMIT } from '@/models/webSearch'
 
-function SearchGroup({ term, group, page }) {
-  const { results, total, hasMore, loading, error, loadMore } = useMoreSearchResults(term, group, page)
+function SearchHit({ result }) {
+  const contents = <>
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <strong className="break-words">{result.title}</strong>
+        {result.warning && <span className="mf-search-warning">
+          <TriangleAlert size={12} aria-hidden="true" />알레르기 주의
+          {result.restrictedIngredients?.length > 0 && <span className="sr-only"> · {result.restrictedIngredients.join(', ')}</span>}
+        </span>}
+      </div>
+      <p>{result.details.filter(Boolean).join(' · ')}</p>
+    </div>
+    {result.memberOnly ? <><LockKeyhole size={15} aria-hidden="true" /><span className="sr-only">로그인 필요</span></>
+      : <ArrowRight size={15} aria-hidden="true" />}
+  </>
+  return result.memberOnly
+    ? <MemberLink to={result.to} feature={result.title} className="mf-search-hit w-full cursor-pointer text-left">{contents}</MemberLink>
+    : <Link to={result.to} state={result.state} className="mf-search-hit">{contents}</Link>
+}
+
+function SearchGroup({ term, group, page, guest }) {
+  const { results, total, hasMore, loading, error, loadMore } = useMoreSearchResults(term, group, page, guest)
   return <section className="mf-search-group" aria-label={group.label}>
     <h3>{group.label} <span>{total.toLocaleString()}건</span></h3>
     <ul>
-      {results.map(result => <li key={result.id}>
-        <Link to={result.to} className="mf-search-hit">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <strong className="break-words">{result.title}</strong>
-              {result.warning && <span className="mf-search-warning">
-                <TriangleAlert size={12} aria-hidden="true" />알레르기 주의
-                {result.restrictedIngredients?.length > 0 && <span className="sr-only"> · {result.restrictedIngredients.join(', ')}</span>}
-              </span>}
-            </div>
-            <p>{result.details.filter(Boolean).join(' · ')}</p>
-          </div>
-          <ArrowRight size={15} aria-hidden="true" />
-        </Link>
-      </li>)}
+      {results.map(result => {
+        let hit = result
+        if (guest && group.type === SEARCH_TYPE.EXERCISE) hit = exercisePreview(result.title, result.details)
+        return <li key={result.id}><SearchHit result={hit} /></li>
+      })}
     </ul>
     {error && <p role="alert" className="text-sm text-rose-700">{getErrorMessage(error, '추가 결과를 불러오지 못했어요.')}</p>}
     {hasMore && <button className="mf-search-more" type="button" onClick={loadMore} disabled={loading}>
@@ -33,23 +48,62 @@ function SearchGroup({ term, group, page }) {
   </section>
 }
 
-function SearchResults({ term }) {
-  const query = useWebSearch(term)
+function GuestEntries({ entries }) {
+  const [limit, setLimit] = useState(SEARCH_LIMIT)
+  return <section className="mf-search-group" aria-label="서비스 기능과 공개 예시">
+    <h3>서비스 기능과 공개 예시 <span>{entries.length.toLocaleString()}건</span></h3>
+    <ul>{entries.slice(0, limit).map(result => <li key={result.id}><SearchHit result={result} /></li>)}</ul>
+    {entries.length > limit && <button type="button" className="mf-search-more" onClick={() => setLimit(limit + SEARCH_LIMIT)}>
+      기능과 예시 더보기<ChevronDown size={14} aria-hidden="true" />
+    </button>}
+  </section>
+}
+
+function SearchFeedback({ query }) {
   if (query.isPending) return <p className="mf-search-message" role="status">검색 중…</p>
   if (query.isError) return <div className="mf-search-message" role="alert">
     <p>{getErrorMessage(query.error, '검색 결과를 불러오지 못했어요.')}</p>
     <button type="button" className="mf-search-more" onClick={() => query.refetch()}>다시 시도</button>
   </div>
-  const groups = SEARCH_GROUPS.filter(group => query.data[group.field]?.total > 0)
-  const total = groups.reduce((sum, group) => sum + query.data[group.field].total, 0)
+  return null
+}
+
+function CatalogResults() {
+  const query = usePublicRecipeCatalog(1)
+  if (!query.data) return <SearchFeedback query={query} />
+  const { items, total } = query.data
+  const group = SEARCH_GROUPS.find(item => item.type === SEARCH_TYPE.RECIPE)
+  return <section className="mf-search-group" aria-label="레시피">
+    <h3>레시피 <span role="status">{total.toLocaleString()}건</span></h3>
+    <ul>{items.slice(0, SEARCH_LIMIT).map(item => <li key={item.id}><SearchHit result={group.result(item)} /></li>)}</ul>
+    {total > SEARCH_LIMIT && <Link className="mf-search-more" to="/recipes">전체 레시피 보기 <ArrowRight size={14} aria-hidden="true" /></Link>}
+    {!total && <p className="mf-search-message">등록된 공용 레시피가 없어요.</p>}
+  </section>
+}
+
+function MatchedSearchResults({ term, guest, recipeTerm }) {
+  const keyword = recipeTerm ?? term
+  const query = useWebSearch(keyword, guest)
+  const recipesOnly = guest && (recipeTerm !== null || query.data?.recipes?.total > 0)
+  const entries = guest && !query.isPending && !recipesOnly ? searchGuestEntries(query.data?.terms ?? [term]) : []
+  const groups = SEARCH_GROUPS.filter(group => (!recipesOnly || group.type === SEARCH_TYPE.RECIPE) && query.data?.[group.field]?.total > 0)
+  const total = groups.reduce((sum, group) => sum + query.data[group.field].total, entries.length)
   return <>
-    <div className="mf-search-summary" role="status">
+    {(query.isSuccess || entries.length > 0) && <div className="mf-search-summary" role="status">
       <h2>검색 결과 <span>{total.toLocaleString()}건</span></h2>
-      {query.data.terms?.length > 1 && <p>{query.data.terms.join('·')}로 찾았어요.</p>}
-    </div>
-    {groups.length ? groups.map(group => <SearchGroup key={group.type} term={term} group={group} page={query.data[group.field]} />)
-      : <p className="mf-search-message">‘{term}’에 해당하는 결과가 없어요. 다른 검색어를 입력해 보세요.</p>}
+      {query.data?.terms?.length > 1 && <p>{query.data.terms.join('·')}로 찾았어요.</p>}
+    </div>}
+    {entries.length > 0 && <GuestEntries entries={entries} />}
+    {groups.map(group => <SearchGroup key={group.type} term={keyword} group={group} page={query.data[group.field]} guest={guest} />)}
+    <SearchFeedback query={query} />
+    {query.isSuccess && total === 0 && <p className="mf-search-message">‘{term}’에 해당하는 결과가 없어요. 다른 검색어를 입력해 보세요.</p>}
   </>
+}
+
+function SearchResults({ term }) {
+  const guest = Boolean(useGuestLogin())
+  const recipeTerm = guest ? guestRecipeQuery(term) : null
+  return recipeTerm === '' ? <CatalogResults /> : <MatchedSearchResults term={term} guest={guest} recipeTerm={recipeTerm} />
 }
 
 export function HeaderSearch() {
@@ -61,7 +115,7 @@ export function HeaderSearch() {
   useEffect(() => {
     if (!visible) return
     function outside(event) {
-      if (!root.current?.contains(event.target)) setOpen(false)
+      if (!root.current?.contains(event.target) && !event.target.closest('dialog[open]')) setOpen(false)
     }
     document.addEventListener('pointerdown', outside)
     return () => document.removeEventListener('pointerdown', outside)
@@ -83,7 +137,7 @@ export function HeaderSearch() {
   }
 
   return <div className="mf-header-search" ref={root} onKeyDown={onKeyDown}
-    onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}>
+    onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget) && !event.relatedTarget.closest?.('dialog[open]')) setOpen(false) }}>
     <form role="search" aria-label="밀핏 통합 검색" className="mf-search-form"
       onSubmit={event => { event.preventDefault(); search.submit(); input.current.focus() }}>
       <input type="search" ref={input} aria-label="통합 검색어" placeholder="레시피, 재료, 운동 검색"

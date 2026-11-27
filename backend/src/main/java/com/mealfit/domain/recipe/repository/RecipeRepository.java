@@ -5,11 +5,21 @@ import com.mealfit.domain.recipe.entity.Recipe;
 import com.mealfit.domain.recipe.entity.RecipeMealSlot;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
+
+    String PUBLIC_RECIPE = "r.userId is null and r.source in (com.mealfit.domain.recipe.entity.RecipeSource.SEED, com.mealfit.domain.recipe.entity.RecipeSource.LOCAL_FALLBACK)";
+
+    @Query("select r from Recipe r where " + PUBLIC_RECIPE + " order by r.id")
+    Page<Recipe> findPublicCatalog(Pageable pageable);
+
+    @Query("select r from Recipe r where r.id = :id and " + PUBLIC_RECIPE)
+    Optional<Recipe> findPublicById(@Param("id") Long id);
 
     /** 공용 레시피(userId null)이거나 본인 레시피일 때만 조회된다. */
     @Query("select r from Recipe r where r.id = :id and (r.userId is null or r.userId = :userId)")

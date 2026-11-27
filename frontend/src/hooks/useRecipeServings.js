@@ -6,13 +6,13 @@ import { validRecipeServings } from '@/models/recipeInventory'
  * 레시피 상세의 인분 조회 흐름 (Controller).
  * 입력한 인분으로 다시 조회하고, 조회 중·조리 중에는 중복 요청을 막으며, 실패해도 직전 결과를 유지한다.
  */
-export function useRecipeServings({ recipeId, initialServings, onServingsChange, cookingBusy }) {
+export function useRecipeServings({ recipeId, initialServings, onServingsChange, cookingBusy, publicOnly }) {
   const [requestedServings, setRequestedServings] = useState(initialServings)
   const [servingInput, setServingInput] = useState(initialServings == null ? '' : String(initialServings))
   const [formError, setFormError] = useState('')
   const [lastRecipe, setLastRecipe] = useState(null)
   const requestLock = useRef(false)
-  const recipe = useRecipe(recipeId, requestedServings)
+  const recipe = useRecipe(recipeId, requestedServings, true, publicOnly)
   const data = recipe.data ?? lastRecipe
 
   if (recipe.data && recipe.data !== lastRecipe) {

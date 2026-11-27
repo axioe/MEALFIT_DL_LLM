@@ -2,6 +2,7 @@
 
 /** 처음에 보여 줄 운동 수 (세트·횟수가 있는 운동부터) */
 export const GUEST_WORKOUT_PREVIEW_COUNT = 6
+export const CORE_EXAMPLES = ['플랭크', '바이시클 크런치']
 
 /** 부위 탭: 데이터 키와 화면 이름 */
 export const GUEST_WORKOUT_AREAS = Object.freeze([

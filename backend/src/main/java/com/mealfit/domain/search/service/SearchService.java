@@ -56,11 +56,20 @@ public class SearchService {
     public static final int DEFAULT_LIMIT = 5;
     public static final int MAX_LIMIT = 20;
     private static final int MAX_TERMS = 10;
+    private static final Set<SearchType> PUBLIC_TYPES = Set.of(SearchType.RECIPE, SearchType.EXERCISE);
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final SearchRepository searchRepository;
     private final IngredientStandardRepository ingredientStandardRepository;
     private final UserDietProfileProvider userDietProfileProvider;
+
+    public SearchResponse searchPublic(String query, Set<SearchType> requested, Integer limit, Integer offset) {
+        Set<SearchType> types = requested == null || requested.isEmpty() ? PUBLIC_TYPES : requested;
+        if (!PUBLIC_TYPES.containsAll(types)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return search(null, query, types, limit, offset);
+    }
 
     public SearchResponse search(Long userId, String rawQuery, Set<SearchType> requested, Integer limit, Integer offset) {
         String query = cleanQuery(rawQuery);
@@ -128,7 +137,7 @@ public class SearchService {
         List<Long> page = ids.keySet().stream().skip(from).limit(size).toList();
         Map<Long, Recipe> loaded = searchRepository.recipesWithIngredients(page).stream()
                 .collect(Collectors.toMap(Recipe::getId, Function.identity()));
-        Set<String> restrictedSet = userDietProfileProvider.getProfile(userId).restrictedIngredients();
+        Set<String> restrictedSet = userId == null ? Set.of() : userDietProfileProvider.getProfile(userId).restrictedIngredients();
         Set<String> keys = terms.stream().map(SearchService::compact).collect(Collectors.toSet());
 
         List<RecipeHit> hits = new ArrayList<>();
@@ -143,7 +152,7 @@ public class SearchService {
                     .filter(name -> keys.stream().anyMatch(compact(name)::contains)).toList();
             List<String> violations = IngredientRestriction.violations(ingredients, restrictedSet);
             hits.add(new RecipeHit(recipe.getId(), recipe.getName(), recipe.getCookTimeMin(), recipe.getSource(),
-                    userId.equals(recipe.getUserId()), matched, !violations.isEmpty(), violations));
+                    userId != null && userId.equals(recipe.getUserId()), matched, !violations.isEmpty(), violations));
         }
         return new Group<>(ids.size(), hits);
     }

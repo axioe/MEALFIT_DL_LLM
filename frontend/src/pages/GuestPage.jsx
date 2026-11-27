@@ -7,15 +7,10 @@ import { MemberLink } from '@/components/common/MemberLink'
 import { LoginPromptDialog } from '@/components/common/LoginPromptDialog'
 import { GuestLoginContext, useGuestLogin } from '@/hooks/useGuestLogin'
 import { GUEST_WORKOUT_EXAMPLES, GUEST_WORKOUT_SOURCE } from '@/lib/guestWorkoutExamples'
-import { GUEST_WORKOUT_AREAS, detailText, doseText, guestWorkoutList } from '@/models/guestWorkout'
-
-const exampleMeals = [
-  { meal: '아침', name: '달걀 토스트' },
-  { meal: '점심', name: '버섯 비빔밥' },
-  { meal: '저녁', name: '두부 달걀 덮밥' },
-]
-// 코어는 세부 부위 합의 전이라 기존 예시를 그대로 둔다 (상체·하체·전신은 국민체력100 예시)
-const coreExamples = ['플랭크', '바이시클 크런치']
+import { CORE_EXAMPLES, GUEST_WORKOUT_AREAS, detailText, doseText, guestWorkoutList } from '@/models/guestWorkout'
+import { GUEST_MEALS } from '@/lib/guestMealExamples'
+import { RecipeDetailPage } from '@/pages/RecipeDetailPage'
+import { RecipeCatalogPage } from '@/pages/RecipeCatalogPage'
 
 function GuestHome() {
   return <div className="mf-stack">
@@ -25,6 +20,7 @@ function GuestHome() {
       <section className="card mf-stack"><h2 className="mf-section-title">오늘 식단</h2>
         <p className="mf-copy">아침부터 저녁까지, 하루 식단 예시를 둘러보세요.</p>
         <Link className="mf-text-link" to="/recommend">식단 예시 보기</Link>
+        <Link className="mf-text-link" to="/recipes">전체 레시피 보기</Link>
         <MemberLink to="/mypage?tab=allergies" feature="식단 조건 설정" className="mf-text-link">식단 조건 설정</MemberLink>
       </section>
       <section className="card mf-stack"><h2 className="mf-section-title">오늘 운동</h2>
@@ -41,11 +37,12 @@ function GuestMeals() {
   const quick = params.get('mode') === 'quick'
   return <div className="mf-stack">
     <header className="mf-heading mb-0"><div><h1>{quick ? '15분 요리 예시' : '오늘 식단 예시'}</h1></div>
+      <Link className="btn-secondary" to="/recipes">전체 레시피 보기</Link>
       <Link className="btn-secondary" to={quick ? '/recommend' : '/recommend?mode=quick&example=1'}>
         {quick ? '하루 식단 보기' : '15분 요리 보기'}
       </Link>
     </header>
-    {quick ? <QuickExample /> : <div className="grid gap-4 sm:grid-cols-3">{exampleMeals.map(({ meal, name }) =>
+    {quick ? <QuickExample initialRecipeKey={params.get('recipe')} /> : <div className="grid gap-4 sm:grid-cols-3">{GUEST_MEALS.map(({ meal, name }) =>
       <section key={meal} className="card mf-stack"><span className="mf-label">{meal}</span><h2 className="mf-section-title">{name}</h2>
         <button type="button" className="btn-primary justify-self-start" aria-haspopup="dialog" onClick={() => requestLogin('식단 확정')}>이 메뉴로 정하기</button>
       </section>)}</div>}
@@ -53,7 +50,9 @@ function GuestMeals() {
 }
 
 function GuestWorkout() {
-  const [area, setArea] = useState('upper')
+  const { state } = useLocation()
+  const preview = state?.exercisePreview
+  const [area, setArea] = useState(state?.area ?? 'upper')
   const [showAll, setShowAll] = useState(false)
   const requestLogin = useGuestLogin()
   const areas = [...GUEST_WORKOUT_AREAS, { key: 'core', label: '코어' }]
@@ -61,6 +60,8 @@ function GuestWorkout() {
   const list = area === 'core' ? null : guestWorkoutList(GUEST_WORKOUT_EXAMPLES, area, showAll)
   function pick(key) { setArea(key); setShowAll(false) }
   return <div className="mf-stack"><header className="mf-heading mb-0"><div><h1>운동 둘러보기</h1></div></header>
+    {preview && <section className="card mf-stack"><h2 className="mf-section-title">{preview.title}</h2>
+      <p className="mf-copy">{preview.details.join(' · ')}</p></section>}
     <section className="card mf-stack"><h2 className="mf-section-title">부위별 운동 예시</h2>
       <div className="flex flex-wrap gap-2">{areas.map(item =>
         <button type="button" key={item.key} className="mf-chip" aria-pressed={area === item.key} onClick={() => pick(item.key)}>{item.label}</button>)}</div>
@@ -73,7 +74,7 @@ function GuestWorkout() {
           </li>)}</ul>
         {list.hidden > 0 && <button type="button" className="btn-secondary justify-self-start" onClick={() => setShowAll(true)}>{label} 운동 {list.hidden}개 더 보기</button>}
         <p className="text-xs text-gray-500">운동 정보 출처: {GUEST_WORKOUT_SOURCE}</p>
-      </> : <ul className="mf-list" aria-label="코어 운동">{coreExamples.map(name => <li key={name}>{name}</li>)}</ul>}
+      </> : <ul className="mf-list" aria-label="코어 운동">{CORE_EXAMPLES.map(name => <li key={name}>{name}</li>)}</ul>}
       <button type="button" className="btn-primary justify-self-start" aria-haspopup="dialog" onClick={() => requestLogin('내 운동 루틴')}>내 루틴 보기</button>
     </section>
   </div>
@@ -90,7 +91,11 @@ export function GuestPage({ screen, onRetrySession }) {
       {onRetrySession && <div className="mf-note mb-4" role="status">로그인 상태를 확인하지 못했어요.
         <button type="button" className="mf-text-link" onClick={onRetrySession}>다시 확인</button>
       </div>}
-      {screen === 'home' ? <GuestHome /> : screen === 'meals' ? <GuestMeals /> : <GuestWorkout />}
+      {screen === 'home' && <GuestHome />}
+      {screen === 'meals' && <GuestMeals />}
+      {screen === 'workout' && <GuestWorkout />}
+      {screen === 'catalog' && <RecipeCatalogPage />}
+      {screen === 'recipe' && <RecipeDetailPage publicOnly />}
     </AppLayout>
     {prompt && <LoginPromptDialog {...prompt} onClose={() => setPrompt(null)} />}
   </GuestLoginContext.Provider>

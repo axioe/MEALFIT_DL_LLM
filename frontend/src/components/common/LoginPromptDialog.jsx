@@ -22,7 +22,8 @@ export function LoginPromptDialog({ feature, returnTo, onClose }) {
       <LockKeyhole size={22} aria-hidden="true" />
     </span>
     <h2 id="login-prompt-title" className="mf-title">로그인이 필요해요</h2>
-    <p id="login-prompt-description" className="mf-copy">로그인하면 ‘{feature}’ 기능을 이용할 수 있어요.</p>
+    <p id="login-prompt-description" className="mf-copy">로그인하면 ‘{feature}’ 항목을 열 수 있어요. 처음이라면{' '}
+      <Link to="/signup" state={{ from: returnTo }} className="font-semibold text-emerald-700 underline">회원가입</Link>해 주세요.</p>
     <div className="mt-6 flex flex-wrap justify-end gap-2">
       <button type="button" onClick={dismiss} className="btn-secondary">계속 둘러보기</button>
       <Link to="/login" state={{ from: returnTo }} className="btn-primary">로그인하기</Link>

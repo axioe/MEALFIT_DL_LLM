@@ -64,6 +64,8 @@ public class SecurityConfig {
             )
 
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.GET, "/api/v1/search/public", "/api/v1/recipes/public",
+                    "/api/v1/recipes/public/{id:[0-9]+}").permitAll()
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/v1/auth/signup",

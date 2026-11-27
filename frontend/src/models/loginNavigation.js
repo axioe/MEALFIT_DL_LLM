@@ -5,7 +5,7 @@ export const LOGIN_RETURN_TTL = 15 * 60 * 1000
 
 const APP_ORIGIN = 'https://mealfit.invalid'
 const MAIN_PATHS = new Set([
-  '/dashboard', '/recommend', '/fridge', '/shopping',
+  '/dashboard', '/recommend', '/recipes', '/fridge', '/shopping',
   '/workout', '/calendar', '/weight', '/mypage',
 ])
 
