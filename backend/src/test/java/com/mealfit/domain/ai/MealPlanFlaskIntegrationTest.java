@@ -137,7 +137,7 @@ class MealPlanFlaskIntegrationTest {
                 assertThat(plan.get("recipe").get("source").asText()).isEqualTo("AI_GENERATED");
                 assertThat(plan.get("id").asLong()).isPositive();
             }
-            System.out.println("LIVE_DAY_AI: authenticated MVC -> Spring -> Flask -> Gemini -> rollback-only H2: 3 meals saved");
+            System.out.println("LIVE_DAY_AI: authenticated MVC -> Spring -> Flask -> LLM -> rollback-only H2: 3 meals saved");
         } finally {
             bridge.client = previous;
         }

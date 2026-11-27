@@ -2,7 +2,7 @@ import json
 import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from mealfit_ai.clients.gemini_client import generate
+from mealfit_ai.clients.ollama_client import generate
 from mealfit_ai.errors import ServiceError
 from mealfit_ai.schemas.validation import text, quantity, decimal_text, names, invalid
 
@@ -139,6 +139,6 @@ def validate_response(raw, request):
         raise ServiceError(502, 'AI_004', 'AI 식단 응답 형식을 확인하지 못했습니다. 다시 시도해 주세요.') from None
 
 
-def generate_meals(request, api_key, model):
-    """하루 식단 프롬프트·응답 스키마로 Gemini를 호출한다."""
-    return generate(request, api_key, model, system_prompt=SYSTEM_PROMPT, response_schema=RESPONSE_SCHEMA)
+def generate_meals(request, base_url, model):
+    """하루 식단 프롬프트·응답 스키마로 자체 LLM을 호출한다."""
+    return generate(request, base_url, model, system_prompt=SYSTEM_PROMPT, response_schema=RESPONSE_SCHEMA)

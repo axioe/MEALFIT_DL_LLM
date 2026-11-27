@@ -1,10 +1,10 @@
-"""MealFit AI 서비스 (Flask + Gemini).
+"""MealFit AI 서비스 (Flask + 자체 LLM(Ollama)).
 
 구조
 - controllers/  HTTP 라우트(Blueprint)와 오류 응답 — Controller
 - services/     추천 프롬프트·응답 검증 — Model(비즈니스 로직)
 - schemas/      요청 본문 검증 — Model(입력 규칙)
-- clients/      Gemini 호출, 자세 판별 모델(ONNX) 호출
+- clients/      자체 LLM(Ollama) 호출, 자세 판별 모델(ONNX) 호출
 """
 import os
 import sys
@@ -15,7 +15,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask
 
-from mealfit_ai.clients.gemini_client import generate
+from mealfit_ai.clients.ollama_client import generate
 from mealfit_ai.controllers.error_handlers import register_error_handlers
 from mealfit_ai.controllers.health_controller import health_bp
 from mealfit_ai.controllers.vision_controller import vision_bp
@@ -36,9 +36,10 @@ def create_app(config=None):
     load_dotenv(Path(__file__).resolve().parent.parent / '.env', override=False)
     app = Flask(__name__)
     app.json.ensure_ascii = False
-    app.config.update(MAX_CONTENT_LENGTH=1024 * 1024, GEMINI_API_KEY=os.getenv('GEMINI_API_KEY', ''),
-                      GEMINI_MODEL=os.getenv('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
-                      # 테스트는 GENERATOR·MEAL_GENERATOR·TODAY를 바꿔 끼워 Gemini 없이 검증한다
+    # 자체 LLM(D14): 비어 있으면 503 → Spring이 검수 레시피로 대체한다 (운영 EC2는 LLM을 돌리지 않는다)
+    app.config.update(MAX_CONTENT_LENGTH=1024 * 1024, LLM_BASE_URL=os.getenv('LLM_BASE_URL', ''),
+                      LLM_MODEL=os.getenv('LLM_MODEL', 'gemma4:e2b'),
+                      # 테스트는 GENERATOR·MEAL_GENERATOR·TODAY를 바꿔 끼워 LLM 없이 검증한다
                       GENERATOR=generate, MEAL_GENERATOR=generate_meals,
                       TODAY=lambda: datetime.now(KST).date())
     app.config.update(VISION_MODEL_PATH=os.getenv('VISION_MODEL_PATH', ''),

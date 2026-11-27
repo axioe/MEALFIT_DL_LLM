@@ -106,10 +106,11 @@ mealfit:
     mail-from-name: ${MAIL_FROM_NAME:MealFit}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
   ai:
-    # Python AI 서비스(FastAPI + Gemini). Gemini 키는 Python 쪽에만 둔다.
+    # Python AI 서비스(Flask + 자체 LLM(Ollama)). LLM 주소·모델은 ai-service 쪽 설정(LLM_BASE_URL·LLM_MODEL)
     base-url: ${AI_SERVICE_URL:http://localhost:8000}
     connect-timeout: 3s
-    read-timeout: 20s
+    # CPU 시연에서 LLM을 기다리려면 AI_READ_TIMEOUT과 ai-service LLM_TIMEOUT_SECONDS를 함께 늘린다 (LLM 쪽을 더 짧게)
+    read-timeout: ${AI_READ_TIMEOUT:20s}
 
 ai:
   pose:

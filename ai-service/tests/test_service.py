@@ -2,10 +2,11 @@ import copy
 import json
 import unittest
 from datetime import date
-from unittest.mock import patch, MagicMock
-from httpx import ReadTimeout
+import socket
+import urllib.error
+from unittest.mock import patch
 from app import create_app
-from mealfit_ai.clients.gemini_client import generate
+from mealfit_ai.clients.ollama_client import generate
 from mealfit_ai.errors import ServiceError
 from mealfit_ai.services.quick_recipe_service import validate_response
 from mealfit_ai.schemas.validation import validate_request
@@ -26,13 +27,13 @@ class ServiceTests(unittest.TestCase):
         def fake(request, key, model):
             self.calls.append(request)
             return json.dumps(RESPONSE, ensure_ascii=False)
-        self.app = create_app({'TESTING': True, 'GEMINI_API_KEY': '', 'GENERATOR': fake, 'TODAY': lambda: TODAY})
+        self.app = create_app({'TESTING': True, 'LLM_BASE_URL': '', 'GENERATOR': fake, 'TODAY': lambda: TODAY})
         self.client = self.app.test_client()
 
     def send(self, body):
         return self.client.post('/ai/quick-recipes', data=json.dumps(body, ensure_ascii=False), content_type='application/json')
 
-    def test_health_without_gemini(self):
+    def test_health_without_llm(self):
         self.assertEqual(self.client.get('/health').json, {'status': 'ok', 'service': 'mealfit-ai'})
         self.assertFalse(self.calls)
 
@@ -117,33 +118,41 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(set(response.json), {'status', 'code', 'message', 'errors', 'timestamp'})
         self.assertNotIn('secret-value', response.get_data(as_text=True))
 
-    def test_missing_key(self):
+    def test_missing_llm_url(self):
         self.app.config['GENERATOR'] = generate
         response = self.send(BODY)
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json['code'], 'AI_002')
 
-    @patch('mealfit_ai.clients.gemini_client.genai.Client')
-    def test_sdk_structured_output_and_timeout_config(self, client):
-        context = MagicMock(); client.return_value.__enter__.return_value = context
-        context.models.generate_content.return_value.text = json.dumps(RESPONSE)
-        generate(validate_request(BODY, TODAY), 'test-only', 'gemini-3.8-flash')
-        self.assertEqual(client.call_args.kwargs['http_options'].timeout, 18000)
-        self.assertEqual(client.call_args.kwargs['http_options'].retry_options.attempts, 1)
-        config = context.models.generate_content.call_args.kwargs['config']
-        self.assertEqual(config.response_mime_type, 'application/json')
-        self.assertIn('recipes', config.response_json_schema['properties'])
+    @patch('mealfit_ai.clients.ollama_client.post')
+    def test_ollama_structured_output_and_timeout_config(self, post):
+        post.return_value = {'message': {'content': json.dumps(RESPONSE)}}
+        raw = generate(validate_request(BODY, TODAY), 'http://llm.test:11434/', 'gemma4:e2b', timeout=18)
+        self.assertEqual(json.loads(raw), RESPONSE)
+        url, body, timeout = post.call_args.args
+        self.assertEqual(url, 'http://llm.test:11434/api/chat')
+        self.assertEqual(timeout, 18)
+        self.assertEqual(body['model'], 'gemma4:e2b')
+        self.assertFalse(body['stream'])
+        self.assertIn('recipes', body['format']['properties'])
+        self.assertEqual(body['messages'][0]['role'], 'system')
+        self.assertEqual(json.loads(body['messages'][1]['content'])['maxCookingMinutes'], 15)
 
-    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=ReadTimeout('secret-url'))
-    def test_timeout_is_safe(self, _client):
-        self.app.config['GEMINI_API_KEY'] = 'test-only'; self.app.config['GENERATOR'] = generate
+    @patch('mealfit_ai.clients.ollama_client.post', side_effect=socket.timeout('secret-url'))
+    def test_timeout_is_safe(self, _post):
+        self.app.config['LLM_BASE_URL'] = 'http://llm.test:11434'; self.app.config['GENERATOR'] = generate
         response = self.send(BODY)
         self.assertEqual(response.status_code, 504)
         self.assertNotIn('secret-url', response.get_data(as_text=True))
 
-    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=RuntimeError('secret-url'))
-    def test_upstream_failure(self, _client):
-        self.app.config['GEMINI_API_KEY'] = 'test-only'; self.app.config['GENERATOR'] = generate
+    @patch('mealfit_ai.clients.ollama_client.post', side_effect=RuntimeError('secret-url'))
+    def test_upstream_failure(self, _post):
+        self.app.config['LLM_BASE_URL'] = 'http://llm.test:11434'; self.app.config['GENERATOR'] = generate
+        self.assertEqual(self.send(BODY).status_code, 502)
+
+    @patch('mealfit_ai.clients.ollama_client.post', return_value={'message': {'content': ''}})
+    def test_empty_llm_content_is_upstream_failure(self, _post):
+        self.app.config['LLM_BASE_URL'] = 'http://llm.test:11434'; self.app.config['GENERATOR'] = generate
         self.assertEqual(self.send(BODY).status_code, 502)
 
     def test_unknown_fields_and_routes(self):
@@ -170,32 +179,37 @@ class ServiceTests(unittest.TestCase):
         self.app.config['MAX_CONTENT_LENGTH'] = 10
         self.assertEqual(self.send(BODY).status_code, 413)
 
-    @patch('mealfit_ai.clients.gemini_client.genai.Client')
-    def test_gemini_api_errors(self, client):
-        from google.genai.errors import APIError
-        self.app.config.update(GEMINI_API_KEY='test-only', GENERATOR=generate)
-        for code, status in [(429, 502), (403, 502), (504, 504)]:
-            client.side_effect = APIError(code, {'error': {'message': 'secret-detail', 'status': 'UNAVAILABLE'}})
+    @patch('mealfit_ai.clients.ollama_client.post')
+    def test_ollama_http_errors(self, post):
+        self.app.config.update(LLM_BASE_URL='http://llm.test:11434', GENERATOR=generate)
+        cases = [(urllib.error.HTTPError('u', 404, 'model not found secret-detail', None, None), 502),
+                 (urllib.error.HTTPError('u', 500, 'secret-detail', None, None), 502),
+                 (urllib.error.URLError(ConnectionRefusedError('secret-detail')), 502),
+                 (urllib.error.URLError(socket.timeout('secret-detail')), 504)]
+        for error, status in cases:
+            post.side_effect = error
             response = self.send(BODY)
             self.assertEqual(response.status_code, status)
             self.assertNotIn('secret-detail', response.get_data(as_text=True))
 
-    def test_default_model_uses_verified_lightweight_model(self):
+    def test_default_model_is_self_hosted_gemma(self):
         import os
-        with patch.dict(os.environ, {'GEMINI_MODEL': 'gemini-3.5-flash-lite'}):
-            self.assertEqual(create_app().config['GEMINI_MODEL'], 'gemini-3.5-flash-lite')
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('LLM_MODEL', None)
+            self.assertEqual(create_app({'OCR_PREDICTOR': object(), 'RECEIPT_PREDICTOR': object()}).config['LLM_MODEL'],
+                             'gemma4:e2b')
 
-    @patch('mealfit_ai.clients.gemini_client.genai.Client', side_effect=ReadTimeout('secret-key-and-url'))
-    def test_failure_logs_only_safe_diagnostics(self, _client):
-        with self.assertLogs('mealfit_ai.clients.gemini_client', level='WARNING') as captured:
+    @patch('mealfit_ai.clients.ollama_client.post', side_effect=socket.timeout('secret-prompt-and-url'))
+    def test_failure_logs_only_safe_diagnostics(self, _post):
+        with self.assertLogs('mealfit_ai.clients.ollama_client', level='WARNING') as captured:
             with self.assertRaises(ServiceError):
-                generate({}, 'private-api-key', 'gemini-3.5-flash-lite')
+                generate({'note': 'private-input'}, 'http://private-host:11434', 'gemma4:e2b')
         output = ' '.join(captured.output)
-        self.assertIn('ReadTimeout', output)
+        self.assertIn('TimeoutError', output)
         self.assertIn('elapsed_ms=', output)
-        self.assertNotIn('private-api-key', output)
-        self.assertNotIn('secret-key-and-url', output)
-
+        self.assertNotIn('private-input', output)
+        self.assertNotIn('private-host', output)
+        self.assertNotIn('secret-prompt-and-url', output)
 
 if __name__ == '__main__':
     unittest.main()
