@@ -57,6 +57,21 @@ public class GlobalExceptionHandler {
         return invalidInput(errors);
     }
 
+    /**
+     * 클래스에 @Validated가 붙은 컨트롤러는 파라미터 검증 실패가 HandlerMethodValidationException이 아니라
+     * ConstraintViolationException으로 온다 (예: GET /allergens/search?q=51자 이상). 500이 아니라 400으로 돌려준다.
+     */
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(jakarta.validation.ConstraintViolationException e) {
+        List<ErrorResponse.FieldError> errors = e.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath().toString();
+                    return new ErrorResponse.FieldError(path.substring(path.lastIndexOf('.') + 1), v.getMessage());
+                })
+                .toList();
+        return invalidInput(errors);
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException e) {
         return invalidInput(List.of(new ErrorResponse.FieldError(e.getParameterName(), "필수 입력값입니다.")));
